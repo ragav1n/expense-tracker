@@ -55,7 +55,8 @@ export function SettingsView() {
 
     const getProfile = async () => {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { session } } = await supabase.auth.getSession();
+            const user = session?.user;
             if (!user) {
                 router.push('/signin');
                 return;
@@ -87,7 +88,8 @@ export function SettingsView() {
     const updateProfile = async () => {
         setSaving(true);
         try {
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { session } } = await supabase.auth.getSession();
+            const user = session?.user;
             if (!user) return;
 
             const updates = {
@@ -116,7 +118,8 @@ export function SettingsView() {
     const handleAvatarUpload = async (file: File) => {
         try {
             setUploadingAvatar(true);
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { session } } = await supabase.auth.getSession();
+            const user = session?.user;
             if (!user) return;
 
             const fileExt = file.name.split('.').pop();
@@ -160,7 +163,8 @@ export function SettingsView() {
     const handleExport = async (type: 'csv' | 'pdf') => {
         setLoadingExport(true);
         try {
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { session } } = await supabase.auth.getSession();
+            const user = session?.user;
             if (!user) return;
 
             const { data: transactions, error } = await supabase

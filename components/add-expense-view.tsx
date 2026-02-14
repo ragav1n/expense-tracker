@@ -46,7 +46,8 @@ export function AddExpenseView() {
 
         setLoading(true);
         try {
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { session } } = await supabase.auth.getSession();
+            const user = session?.user;
             if (!user) {
                 toast.error('You must be logged in');
                 router.push('/signin');
@@ -114,7 +115,7 @@ export function AddExpenseView() {
             <div className="space-y-4">
                 <FloatingLabelInput
                     id="description"
-                    label="Description"
+                    label="Description *"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     className="bg-secondary/10 border-white/10 h-14"
@@ -134,7 +135,7 @@ export function AddExpenseView() {
             {/* Date & Payment */}
             <div className="space-y-4">
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">Date</label>
+                    <label className="text-sm font-medium">Date *</label>
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button
