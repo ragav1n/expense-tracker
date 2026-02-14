@@ -17,13 +17,14 @@ export const metadata: Metadata = {
   title: 'Expense Tracker - Track Your Spending',
   description: 'Take control of your finances with our beautiful and intuitive expense tracking app. Monitor spending, categorize expenses, and visualize your financial habits.',
   generator: 'v0.app',
+}
+
+export const viewport = {
   themeColor: '#0c081e',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 }
 
 export default function RootLayout({

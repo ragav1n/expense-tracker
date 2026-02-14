@@ -1,14 +1,96 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ChevronLeft, User, Download, Cloud, FolderPlus, Moon, Bell, AlertTriangle, Shield, CreditCard, Lock, HelpCircle, ChevronRight, SlidersHorizontal, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
+import { WaveLoader } from '@/components/ui/wave-loader';
 
 export function SettingsView() {
     const router = useRouter();
+    const [fullName, setFullName] = useState('');
+    const [budget, setBudget] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [userEmail, setUserEmail] = useState('');
+
+    useEffect(() => {
+        getProfile();
+    }, []);
+
+    const getProfile = async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                router.push('/signin');
+                return;
+            }
+            setUserEmail(user.email || '');
+
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('full_name, monthly_budget')
+                .eq('id', user.id)
+                .single();
+
+            if (error && error.code !== 'PGRST116') {
+                console.error('Error fetching profile:', error);
+            }
+
+            if (data) {
+                setFullName(data.full_name || '');
+                setBudget(data.monthly_budget?.toString() || '3000');
+            }
+        } catch (error) {
+            console.error('Error loading user data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const updateProfile = async () => {
+        setSaving(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const updates = {
+                id: user.id,
+                full_name: fullName,
+                monthly_budget: parseFloat(budget),
+                updated_at: new Date().toISOString(),
+            };
+
+            const { error } = await supabase
+                .from('profiles')
+                .upsert(updates);
+
+            if (error) throw error;
+            toast.success('Profile updated successfully');
+        } catch (error: any) {
+            toast.error('Error updating profile: ' + error.message);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleSignOut = async () => {
+        await supabase.auth.signOut();
+        router.push('/signin');
+    };
+
+
+    if (loading) {
+        return (
+            <div className="h-full w-full flex flex-col items-center justify-center min-h-[50vh]">
+                <WaveLoader bars={5} message="Loading settings..." />
+            </div>
+        );
+    }
 
     return (
         <div className="p-5 space-y-6 max-w-md mx-auto relative pb-24">
@@ -26,24 +108,44 @@ export function SettingsView() {
 
             {/* Profile Section */}
             <div className="space-y-4">
-                <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                    <User className="w-4 h-4" />
-                    <span>Profile</span>
+                <div className="flex items-center justify-between text-sm font-semibold text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                        <User className="w-4 h-4" />
+                        <span>Profile</span>
+                    </div>
                 </div>
 
                 <div className="flex gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center text-xl font-bold shadow-lg shadow-primary/20">
-                        SA
+                    <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center text-xl font-bold shadow-lg shadow-primary/20 text-white uppercase">
+                        {fullName ? fullName.substring(0, 2) : userEmail.substring(0, 2)}
                     </div>
                     <div className="flex-1 space-y-3">
                         <div className="space-y-1">
                             <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Full Name</label>
-                            <Input defaultValue="Sarah Anderson" className="bg-secondary/10 border-white/5 h-9" />
+                            <Input
+                                value={fullName}
+                                onChange={(e) => setFullName(e.target.value)}
+                                className="bg-secondary/10 border-white/5 h-9"
+                                placeholder="e.g. John Doe"
+                            />
                         </div>
                         <div className="space-y-1">
                             <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Monthly Budget</label>
-                            <Input defaultValue="$3,500" className="bg-secondary/10 border-white/5 h-9" />
+                            <Input
+                                value={budget}
+                                onChange={(e) => setBudget(e.target.value)}
+                                className="bg-secondary/10 border-white/5 h-9"
+                                placeholder="e.g. 3000"
+                                type="number"
+                            />
                         </div>
+                        <Button
+                            onClick={updateProfile}
+                            disabled={saving}
+                            className="w-full h-8 text-xs bg-primary/20 text-primary hover:bg-primary/30 border border-primary/20"
+                        >
+                            {saving ? 'Saving...' : 'Save Changes'}
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -120,7 +222,7 @@ export function SettingsView() {
             {/* Logout */}
             <div className="pt-2">
                 <button
-                    onClick={() => router.push('/signin')}
+                    onClick={handleSignOut}
                     className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors duration-200 border border-destructive/20"
                 >
                     <LogOut className="w-4 h-4" />

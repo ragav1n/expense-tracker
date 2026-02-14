@@ -4,8 +4,10 @@ import Link from 'next/link';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { Mail, Lock, Eye, EyeClosed, ArrowRight } from 'lucide-react';
 
+import { useRouter } from 'next/navigation';
 import { cn } from "@/lib/utils"
 import { FallingPattern } from './ui/falling-pattern';
+import { supabase } from '@/lib/supabase';
 
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
@@ -24,6 +26,7 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
 }
 
 export function Component({ isSignUp = false }: { isSignUp?: boolean }) {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [email, setEmail] = useState("");
@@ -50,29 +53,62 @@ export function Component({ isSignUp = false }: { isSignUp?: boolean }) {
     mouseY.set(0);
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    setError(null);
+    setSuccess(null);
 
     // Validate inputs
     if (!email || !password) {
-      alert('Please fill in all fields');
+      setError('Please fill in all fields');
       return;
     }
 
     if (isSignUp && (!name || !confirmPassword || password !== confirmPassword)) {
-      alert('Please check your information');
+      setError('Please check your information');
       return;
     }
 
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('expenseTrackerUser', email);
-        window.location.href = '/dashboard';
+    try {
+      if (isSignUp) {
+        // Sign Up
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { full_name: name },
+          },
+        });
+
+        if (error) throw error;
+
+        setSuccess('Registration successful! Please check your email for verification.');
+        // Optional: Redirect to login or handle session
+      } else {
+        // Sign In
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) throw error;
+
+        // Successful login
+        if (typeof window !== 'undefined') {
+          // We can check data.session if needed, but router push is enough for now
+          router.push('/');
+        }
       }
-    }, 500);
+    } catch (error: any) {
+      setError(error.message || 'Authentication failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -337,6 +373,30 @@ export function Component({ isSignUp = false }: { isSignUp?: boolean }) {
                   {isSignUp ? 'Start tracking your expenses today' : 'Sign in to Expense Tracker'}
                 </motion.p>
               </div>
+
+              {/* Inline Messages */}
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm text-center font-medium"
+                  >
+                    {error}
+                  </motion.div>
+                )}
+                {success && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="mb-4 p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-500 text-sm text-center font-medium"
+                  >
+                    {success}
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Login form */}
               <form onSubmit={handleSubmit} className="space-y-4">

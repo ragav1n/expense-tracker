@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ChevronLeft, Sparkles, Calendar, CreditCard, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, Layers } from 'lucide-react';
+import { ChevronLeft, CreditCard, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, Wallet, Banknote } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,8 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TimePicker } from "@/components/ui/datetime-picker";
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 const dropdownCategories: Category[] = [
     { id: 'food', label: 'Food & Dining', icon: Utensils, color: '#FF6B6B' },
@@ -27,8 +29,48 @@ const dropdownCategories: Category[] = [
 export function AddExpenseView() {
     const router = useRouter();
     const [selectedCategory, setSelectedCategory] = useState('food');
-    const [amount, setAmount] = useState('45.80');
+    const [amount, setAmount] = useState('');
+    const [description, setDescription] = useState('');
+    const [notes, setNotes] = useState('');
     const [date, setDate] = useState<Date | undefined>(new Date());
+    const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Debit Card' | 'Credit Card'>('Cash');
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async () => {
+        if (!amount || !description || !date) {
+            toast.error('Please fill in all required fields');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                toast.error('You must be logged in');
+                router.push('/signin');
+                return;
+            }
+
+            const { error } = await supabase.from('transactions').insert({
+                user_id: user.id,
+                amount: parseFloat(amount),
+                description,
+                category: selectedCategory,
+                date: format(date, 'yyyy-MM-dd'),
+                payment_method: paymentMethod,
+                notes
+            });
+
+            if (error) throw error;
+
+            toast.success('Expense added successfully!');
+            router.push('/');
+        } catch (error: any) {
+            toast.error('Failed to add expense: ' + error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="p-5 space-y-6 max-w-md mx-auto pt-4 relative">
@@ -43,7 +85,9 @@ export function AddExpenseView() {
                 <div className="text-center">
                     <h2 className="text-lg font-semibold">Add Expense</h2>
                 </div>
-                <button className="text-sm font-medium text-primary hover:text-primary/80">Next</button>
+                <button onClick={handleSubmit} disabled={loading} className="text-sm font-medium text-primary hover:text-primary/80 disabled:opacity-50">
+                    {loading ? 'Saving...' : 'Save'}
+                </button>
             </div>
 
             {/* Amount Input */}
@@ -52,6 +96,8 @@ export function AddExpenseView() {
                 <div className="relative">
                     <Input
                         value={amount}
+                        type="number"
+                        placeholder="0.00"
                         onChange={(e) => setAmount(e.target.value)}
                         className="h-16 text-3xl font-bold pl-12 bg-secondary/10 border-primary/50 focus-visible:ring-primary/50"
                     />
@@ -64,7 +110,8 @@ export function AddExpenseView() {
                 <FloatingLabelInput
                     id="description"
                     label="Description"
-                    defaultValue="Whole Foods Market"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
                     className="bg-secondary/10 border-white/10 h-14"
                 />
             </div>
@@ -111,10 +158,44 @@ export function AddExpenseView() {
                     </Popover>
                 </div>
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">Payment</label>
-                    <div className="flex items-center gap-2 p-3 rounded-xl bg-secondary/10 border border-white/10 h-12">
-                        <CreditCard className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm">Credit Card</span>
+                    <label className="text-sm font-medium">Payment Method</label>
+                    <div className="grid grid-cols-3 gap-2">
+                        <div
+                            onClick={() => setPaymentMethod('Cash')}
+                            className={cn(
+                                "flex flex-col items-center justify-center gap-1 p-3 rounded-xl border cursor-pointer transition-all",
+                                paymentMethod === 'Cash'
+                                    ? "bg-primary/20 border-primary text-primary"
+                                    : "bg-secondary/10 border-white/10 hover:bg-secondary/20"
+                            )}
+                        >
+                            <Banknote className="w-5 h-5" />
+                            <span className="text-xs">Cash</span>
+                        </div>
+                        <div
+                            onClick={() => setPaymentMethod('Debit Card')}
+                            className={cn(
+                                "flex flex-col items-center justify-center gap-1 p-3 rounded-xl border cursor-pointer transition-all",
+                                paymentMethod === 'Debit Card'
+                                    ? "bg-primary/20 border-primary text-primary"
+                                    : "bg-secondary/10 border-white/10 hover:bg-secondary/20"
+                            )}
+                        >
+                            <CreditCard className="w-5 h-5" />
+                            <span className="text-xs">Debit</span>
+                        </div>
+                        <div
+                            onClick={() => setPaymentMethod('Credit Card')}
+                            className={cn(
+                                "flex flex-col items-center justify-center gap-1 p-3 rounded-xl border cursor-pointer transition-all",
+                                paymentMethod === 'Credit Card'
+                                    ? "bg-primary/20 border-primary text-primary"
+                                    : "bg-secondary/10 border-white/10 hover:bg-secondary/20"
+                            )}
+                        >
+                            <Wallet className="w-5 h-5" />
+                            <span className="text-xs">Credit</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -124,14 +205,19 @@ export function AddExpenseView() {
                 <label className="text-sm font-medium">Notes (Optional)</label>
                 <Textarea
                     placeholder="Add notes..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
                     className="bg-secondary/10 border-white/10 resize-none min-h-[80px]"
-                    defaultValue="Weekly grocery shopping..."
                 />
             </div>
 
             {/* Main Action Button */}
-            <Button className="w-full h-12 text-base font-semibold shadow-[0_0_20px_rgba(138,43,226,0.3)] hover:shadow-[0_0_30px_rgba(138,43,226,0.5)] transition-all">
-                Add Expense
+            <Button
+                onClick={handleSubmit}
+                disabled={loading}
+                className="w-full h-12 text-base font-semibold shadow-[0_0_20px_rgba(138,43,226,0.3)] hover:shadow-[0_0_30px_rgba(138,43,226,0.5)] transition-all"
+            >
+                {loading ? 'Adding Expense...' : 'Add Expense'}
             </Button>
 
             {/* Spacer for bottom nav */}

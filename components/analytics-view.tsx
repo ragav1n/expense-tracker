@@ -1,38 +1,36 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ChevronLeft, MoreHorizontal } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer, Pie, PieChart } from 'recharts';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/pie-chart";
+import { supabase } from '@/lib/supabase';
+import { format, subMonths, startOfMonth, endOfMonth, isSameMonth, parseISO } from 'date-fns';
+import { WaveLoader } from '@/components/ui/wave-loader';
 
-// Mock Data
-const categoryTrendData = [
-    { month: 'Aug', Food: 800, Transport: 400, Bills: 500, Shopping: 300 },
-    { month: 'Sep', Food: 950, Transport: 450, Bills: 500, Shopping: 500 },
-    { month: 'Oct', Food: 900, Transport: 500, Bills: 520, Shopping: 280 },
-    { month: 'Nov', Food: 1200, Transport: 550, Bills: 520, Shopping: 830 },
-    { month: 'Dec', Food: 1400, Transport: 600, Bills: 550, Shopping: 250 },
-    { month: 'Jan', Food: 1150, Transport: 680, Bills: 520, Shopping: 350 },
-    { month: 'Feb', Food: 900, Transport: 500, Bills: 520, Shopping: 600 },
-];
+// Constants for consistent coloring
+const CATEGORY_COLORS: Record<string, string> = {
+    food: '#8A2BE2',      // Electric Purple
+    transport: '#FF6B6B', // Coral
+    bills: '#4ECDC4',     // Teal
+    shopping: '#F9C74F',  // Yellow
+    healthcare: '#FF9F1C', // Orange
+    entertainment: '#2EC4B6', // Light Blue
+    others: '#C7F464',    // Lime
+};
 
-const categoryBreakdown = [
-    { name: 'Food', amount: 1150, color: 'bg-[#8A2BE2]', value: 75, lastMonth: 'bg-[#8A2BE2]/20', fill: "#8A2BE2", stroke: "#8A2BE2" }, // Electric Purple
-    { name: 'Transport', amount: 680, color: 'bg-[#FF6B6B]', value: 45, lastMonth: 'bg-[#FF6B6B]/20', fill: "#FF6B6B", stroke: "#FF6B6B" }, // Coral
-    { name: 'Bills', amount: 520, color: 'bg-[#4ECDC4]', value: 35, lastMonth: 'bg-[#4ECDC4]/20', fill: "#4ECDC4", stroke: "#4ECDC4" }, // Teal
-    { name: 'Shopping', amount: 350, color: 'bg-[#F9C74F]', value: 25, lastMonth: 'bg-[#F9C74F]/20', fill: "#F9C74F", stroke: "#F9C74F" }, // Yellow
-];
-
-const chartConfig = {
-    food: { label: "Food", color: "#8A2BE2" },
-    transport: { label: "Transport", color: "#FF6B6B" },
-    bills: { label: "Bills", color: "#4ECDC4" },
-    shopping: { label: "Shopping", color: "#F9C74F" },
-} satisfies ChartConfig;
+const chartConfig: ChartConfig = {
+    food: { label: "Food", color: CATEGORY_COLORS.food },
+    transport: { label: "Transport", color: CATEGORY_COLORS.transport },
+    bills: { label: "Bills", color: CATEGORY_COLORS.bills },
+    shopping: { label: "Shopping", color: CATEGORY_COLORS.shopping },
+    healthcare: { label: "Healthcare", color: CATEGORY_COLORS.healthcare },
+    entertainment: { label: "Entertainment", color: CATEGORY_COLORS.entertainment },
+    others: { label: "Others", color: CATEGORY_COLORS.others },
+};
 
 // Custom Tooltip Component
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -48,7 +46,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
                                 style={{ backgroundColor: entry.stroke || entry.color || entry.fill }}
                             />
                             <span className="text-muted-foreground capitalize">{entry.name}:</span>
-                            <span className="font-mono font-medium">${entry.value}</span>
+                            <span className="font-mono font-medium">${Number(entry.value).toFixed(2)}</span>
                         </div>
                     ))}
                 </div>
@@ -60,6 +58,109 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export function AnalyticsView() {
     const router = useRouter();
+    const [loading, setLoading] = useState(true);
+    const [categoryTrendData, setCategoryTrendData] = useState<any[]>([]);
+    const [categoryBreakdown, setCategoryBreakdown] = useState<any[]>([]);
+    const [currentMonthTotal, setCurrentMonthTotal] = useState(0);
+    const [lastMonthTotal, setLastMonthTotal] = useState(0);
+
+    useEffect(() => {
+        async function fetchData() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+
+                // Fetch transactions for the last 6 months
+                const sixMonthsAgo = subMonths(new Date(), 6);
+                const { data: transactions } = await supabase
+                    .from('transactions')
+                    .select('*')
+                    .gte('date', startOfMonth(sixMonthsAgo).toISOString())
+                    .order('date', { ascending: true });
+
+                if (transactions) {
+                    processTransactions(transactions);
+                }
+            } catch (error) {
+                console.error("Error fetching analytics:", error);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchData();
+    }, []);
+
+    const processTransactions = (transactions: any[]) => {
+        const now = new Date();
+        const currentMonth = now;
+        const lastMonth = subMonths(now, 1);
+
+        // 1. Process Monthly Trends (Last 6 Months)
+        const monthsMap: Record<string, any> = {};
+        // Initialize last 6 months
+        for (let i = 6; i >= 0; i--) {
+            const d = subMonths(now, i);
+            const monthKey = format(d, 'MMM');
+            monthsMap[monthKey] = { month: monthKey };
+            // Initialize all categories to 0
+            Object.keys(CATEGORY_COLORS).forEach(cat => monthsMap[monthKey][cat] = 0);
+        }
+
+        transactions.forEach(tx => {
+            const date = parseISO(tx.date);
+            const monthKey = format(date, 'MMM');
+            if (monthsMap[monthKey]) {
+                const cat = tx.category.toLowerCase();
+                if (!monthsMap[monthKey][cat]) monthsMap[monthKey][cat] = 0;
+                monthsMap[monthKey][cat] += Number(tx.amount);
+            }
+        });
+        setCategoryTrendData(Object.values(monthsMap));
+
+
+        // 2. Process Current Month Breakdown
+        const currentMonthTxs = transactions.filter(tx => isSameMonth(parseISO(tx.date), currentMonth));
+        const lastMonthTxs = transactions.filter(tx => isSameMonth(parseISO(tx.date), lastMonth));
+
+        const currentTotal = currentMonthTxs.reduce((sum, tx) => sum + Number(tx.amount), 0);
+        const lastTotal = lastMonthTxs.reduce((sum, tx) => sum + Number(tx.amount), 0);
+        setCurrentMonthTotal(currentTotal);
+        setLastMonthTotal(lastTotal);
+
+        const breakdownMap: Record<string, number> = {};
+        currentMonthTxs.forEach(tx => {
+            const cat = tx.category.toLowerCase();
+            breakdownMap[cat] = (breakdownMap[cat] || 0) + Number(tx.amount);
+        });
+
+        const breakdownData = Object.entries(breakdownMap).map(([name, amount]) => {
+            // Calculate percentage relative to total spent
+            const percentage = currentTotal > 0 ? (amount / currentTotal) * 100 : 0;
+            return {
+                name: name.charAt(0).toUpperCase() + name.slice(1),
+                amount,
+                value: percentage,
+                color: CATEGORY_COLORS[name] || CATEGORY_COLORS.others,
+                fill: CATEGORY_COLORS[name] || CATEGORY_COLORS.others,
+                stroke: CATEGORY_COLORS[name] || CATEGORY_COLORS.others,
+            };
+        }).sort((a, b) => b.amount - a.amount);
+
+        setCategoryBreakdown(breakdownData);
+    };
+
+    const percentageChange = lastMonthTotal > 0
+        ? ((currentMonthTotal - lastMonthTotal) / lastMonthTotal) * 100
+        : 0;
+
+
+    if (loading) {
+        return (
+            <div className="h-full w-full flex flex-col items-center justify-center min-h-[50vh]">
+                <WaveLoader bars={5} message="Loading analytics..." />
+            </div>
+        );
+    }
 
     return (
         <div className="p-5 space-y-6 max-w-md mx-auto relative pb-24">
@@ -81,7 +182,7 @@ export function AnalyticsView() {
             <Card className="bg-card/50 backdrop-blur-md border-white/5">
                 <CardContent className="p-5 space-y-4">
                     <div className="flex justify-between items-center">
-                        <h3 className="font-semibold text-sm">Category Trends</h3>
+                        <h3 className="font-semibold text-sm">Category Trends (Last 6 Months)</h3>
                     </div>
 
                     <div className="h-48 w-full">
@@ -94,12 +195,12 @@ export function AnalyticsView() {
                                     tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }}
                                 />
                                 <Tooltip content={<CustomTooltip />} />
-                                {categoryBreakdown.map((cat) => (
+                                {Object.keys(CATEGORY_COLORS).map((cat) => (
                                     <Line
-                                        key={cat.name}
+                                        key={cat}
                                         type="monotone"
-                                        dataKey={cat.name}
-                                        stroke={cat.stroke}
+                                        dataKey={cat}
+                                        stroke={CATEGORY_COLORS[cat]}
                                         strokeWidth={2}
                                         dot={false}
                                     />
@@ -109,11 +210,16 @@ export function AnalyticsView() {
                     </div>
 
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/20 text-green-400 text-xs font-medium">
-                            <span className="text-xs">↑ +8.5% vs last month</span>
+                        <div className={cn(
+                            "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium",
+                            percentageChange >= 0 ? "bg-red-500/20 text-red-400" : "bg-green-500/20 text-green-400"
+                        )}>
+                            <span className="text-xs">
+                                {percentageChange >= 0 ? '↑' : '↓'} {Math.abs(percentageChange).toFixed(1)}% vs last month
+                            </span>
                         </div>
                         <div className="px-3 py-1.5 rounded-full bg-primary/20 text-primary text-xs font-medium border border-primary/20">
-                            January 2025
+                            {format(new Date(), 'MMMM yyyy')}
                         </div>
                     </div>
                 </CardContent>
@@ -125,49 +231,64 @@ export function AnalyticsView() {
 
                 {/* Pie Chart Integration */}
                 <div className="h-[250px] w-full">
-                    <ChartContainer
-                        config={chartConfig}
-                        className="mx-auto aspect-square max-h-[250px]"
-                    >
-                        <PieChart>
-                            <ChartTooltip
-                                cursor={false}
-                                content={<ChartTooltipContent hideLabel />}
-                            />
-                            <Pie
-                                data={categoryBreakdown}
-                                dataKey="amount"
-                                nameKey="name"
-                                innerRadius={60}
-                                strokeWidth={0}
-                                paddingAngle={5}
-                                cornerRadius={5}
-                            >
-                            </Pie>
-                        </PieChart>
-                    </ChartContainer>
+                    {categoryBreakdown.length > 0 ? (
+                        <ChartContainer
+                            config={chartConfig}
+                            className="mx-auto aspect-square max-h-[250px]"
+                        >
+                            <PieChart>
+                                <ChartTooltip
+                                    cursor={false}
+                                    content={<ChartTooltipContent hideLabel />}
+                                />
+                                <Pie
+                                    data={categoryBreakdown}
+                                    dataKey="amount"
+                                    nameKey="name"
+                                    innerRadius={60}
+                                    strokeWidth={0}
+                                    paddingAngle={5}
+                                    cornerRadius={5}
+                                >
+                                </Pie>
+                            </PieChart>
+                        </ChartContainer>
+                    ) : (
+                        <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                            No data for this month
+                        </div>
+                    )}
                 </div>
 
                 <div className="space-y-4">
                     {categoryBreakdown.map((cat) => (
                         <div key={cat.name} className="space-y-2">
                             <div className="flex justify-between text-sm">
-                                <span>{cat.name}</span>
-                                <span className="font-semibold">${cat.amount}</span>
+                                <span className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.fill }} />
+                                    {cat.name}
+                                </span>
+                                <span className="font-semibold">${cat.amount.toFixed(2)}</span>
                             </div>
 
-                            {/* Dual Progress Bar (Current vs Last Month representation style) */}
-                            <div className="h-2 w-full bg-secondary/20 rounded-full overflow-hidden flex">
-                                <div className={cn("h-full rounded-full", cat.color)} style={{ width: `${cat.value}%` }} />
-                                <div className={cn("h-full", cat.lastMonth)} style={{ width: '20%' }} /> {/* Placeholder for last month */}
+                            {/* Simple Progress Bar */}
+                            <div className="h-2 w-full bg-secondary/20 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full rounded-full transition-all duration-500"
+                                    style={{ width: `${cat.value}%`, backgroundColor: cat.fill }}
+                                />
                             </div>
 
-                            <div className="flex justify-between text-[10px] text-muted-foreground">
-                                <span>This Month</span>
-                                <span>Last Month</span>
+                            <div className="flex justify-end text-[10px] text-muted-foreground">
+                                <span>{cat.value.toFixed(1)}% of total</span>
                             </div>
                         </div>
                     ))}
+                    {categoryBreakdown.length === 0 && (
+                        <div className="text-center text-xs text-muted-foreground">
+                            No transactions recorded this month.
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
