@@ -159,7 +159,7 @@ export function GroupsView() {
                 <TabsList className="w-full grid grid-cols-3 bg-secondary/20 p-1 rounded-2xl h-12">
                     <TabsTrigger value="groups" className="rounded-xl data-[state=active]:bg-card data-[state=active]:text-primary transition-all font-semibold">Groups</TabsTrigger>
                     <TabsTrigger value="friends" className="rounded-xl data-[state=active]:bg-card data-[state=active]:text-primary transition-all font-semibold">Friends</TabsTrigger>
-                    <TabsTrigger value="settlements" className="rounded-xl data-[state=active]:bg-card data-[state=active]:text-primary transition-all font-semibold italic text-xs">Settlements</TabsTrigger>
+                    <TabsTrigger value="settlements" className="rounded-xl data-[state=active]:bg-card data-[state=active]:text-primary transition-all font-semibold">Settlements</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="groups" className="mt-6 space-y-4">

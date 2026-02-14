@@ -61,6 +61,7 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
             const { data: { session } } = await supabase.auth.getSession();
             const user = session?.user;
             if (!user) return;
+            setUserId(user.id);
 
             const { data, error } = await supabase
                 .from('profiles')
@@ -73,7 +74,6 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
                 if (data.budget_alerts !== null) setBudgetAlertsEnabledState(data.budget_alerts);
                 if (data.monthly_budget) setMonthlyBudgetState(data.monthly_budget);
                 if (data.budgets) setBudgets(data.budgets as Record<string, number>);
-                setUserId(user.id);
             }
             if (error && error.code !== 'PGRST116') {
                 console.error('Error fetching preferences:', error);
