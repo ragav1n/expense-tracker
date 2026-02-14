@@ -167,31 +167,29 @@ export function DashboardView() {
             <div className="flex justify-between items-center pt-2">
                 <div className="flex items-center gap-3">
                     {/* App Logo */}
-                    <div className="w-8 h-8 relative shrink-0">
+                    <div className="w-10 h-10 relative shrink-0">
                         <img src="/Novira.png" alt="Novira" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(138,43,226,0.5)]" />
                     </div>
-
-                    <div className="w-10 h-10 rounded-full bg-secondary/20 border border-white/5 overflow-hidden flex items-center justify-center text-xs font-bold text-muted-foreground uppercase shrink-0">
+                    <div>
+                        <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/80">
+                            Hello, {userName.split(' ')[0]}! 👋
+                        </h1>
+                        <p className="text-[11px] text-muted-foreground font-medium">Track your expenses with Novira</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2">
+                    {/* Avatar (Links to Settings) */}
+                    <div
+                        onClick={() => router.push('/settings')}
+                        className="w-10 h-10 rounded-full bg-secondary/20 border border-white/5 overflow-hidden flex items-center justify-center text-xs font-bold text-muted-foreground uppercase shrink-0 cursor-pointer hover:border-primary/50 transition-colors"
+                    >
                         {avatarUrl ? (
                             <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                         ) : (
                             userName.substring(0, 2)
                         )}
                     </div>
-                    <div>
-                        <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/80">
-                            Hello, {userName.split(' ')[0]}! 👋
-                        </h1>
-                        <p className="text-xs text-muted-foreground">Track your expenses wisely</p>
-                    </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={handleSignOut}
-                        className="w-10 h-10 rounded-full bg-secondary/20 hover:bg-secondary/30 flex items-center justify-center border border-white/5 transition-colors"
-                    >
-                        <LogOut className="w-4 h-4 text-muted-foreground" />
-                    </button>
+
                     <button
                         onClick={() => router.push('/add')}
                         className="w-10 h-10 rounded-full bg-primary/20 hover:bg-primary/30 flex items-center justify-center border border-primary/20 transition-colors"

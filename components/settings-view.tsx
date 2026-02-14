@@ -206,18 +206,16 @@ export function SettingsView() {
     return (
         <div className="p-5 space-y-6 max-w-md mx-auto relative pb-24">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
                 <button
                     onClick={() => router.back()}
                     className="p-2 rounded-full bg-secondary/30 hover:bg-secondary/50 transition-colors"
                 >
                     <ChevronLeft className="w-5 h-5" />
                 </button>
-                <div className="flex items-center gap-2">
-                    <img src="/Novira.png" alt="Novira" className="w-6 h-6 object-contain drop-shadow-[0_0_8px_rgba(138,43,226,0.5)]" />
-                    <h2 className="text-lg font-semibold">Settings</h2>
-                </div>
-                <div className="w-9" /> {/* Spacer */}
+                <h2 className="text-lg font-semibold">Settings</h2>
+                <div className="w-9" /> {/* Spacer to balance Back button */}
             </div>
 
             {/* Profile Section */}

@@ -76,7 +76,7 @@ export function AddExpenseView() {
     };
 
     return (
-        <div className="p-5 space-y-6 max-w-md mx-auto pt-4 relative">
+        <div className="p-5 space-y-6 max-w-md mx-auto pt-4 relative pb-24">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <button
@@ -225,8 +225,7 @@ export function AddExpenseView() {
                 {loading ? 'Adding Expense...' : 'Add Expense'}
             </Button>
 
-            {/* Spacer for bottom nav */}
-            <div className="h-20" />
+
         </div>
     );
 }
