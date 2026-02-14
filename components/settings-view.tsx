@@ -14,6 +14,7 @@ import { WaveLoader } from '@/components/ui/wave-loader';
 import { AlertBanner } from '@/components/ui/alert-banner';
 import { AnimatePresence } from 'framer-motion';
 import { generateCSV, generatePDF } from '@/utils/export-utils';
+import { ChangePasswordDialog } from '@/components/change-password-dialog';
 
 export function SettingsView() {
     const router = useRouter();
@@ -322,13 +323,17 @@ export function SettingsView() {
                 </div>
 
                 <div className="bg-secondary/5 rounded-xl border border-white/5 divide-y divide-white/5">
-                    <button className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors text-left">
-                        <div className="flex items-center gap-3">
-                            <Lock className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">Change Password</span>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                    </button>
+                    <ChangePasswordDialog
+                        trigger={
+                            <button className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors text-left outline-none">
+                                <div className="flex items-center gap-3">
+                                    <Lock className="w-4 h-4 text-muted-foreground" />
+                                    <span className="text-sm font-medium">Change Password</span>
+                                </div>
+                                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                            </button>
+                        }
+                    />
                 </div>
             </div>
 

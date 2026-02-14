@@ -332,7 +332,7 @@ export function Component({ isSignUp = false }: { isSignUp?: boolean }) {
             {/* Glass card background - cosmic theme */}
             <div className="relative bg-card/60 backdrop-blur-xl rounded-2xl p-6 border border-primary/20 shadow-2xl overflow-hidden">
               {/* Subtle card inner patterns */}
-              <div className="absolute inset-0 opacity-[0.03]"
+              <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
                 style={{
                   backgroundImage: `linear-gradient(135deg, white 0.5px, transparent 0.5px), linear-gradient(45deg, white 0.5px, transparent 0.5px)`,
                   backgroundSize: '30px 30px'
@@ -573,7 +573,7 @@ export function Component({ isSignUp = false }: { isSignUp?: boolean }) {
                 </motion.div>
 
                 {/* Remember me & Forgot password */}
-                <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center justify-between pt-1 relative z-10">
                   <div className="flex items-center justify-between">
                     <Link href="/forgot-password" className="text-xs text-foreground/60 hover:text-foreground transition-colors duration-200">
                       Forgot password?
@@ -638,48 +638,7 @@ export function Component({ isSignUp = false }: { isSignUp?: boolean }) {
                   </div>
                 </motion.button>
 
-                {/* Minimal Divider */}
-                <div className="relative mt-2 mb-5 flex items-center">
-                  <div className="flex-grow border-t border-foreground/10"></div>
-                  <motion.span
-                    className="mx-3 text-xs text-foreground/40"
-                    initial={{ opacity: 0.7 }}
-                    animate={{ opacity: [0.7, 0.9, 0.7] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                  >
-                    or
-                  </motion.span>
-                  <div className="flex-grow border-t border-foreground/10"></div>
-                </div>
 
-                {/* Google Sign In */}
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  type="button"
-                  disabled={isLoading}
-                  className="w-full relative group/google mt-5"
-                >
-                  <div className="absolute inset-0 bg-foreground/5 rounded-lg blur-lg opacity-0 group-hover/google:opacity-50 transition-opacity duration-300" />
-
-                  <div className="relative overflow-hidden bg-foreground/5 text-foreground font-medium h-10 rounded-lg border border-foreground/10 hover:border-foreground/20 transition-all duration-300 flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 flex items-center justify-center text-foreground/80 group-hover/google:text-foreground transition-colors duration-300">G</div>
-                    <span className="text-foreground/80 group-hover/google:text-foreground transition-colors text-xs">
-                      Sign in with Google
-                    </span>
-
-                    {/* Button hover effect */}
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0"
-                      initial={{ x: '-100%' }}
-                      whileHover={{ x: '100%' }}
-                      transition={{
-                        duration: 1,
-                        ease: "easeInOut"
-                      }}
-                    />
-                  </div>
-                </motion.button>
 
                 {/* Sign up link */}
                 <motion.p
