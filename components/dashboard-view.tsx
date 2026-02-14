@@ -166,7 +166,12 @@ export function DashboardView() {
             {/* Header */}
             <div className="flex justify-between items-center pt-2">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-secondary/20 border border-white/5 overflow-hidden flex items-center justify-center text-xs font-bold text-muted-foreground uppercase">
+                    {/* App Logo */}
+                    <div className="w-8 h-8 relative shrink-0">
+                        <img src="/Novira.png" alt="Novira" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(138,43,226,0.5)]" />
+                    </div>
+
+                    <div className="w-10 h-10 rounded-full bg-secondary/20 border border-white/5 overflow-hidden flex items-center justify-center text-xs font-bold text-muted-foreground uppercase shrink-0">
                         {avatarUrl ? (
                             <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                         ) : (

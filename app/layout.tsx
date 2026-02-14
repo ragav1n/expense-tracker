@@ -15,9 +15,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Expense Tracker - Track Your Spending',
-  description: 'Take control of your finances with our beautiful and intuitive expense tracking app. Monitor spending, categorize expenses, and visualize your financial habits.',
+  title: 'Novira - Finance Tracker',
+  description: 'Experience the future of personal finance with Novira. Track spending, manage budgets, and visualize your financial universe.',
   generator: 'v0.app',
+  icons: {
+    icon: '/Novira.png',
+    shortcut: '/Novira.png',
+    apple: '/Novira.png',
+  }
 }
 
 export const viewport = {

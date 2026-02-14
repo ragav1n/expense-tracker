@@ -213,7 +213,10 @@ export function SettingsView() {
                 >
                     <ChevronLeft className="w-5 h-5" />
                 </button>
-                <h2 className="text-lg font-semibold">Settings</h2>
+                <div className="flex items-center gap-2">
+                    <img src="/Novira.png" alt="Novira" className="w-6 h-6 object-contain drop-shadow-[0_0_8px_rgba(138,43,226,0.5)]" />
+                    <h2 className="text-lg font-semibold">Settings</h2>
+                </div>
                 <div className="w-9" /> {/* Spacer */}
             </div>
 
@@ -438,11 +441,10 @@ export function SettingsView() {
 
             {/* Footer Info */}
             <div className="text-center py-4 space-y-2">
-                <p className="text-xs text-muted-foreground font-medium">ExpenseTracker v1.0.0</p>
-                <div className="flex justify-center gap-4 text-[10px] text-primary">
-                    <button>Terms</button>
-                    <button>Privacy</button>
-                    <button>Help</button>
+                <p className="text-xs text-muted-foreground font-medium">Novira v1.0.0</p>
+                <div className="flex justify-center items-center gap-2 text-[10px] text-muted-foreground">
+                    <Shield className="w-3 h-3" />
+                    <span>Secure & Encrypted</span>
                 </div>
             </div>
         </div>

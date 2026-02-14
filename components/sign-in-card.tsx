@@ -348,8 +348,9 @@ export function Component({ isSignUp = false }: { isSignUp?: boolean }) {
                   className="mx-auto w-10 h-10 rounded-full border border-primary/30 flex items-center justify-center relative overflow-hidden"
                 >
                   {/* Logo placeholder - would be an SVG in practice */}
-                  {/* <!-- SVG_LOGO --> */}
-                  <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-b from-primary to-primary/70">$</span>
+                  <div className="relative w-full h-full p-2">
+                    <img src="/Novira.png" alt="Novira Logo" className="w-full h-full object-contain drop-shadow-[0_0_10px_rgba(138,43,226,0.5)]" />
+                  </div>
 
                   {/* Inner lighting effect */}
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent opacity-50" />
@@ -370,7 +371,7 @@ export function Component({ isSignUp = false }: { isSignUp?: boolean }) {
                   transition={{ delay: 0.3 }}
                   className="text-foreground/60 text-xs"
                 >
-                  {isSignUp ? 'Start tracking your expenses today' : 'Sign in to Expense Tracker'}
+                  {isSignUp ? 'Start tracking your expenses today' : 'Sign in to Novira'}
                 </motion.p>
               </div>
 
