@@ -1,15 +1,22 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { ChevronLeft, MoreHorizontal } from 'lucide-react';
+import { ChevronLeft, MoreHorizontal, Filter } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer, Pie, PieChart } from 'recharts';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/pie-chart";
 import { supabase } from '@/lib/supabase';
-import { format, subMonths, startOfMonth, endOfMonth, isSameMonth, parseISO } from 'date-fns';
+import { format, subMonths, startOfMonth, endOfMonth, isSameMonth, parseISO, subYears } from 'date-fns';
 import { WaveLoader } from '@/components/ui/wave-loader';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 
 // Constants for consistent coloring
 const CATEGORY_COLORS: Record<string, string> = {
@@ -56,86 +63,126 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return null;
 };
 
+type DateRange = '3M' | '6M' | '1Y' | 'ALL';
+
 export function AnalyticsView() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [categoryTrendData, setCategoryTrendData] = useState<any[]>([]);
     const [categoryBreakdown, setCategoryBreakdown] = useState<any[]>([]);
-    const [currentMonthTotal, setCurrentMonthTotal] = useState(0);
-    const [lastMonthTotal, setLastMonthTotal] = useState(0);
+    const [totalSpentInRange, setTotalSpentInRange] = useState(0);
+    const [dateRange, setDateRange] = useState<DateRange>('6M');
 
     useEffect(() => {
-        async function fetchData() {
-            try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) return;
+        fetchData();
+    }, [dateRange]);
 
-                // Fetch transactions for the last 6 months
-                const sixMonthsAgo = subMonths(new Date(), 6);
-                const { data: transactions } = await supabase
-                    .from('transactions')
-                    .select('*')
-                    .gte('date', startOfMonth(sixMonthsAgo).toISOString())
-                    .order('date', { ascending: true });
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
 
-                if (transactions) {
-                    processTransactions(transactions);
-                }
-            } catch (error) {
-                console.error("Error fetching analytics:", error);
-            } finally {
-                setLoading(false);
+            let query = supabase
+                .from('transactions')
+                .select('*')
+                .order('date', { ascending: true }); // Order ascending for chart
+
+            // Apply Date Filter
+            const now = new Date();
+            let startDate: Date | null = null;
+
+            if (dateRange === '3M') startDate = startOfMonth(subMonths(now, 2)); // Current + 2 prev = 3 months
+            else if (dateRange === '6M') startDate = startOfMonth(subMonths(now, 5));
+            else if (dateRange === '1Y') startDate = startOfMonth(subYears(now, 1));
+            // 'ALL' implies no lower bound filter
+
+            if (startDate) {
+                query = query.gte('date', startDate.toISOString());
+            }
+
+            const { data: transactions } = await query;
+
+            if (transactions) {
+                processTransactions(transactions, dateRange);
+            }
+        } catch (error) {
+            console.error("Error fetching analytics:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const processTransactions = (transactions: any[], range: DateRange) => {
+        const now = new Date();
+
+        // 1. Process Trend Data
+        const monthsMap: Record<string, any> = {};
+
+        // Determine number of months to display on X-axis
+        let monthsBack = 5; // Default 6M (0 to 5)
+        if (range === '3M') monthsBack = 2;
+        else if (range === '1Y') monthsBack = 11;
+        else if (range === 'ALL') {
+            // For ALL, we don't pre-fill months, we just take what's in the data
+            monthsBack = -1;
+        }
+
+        // Initialize months if not ALL
+        if (monthsBack !== -1) {
+            for (let i = monthsBack; i >= 0; i--) {
+                const d = subMonths(now, i);
+                const monthKey = format(d, 'MMM yyyy'); // Use Year too to avoid collisions in 1Y view
+                monthsMap[monthKey] = { month: monthKey, rawDate: d };
+                Object.keys(CATEGORY_COLORS).forEach(cat => monthsMap[monthKey][cat] = 0);
             }
         }
-        fetchData();
-    }, []);
 
-    const processTransactions = (transactions: any[]) => {
-        const now = new Date();
-        const currentMonth = now;
-        const lastMonth = subMonths(now, 1);
-
-        // 1. Process Monthly Trends (Last 6 Months)
-        const monthsMap: Record<string, any> = {};
-        // Initialize last 6 months
-        for (let i = 6; i >= 0; i--) {
-            const d = subMonths(now, i);
-            const monthKey = format(d, 'MMM');
-            monthsMap[monthKey] = { month: monthKey };
-            // Initialize all categories to 0
-            Object.keys(CATEGORY_COLORS).forEach(cat => monthsMap[monthKey][cat] = 0);
-        }
-
+        // Aggregate Data
         transactions.forEach(tx => {
             const date = parseISO(tx.date);
-            const monthKey = format(date, 'MMM');
+            const monthKey = format(date, 'MMM yyyy');
+
+            // If ALL, create entry if missing
+            if (monthsBack === -1 && !monthsMap[monthKey]) {
+                monthsMap[monthKey] = { month: monthKey, rawDate: date };
+                Object.keys(CATEGORY_COLORS).forEach(cat => monthsMap[monthKey][cat] = 0);
+            }
+
             if (monthsMap[monthKey]) {
                 const cat = tx.category.toLowerCase();
-                if (!monthsMap[monthKey][cat]) monthsMap[monthKey][cat] = 0;
+                if (!monthsMap[monthKey][cat]) monthsMap[monthKey][cat] = 0; // Init if category new
                 monthsMap[monthKey][cat] += Number(tx.amount);
             }
         });
-        setCategoryTrendData(Object.values(monthsMap));
+
+        // Convert map to array and Sort by date
+        const sortedTrendData = Object.values(monthsMap).sort((a: any, b: any) => a.rawDate - b.rawDate);
+
+        // Format month label back to short format for display if needed, or keep MMM yyyy
+        const displayData = sortedTrendData.map((item: any) => ({
+            ...item,
+            month: range === '1Y' || range === 'ALL' ? format(item.rawDate, 'MMM yy') : format(item.rawDate, 'MMM')
+        }));
+
+        setCategoryTrendData(displayData);
 
 
-        // 2. Process Current Month Breakdown
-        const currentMonthTxs = transactions.filter(tx => isSameMonth(parseISO(tx.date), currentMonth));
-        const lastMonthTxs = transactions.filter(tx => isSameMonth(parseISO(tx.date), lastMonth));
-
-        const currentTotal = currentMonthTxs.reduce((sum, tx) => sum + Number(tx.amount), 0);
-        const lastTotal = lastMonthTxs.reduce((sum, tx) => sum + Number(tx.amount), 0);
-        setCurrentMonthTotal(currentTotal);
-        setLastMonthTotal(lastTotal);
-
+        // 2. Process Breakdown (Aggregate of Selected Range)
         const breakdownMap: Record<string, number> = {};
-        currentMonthTxs.forEach(tx => {
+        let total = 0;
+
+        transactions.forEach(tx => {
             const cat = tx.category.toLowerCase();
-            breakdownMap[cat] = (breakdownMap[cat] || 0) + Number(tx.amount);
+            const amount = Number(tx.amount);
+            breakdownMap[cat] = (breakdownMap[cat] || 0) + amount;
+            total += amount;
         });
 
+        setTotalSpentInRange(total);
+
         const breakdownData = Object.entries(breakdownMap).map(([name, amount]) => {
-            // Calculate percentage relative to total spent
-            const percentage = currentTotal > 0 ? (amount / currentTotal) * 100 : 0;
+            const percentage = total > 0 ? (amount / total) * 100 : 0;
             return {
                 name: name.charAt(0).toUpperCase() + name.slice(1),
                 amount,
@@ -149,11 +196,6 @@ export function AnalyticsView() {
         setCategoryBreakdown(breakdownData);
     };
 
-    const percentageChange = lastMonthTotal > 0
-        ? ((currentMonthTotal - lastMonthTotal) / lastMonthTotal) * 100
-        : 0;
-
-
     if (loading) {
         return (
             <div className="h-full w-full flex flex-col items-center justify-center min-h-[50vh]">
@@ -165,24 +207,35 @@ export function AnalyticsView() {
     return (
         <div className="p-5 space-y-6 max-w-md mx-auto relative pb-24">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between relative">
                 <button
                     onClick={() => router.back()}
                     className="p-2 rounded-full bg-secondary/30 hover:bg-secondary/50 transition-colors"
                 >
                     <ChevronLeft className="w-5 h-5" />
                 </button>
-                <h2 className="text-lg font-semibold">Analytics</h2>
-                <button className="p-2 rounded-full hover:bg-secondary/30 transition-colors">
-                    <MoreHorizontal className="w-5 h-5 text-muted-foreground" />
-                </button>
+                <h2 className="text-lg font-semibold absolute left-1/2 -translate-x-1/2">Analytics</h2>
+                <div className="flex items-center gap-2">
+                    <Select value={dateRange} onValueChange={(val: DateRange) => setDateRange(val)}>
+                        <SelectTrigger className="w-[110px] h-8 text-xs bg-secondary/20 border-white/5 rounded-full">
+                            <SelectValue placeholder="Period" />
+                        </SelectTrigger>
+                        <SelectContent align="end">
+                            <SelectItem value="3M">Last 3 Months</SelectItem>
+                            <SelectItem value="6M">Last 6 Months</SelectItem>
+                            <SelectItem value="1Y">Last Year</SelectItem>
+                            <SelectItem value="ALL">All Time</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
             {/* Monthly Spending Trend */}
             <Card className="bg-card/50 backdrop-blur-md border-white/5">
                 <CardContent className="p-5 space-y-4">
                     <div className="flex justify-between items-center">
-                        <h3 className="font-semibold text-sm">Category Trends (Last 6 Months)</h3>
+                        <h3 className="font-semibold text-sm">Spending Trend</h3>
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{dateRange === 'ALL' ? 'All Time' : dateRange}</span>
                     </div>
 
                     <div className="h-48 w-full">
@@ -193,6 +246,7 @@ export function AnalyticsView() {
                                     axisLine={false}
                                     tickLine={false}
                                     tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }}
+                                    interval={dateRange === '1Y' || dateRange === 'ALL' ? 'preserveStartEnd' : 0}
                                 />
                                 <Tooltip content={<CustomTooltip />} />
                                 {Object.keys(CATEGORY_COLORS).map((cat) => (
@@ -203,6 +257,7 @@ export function AnalyticsView() {
                                         stroke={CATEGORY_COLORS[cat]}
                                         strokeWidth={2}
                                         dot={false}
+                                        connectNulls
                                     />
                                 ))}
                             </LineChart>
@@ -210,16 +265,9 @@ export function AnalyticsView() {
                     </div>
 
                     <div className="flex items-center justify-between">
-                        <div className={cn(
-                            "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium",
-                            percentageChange >= 0 ? "bg-red-500/20 text-red-400" : "bg-green-500/20 text-green-400"
-                        )}>
-                            <span className="text-xs">
-                                {percentageChange >= 0 ? '↑' : '↓'} {Math.abs(percentageChange).toFixed(1)}% vs last month
-                            </span>
-                        </div>
-                        <div className="px-3 py-1.5 rounded-full bg-primary/20 text-primary text-xs font-medium border border-primary/20">
-                            {format(new Date(), 'MMMM yyyy')}
+                        <div className="flex flex-col">
+                            <span className="text-[10px] text-muted-foreground">Total in Period</span>
+                            <span className="text-lg font-bold">${totalSpentInRange.toFixed(2)}</span>
                         </div>
                     </div>
                 </CardContent>
@@ -255,7 +303,7 @@ export function AnalyticsView() {
                         </ChartContainer>
                     ) : (
                         <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                            No data for this month
+                            No data for this period
                         </div>
                     )}
                 </div>
@@ -280,13 +328,13 @@ export function AnalyticsView() {
                             </div>
 
                             <div className="flex justify-end text-[10px] text-muted-foreground">
-                                <span>{cat.value.toFixed(1)}% of total</span>
+                                <span>{cat.value.toFixed(1)}%</span>
                             </div>
                         </div>
                     ))}
                     {categoryBreakdown.length === 0 && (
                         <div className="text-center text-xs text-muted-foreground">
-                            No transactions recorded this month.
+                            No transactions recorded.
                         </div>
                     )}
                 </div>

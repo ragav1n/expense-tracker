@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { ChevronLeft, User, Download, Cloud, FolderPlus, Moon, Bell, AlertTriangle, Shield, CreditCard, Lock, HelpCircle, ChevronRight, SlidersHorizontal, LogOut } from 'lucide-react';
+import { ChevronLeft, User, Download, AlertTriangle, Shield, Lock, ChevronRight, SlidersHorizontal, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
@@ -9,14 +9,19 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { WaveLoader } from '@/components/ui/wave-loader';
+import { AlertBanner } from '@/components/ui/alert-banner';
+import { AnimatePresence } from 'framer-motion';
 
 export function SettingsView() {
     const router = useRouter();
+    const budgetInputRef = React.useRef<HTMLInputElement>(null);
     const [fullName, setFullName] = useState('');
     const [budget, setBudget] = useState('');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [userEmail, setUserEmail] = useState('');
+    const [budgetAlertsEnabled, setBudgetAlertsEnabled] = useState(false);
+    const [showAlert, setShowAlert] = useState(false);
 
     useEffect(() => {
         getProfile();
@@ -83,7 +88,6 @@ export function SettingsView() {
         router.push('/signin');
     };
 
-
     if (loading) {
         return (
             <div className="h-full w-full flex flex-col items-center justify-center min-h-[50vh]">
@@ -132,6 +136,7 @@ export function SettingsView() {
                         <div className="space-y-1">
                             <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Monthly Budget</label>
                             <Input
+                                ref={budgetInputRef}
                                 value={budget}
                                 onChange={(e) => setBudget(e.target.value)}
                                 className="bg-secondary/10 border-white/5 h-9"
@@ -169,7 +174,6 @@ export function SettingsView() {
                 <p className="text-[10px] text-muted-foreground">Export your expense data for backup or analysis in other tools.</p>
             </div>
 
-
             {/* Preferences */}
             <div className="space-y-3 pt-2">
                 <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
@@ -180,26 +184,48 @@ export function SettingsView() {
                 <div className="bg-secondary/5 rounded-xl border border-white/5 divide-y divide-white/5">
                     <div className="flex items-center justify-between p-3">
                         <div className="flex items-center gap-3">
-                            <Bell className="w-4 h-4 text-muted-foreground" />
-                            <div>
-                                <p className="text-sm font-medium">Push Notifications</p>
-                                <p className="text-[10px] text-muted-foreground">Get notified about expenses</p>
-                            </div>
-                        </div>
-                        <Switch defaultChecked />
-                    </div>
-                    <div className="flex items-center justify-between p-3">
-                        <div className="flex items-center gap-3">
                             <AlertTriangle className="w-4 h-4 text-muted-foreground" />
                             <div>
                                 <p className="text-sm font-medium">Budget Alerts</p>
                                 <p className="text-[10px] text-muted-foreground">Alert when overspending</p>
                             </div>
                         </div>
-                        <Switch defaultChecked />
+                        <Switch
+                            checked={budgetAlertsEnabled}
+                            onCheckedChange={(checked) => {
+                                setBudgetAlertsEnabled(checked);
+                                if (checked) {
+                                    setShowAlert(true);
+                                    setTimeout(() => setShowAlert(false), 5000);
+                                } else {
+                                    setShowAlert(false);
+                                }
+                            }}
+                        />
                     </div>
                 </div>
             </div>
+
+            <AnimatePresence>
+                {showAlert && (
+                    <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-[90%] max-w-md z-50">
+                        <AlertBanner
+                            variant="warning"
+                            title="Budget Alerts Enabled"
+                            description="You'll be notified when you exceed 80% of your budget."
+                            onDismiss={() => setShowAlert(false)}
+                            primaryAction={{
+                                label: "Configure",
+                                onClick: () => {
+                                    setShowAlert(false);
+                                    budgetInputRef.current?.focus();
+                                    budgetInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                },
+                            }}
+                        />
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* Security */}
             <div className="space-y-3 pt-2">
