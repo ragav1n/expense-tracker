@@ -6,6 +6,12 @@ import { toast } from 'sonner';
 
 type Currency = 'USD' | 'EUR' | 'INR';
 
+const DEFAULT_BUDGETS: Record<Currency, number> = {
+    USD: 1500,
+    EUR: 1000,
+    INR: 100000
+};
+
 interface UserPreferencesContextType {
     currency: Currency;
     setCurrency: (currency: Currency) => Promise<void>;
@@ -23,7 +29,8 @@ const UserPreferencesContext = createContext<UserPreferencesContextType | undefi
 export function UserPreferencesProvider({ children }: { children: React.ReactNode }) {
     const [currency, setCurrencyState] = useState<Currency>('USD');
     const [budgetAlertsEnabled, setBudgetAlertsEnabledState] = useState(false);
-    const [monthlyBudget, setMonthlyBudgetState] = useState(3000);
+    const [monthlyBudget, setMonthlyBudgetState] = useState(DEFAULT_BUDGETS.USD);
+    const [budgets, setBudgets] = useState<Record<string, number>>({});
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [loading, setLoading] = useState(true);
     const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({});
@@ -53,7 +60,7 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
 
             const { data, error } = await supabase
                 .from('profiles')
-                .select('currency, budget_alerts, monthly_budget')
+                .select('currency, budget_alerts, monthly_budget, budgets')
                 .eq('id', user.id)
                 .single();
 
@@ -61,6 +68,7 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
                 if (data.currency) setCurrencyState(data.currency as Currency);
                 if (data.budget_alerts !== null) setBudgetAlertsEnabledState(data.budget_alerts);
                 if (data.monthly_budget) setMonthlyBudgetState(data.monthly_budget);
+                if (data.budgets) setBudgets(data.budgets as Record<string, number>);
             }
             if (error && error.code !== 'PGRST116') {
                 console.error('Error fetching preferences:', error);
@@ -91,6 +99,7 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
                         if (newData.currency) setCurrencyState(newData.currency as Currency);
                         if (newData.budget_alerts !== undefined) setBudgetAlertsEnabledState(newData.budget_alerts);
                         if (newData.monthly_budget) setMonthlyBudgetState(newData.monthly_budget);
+                        if (newData.budgets) setBudgets(newData.budgets as Record<string, number>);
                     }
                 }
             )
@@ -102,8 +111,14 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
     }, []);
 
     const setCurrency = async (newCurrency: Currency) => {
+        if (newCurrency === currency) return;
+
+        // Use stored budget for the currency if it exists, otherwise use default
+        const newBudget = budgets[newCurrency] || DEFAULT_BUDGETS[newCurrency];
+
         // Optimistic update
         setCurrencyState(newCurrency);
+        setMonthlyBudgetState(newBudget);
 
         try {
             const { data: { user } } = await supabase.auth.getUser();
@@ -111,11 +126,15 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
 
             const { error } = await supabase
                 .from('profiles')
-                .update({ currency: newCurrency })
+                .update({
+                    currency: newCurrency,
+                    monthly_budget: newBudget
+                })
                 .eq('id', user.id);
 
             if (error) throw error;
 
+            toast.success(`Currency switched to ${newCurrency}. Budget set to ${formatCurrency(newBudget, newCurrency)}`);
         } catch (error) {
             console.error('Error updating currency:', error);
             toast.error('Failed to update currency preference');
@@ -145,8 +164,12 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
     };
 
     const setMonthlyBudget = async (budget: number) => {
+        // Update local state for immediate feedback
+        const updatedBudgets = { ...budgets, [currency]: budget };
+
         // Optimistic update
         setMonthlyBudgetState(budget);
+        setBudgets(updatedBudgets);
 
         try {
             const { data: { user } } = await supabase.auth.getUser();
@@ -154,7 +177,10 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
 
             const { error } = await supabase
                 .from('profiles')
-                .update({ monthly_budget: budget })
+                .update({
+                    monthly_budget: budget,
+                    budgets: updatedBudgets
+                })
                 .eq('id', user.id);
 
             if (error) throw error;
