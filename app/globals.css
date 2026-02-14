@@ -1,0 +1,76 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Deep Purple/Black Theme based on screenshots */
+  --background: oklch(0.1 0.05 280); /* Deep Purple/Black */
+  --foreground: oklch(0.98 0.01 280);
+  
+  --card: oklch(0.13 0.06 280); /* Slightly lighter purple for cards */
+  --card-foreground: oklch(0.98 0.01 280);
+  
+  --popover: oklch(0.13 0.06 280);
+  --popover-foreground: oklch(0.98 0.01 280);
+  
+  --primary: oklch(0.55 0.25 280); /* Electric Purple */
+  --primary-foreground: oklch(0.98 0.01 280);
+  
+  --secondary: oklch(0.25 0.1 280); /* Darker Purple Accent */
+  --secondary-foreground: oklch(0.98 0.01 280);
+  
+  --muted: oklch(0.2 0.04 280);
+  --muted-foreground: oklch(0.7 0.05 280);
+  
+  --accent: oklch(0.25 0.1 280);
+  --accent-foreground: oklch(0.98 0.01 280);
+  
+  --destructive: oklch(0.6 0.25 25);
+  --destructive-foreground: oklch(0.98 0.01 280);
+  
+  --border: oklch(0.2 0.05 280);
+  --input: oklch(0.2 0.05 280);
+  --ring: oklch(0.55 0.25 280);
+  
+  --radius: 0.75rem;
+}
+
+@theme inline {
+  --font-sans: 'Geist', 'Geist Fallback';
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
