@@ -7,6 +7,7 @@ import { Home, Plus, BarChart2, Search, Settings } from 'lucide-react';
 import { FallingPattern } from '@/components/ui/falling-pattern';
 import { ExpandableTabs } from '@/components/ui/expandable-tabs';
 import { Toaster } from 'sonner';
+import { supabase } from '@/lib/supabase';
 
 export function MobileLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
@@ -34,6 +35,22 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
 
     const pathname = usePathname();
     const isAuthPage = ['/signin', '/signup'].includes(pathname);
+    const [hasSession, setHasSession] = React.useState<boolean | null>(null);
+
+    React.useEffect(() => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
+            setHasSession(!!session);
+        });
+
+        // Initial check
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setHasSession(!!session);
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
+
+    const showNav = !isAuthPage && hasSession;
 
     return (
         <div className="min-h-screen w-full bg-background text-foreground relative overflow-hidden font-sans select-none">
@@ -44,7 +61,7 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
             </main>
 
             {/* Bottom Navigation */}
-            {!isAuthPage && (
+            {showNav && (
                 <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center px-4">
                     <ExpandableTabs
                         tabs={tabs}
