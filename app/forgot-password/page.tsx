@@ -48,6 +48,16 @@ export default function ForgotPassword() {
         mouseY.set(0);
     };
 
+    const [cooldown, setCooldown] = useState(0);
+
+    // Cooldown timer
+    React.useEffect(() => {
+        if (cooldown > 0) {
+            const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [cooldown]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
@@ -68,6 +78,7 @@ export default function ForgotPassword() {
             if (error) throw error;
 
             setSuccess('Check your email for the password reset link.');
+            setCooldown(60); // Start 60s cooldown
         } catch (error: any) {
             setError(error.message || 'Failed to send reset email');
         } finally {
@@ -211,7 +222,7 @@ export default function ForgotPassword() {
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
                                     type="submit"
-                                    disabled={isLoading}
+                                    disabled={isLoading || cooldown > 0}
                                     className="w-full relative group/button mt-2"
                                 >
                                     <div className="absolute inset-0 bg-primary/20 rounded-lg blur-lg opacity-0 group-hover/button:opacity-70 transition-opacity duration-300" />
@@ -240,8 +251,8 @@ export default function ForgotPassword() {
                                                     exit={{ opacity: 0 }}
                                                     className="flex items-center justify-center gap-1 text-sm font-medium"
                                                 >
-                                                    Send Reset Link
-                                                    <ArrowRight className="w-3 h-3 group-hover/button:translate-x-1 transition-transform duration-300" />
+                                                    {cooldown > 0 ? `Resend in ${cooldown}s` : 'Send Reset Link'}
+                                                    {cooldown === 0 && <ArrowRight className="w-3 h-3 group-hover/button:translate-x-1 transition-transform duration-300" />}
                                                 </motion.span>
                                             )}
                                         </AnimatePresence>
