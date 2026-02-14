@@ -20,14 +20,30 @@ export function SettingsView() {
     const router = useRouter();
     const budgetInputRef = React.useRef<HTMLInputElement>(null);
     const [fullName, setFullName] = useState('');
-    const [budget, setBudget] = useState('');
+    // Removed local budget state
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [userEmail, setUserEmail] = useState('');
-    const [budgetAlertsEnabled, setBudgetAlertsEnabled] = useState(false);
+    // Removed local budgetAlertsEnabled state
     const [showAlert, setShowAlert] = useState(false);
     const [loadingExport, setLoadingExport] = useState(false);
-    const { currency, setCurrency, formatCurrency, convertAmount } = useUserPreferences();
+    const {
+        currency,
+        setCurrency,
+        formatCurrency,
+        convertAmount,
+        budgetAlertsEnabled,
+        setBudgetAlertsEnabled,
+        monthlyBudget,
+        setMonthlyBudget
+    } = useUserPreferences();
+
+    // Local state for budget input to allow typing before saving
+    const [localBudget, setLocalBudget] = useState(monthlyBudget.toString());
+
+    useEffect(() => {
+        setLocalBudget(monthlyBudget.toString());
+    }, [monthlyBudget]);
 
     useEffect(() => {
         getProfile();
@@ -54,7 +70,7 @@ export function SettingsView() {
 
             if (data) {
                 setFullName(data.full_name || '');
-                setBudget(data.monthly_budget?.toString() || '3000');
+                // Budget is handled by provider now
             }
         } catch (error) {
             console.error('Error loading user data:', error);
@@ -72,13 +88,16 @@ export function SettingsView() {
             const updates = {
                 id: user.id,
                 full_name: fullName,
-                monthly_budget: parseFloat(budget),
+                monthly_budget: parseFloat(localBudget),
                 updated_at: new Date().toISOString(),
             };
 
             const { error } = await supabase
                 .from('profiles')
                 .upsert(updates);
+
+            // Sync with provider
+            await setMonthlyBudget(updates.monthly_budget);
 
             if (error) throw error;
             toast.success('Profile updated successfully');
@@ -176,8 +195,8 @@ export function SettingsView() {
                             <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Monthly Budget</label>
                             <Input
                                 ref={budgetInputRef}
-                                value={budget}
-                                onChange={(e) => setBudget(e.target.value)}
+                                value={localBudget}
+                                onChange={(e) => setLocalBudget(e.target.value)}
                                 className="bg-secondary/10 border-white/5 h-9"
                                 placeholder="e.g. 3000"
                                 type="number"

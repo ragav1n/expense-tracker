@@ -8,16 +8,23 @@ type Currency = 'USD' | 'EUR' | 'INR';
 
 interface UserPreferencesContextType {
     currency: Currency;
-    setCurrency: (currency: Currency) => void;
+    setCurrency: (currency: Currency) => Promise<void>;
     formatCurrency: (amount: number, currencyOverride?: string) => string;
     refreshPreferences: () => Promise<void>;
     convertAmount: (amount: number, fromCurrency: string) => number;
+    budgetAlertsEnabled: boolean;
+    setBudgetAlertsEnabled: (enabled: boolean) => Promise<void>;
+    monthlyBudget: number;
+    setMonthlyBudget: (budget: number) => Promise<void>;
 }
 
 const UserPreferencesContext = createContext<UserPreferencesContextType | undefined>(undefined);
 
 export function UserPreferencesProvider({ children }: { children: React.ReactNode }) {
     const [currency, setCurrencyState] = useState<Currency>('USD');
+    const [budgetAlertsEnabled, setBudgetAlertsEnabledState] = useState(false);
+    const [monthlyBudget, setMonthlyBudgetState] = useState(3000);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [loading, setLoading] = useState(true);
     const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({});
 
@@ -46,12 +53,17 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
 
             const { data, error } = await supabase
                 .from('profiles')
-                .select('currency')
+                .select('currency, budget_alerts, monthly_budget')
                 .eq('id', user.id)
                 .single();
 
-            if (data?.currency) {
-                setCurrencyState(data.currency as Currency);
+            if (data) {
+                if (data.currency) setCurrencyState(data.currency as Currency);
+                if (data.budget_alerts !== null) setBudgetAlertsEnabledState(data.budget_alerts);
+                if (data.monthly_budget) setMonthlyBudgetState(data.monthly_budget);
+            }
+            if (error && error.code !== 'PGRST116') {
+                console.error('Error fetching preferences:', error);
             }
         } catch (error) {
             console.error('Error fetching preferences:', error);
@@ -74,8 +86,11 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
                     table: 'profiles',
                 },
                 (payload) => {
-                    if (payload.new && (payload.new as any).currency) {
-                        setCurrencyState((payload.new as any).currency as Currency);
+                    if (payload.new) {
+                        const newData = payload.new as any;
+                        if (newData.currency) setCurrencyState(newData.currency as Currency);
+                        if (newData.budget_alerts !== undefined) setBudgetAlertsEnabledState(newData.budget_alerts);
+                        if (newData.monthly_budget) setMonthlyBudgetState(newData.monthly_budget);
                     }
                 }
             )
@@ -104,7 +119,48 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
         } catch (error) {
             console.error('Error updating currency:', error);
             toast.error('Failed to update currency preference');
-            // Revert on error
+            refreshPreferences();
+        }
+    };
+
+    const setBudgetAlertsEnabled = async (enabled: boolean) => {
+        // Optimistic update
+        setBudgetAlertsEnabledState(enabled);
+
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const { error } = await supabase
+                .from('profiles')
+                .update({ budget_alerts: enabled })
+                .eq('id', user.id);
+
+            if (error) throw error;
+        } catch (error) {
+            console.error('Error updating budget alerts:', error);
+            toast.error('Failed to update budget alert preference');
+            refreshPreferences();
+        }
+    };
+
+    const setMonthlyBudget = async (budget: number) => {
+        // Optimistic update
+        setMonthlyBudgetState(budget);
+
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const { error } = await supabase
+                .from('profiles')
+                .update({ monthly_budget: budget })
+                .eq('id', user.id);
+
+            if (error) throw error;
+        } catch (error) {
+            console.error('Error updating budget:', error);
+            toast.error('Failed to update budget');
             refreshPreferences();
         }
     };
@@ -147,7 +203,17 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
     };
 
     return (
-        <UserPreferencesContext.Provider value={{ currency, setCurrency, formatCurrency, refreshPreferences, convertAmount }}>
+        <UserPreferencesContext.Provider value={{
+            currency,
+            setCurrency,
+            formatCurrency,
+            refreshPreferences,
+            convertAmount,
+            budgetAlertsEnabled,
+            setBudgetAlertsEnabled,
+            monthlyBudget,
+            setMonthlyBudget
+        }}>
             {children}
         </UserPreferencesContext.Provider>
     );

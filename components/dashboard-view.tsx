@@ -1,6 +1,7 @@
 'use client';
 
 import { useUserPreferences } from '@/components/providers/user-preferences-provider';
+import { BudgetAlertManager } from '@/components/budget-alert-manager';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, LogOut, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, CircleDollarSign } from 'lucide-react';
@@ -64,11 +65,10 @@ type SpendingCategory = {
 export function DashboardView() {
     const router = useRouter();
     const [userName, setUserName] = useState<string>('User');
-    const [budget, setBudget] = useState<number>(3000);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
 
     const [loading, setLoading] = useState(true);
-    const { formatCurrency, currency, convertAmount } = useUserPreferences();
+    const { formatCurrency, currency, convertAmount, monthlyBudget } = useUserPreferences();
 
     useEffect(() => {
         async function fetchData() {
@@ -77,15 +77,15 @@ export function DashboardView() {
                 if (!user) return;
 
                 // Fetch Profile
+                // Fetch Profile
                 const { data: profile } = await supabase
                     .from('profiles')
-                    .select('full_name, monthly_budget')
+                    .select('full_name')
                     .eq('id', user.id)
                     .single();
 
                 if (profile) {
                     setUserName(profile.full_name || user.email?.split('@')[0] || 'User');
-                    setBudget(profile.monthly_budget || 3000);
                 }
 
                 // Fetch Transactions
@@ -112,8 +112,8 @@ export function DashboardView() {
         return acc + convertAmount(Number(tx.amount), tx.currency || 'USD');
     }, 0);
 
-    const remaining = budget - totalSpent;
-    const progress = Math.min((totalSpent / budget) * 100, 100);
+    const remaining = monthlyBudget - totalSpent;
+    const progress = Math.min((totalSpent / monthlyBudget) * 100, 100);
 
     // Calculate Spending by Category (converted)
     const spendingByCategory = transactions.reduce((acc, tx) => {
@@ -182,169 +182,171 @@ export function DashboardView() {
                         <Plus className="w-5 h-5 text-primary" />
                     </button>
                 </div>
-            </div>
 
-            {/* Total Spent Card */}
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#8A2BE2] to-[#4B0082] p-6 shadow-xl shadow-primary/20">
-                <div className="absolute top-0 right-0 p-6 opacity-10">
-                    <span className="text-9xl font-bold text-white">{currency === 'EUR' ? '€' : currency === 'INR' ? '₹' : '$'}</span>
-                </div>
+                <BudgetAlertManager totalSpent={totalSpent} />
 
-                <div className="relative z-10 space-y-6">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-white/80 text-sm font-medium">Total Spent This Month</p>
-                            <h2 className="text-4xl font-bold text-white mt-1">{formatCurrency(totalSpent)}</h2>
-                        </div>
-                        <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                            <span className="text-xl font-bold text-white">{currency === 'EUR' ? '€' : currency === 'INR' ? '₹' : '$'}</span>
-                        </div>
+                {/* Total Spent Card */}
+                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#8A2BE2] to-[#4B0082] p-6 shadow-xl shadow-primary/20">
+                    <div className="absolute top-0 right-0 p-6 opacity-10">
+                        <span className="text-9xl font-bold text-white">{currency === 'EUR' ? '€' : currency === 'INR' ? '₹' : '$'}</span>
                     </div>
 
-                    <div className="space-y-2">
-                        <div className="flex justify-between text-xs font-medium text-white/80">
-                            <span>Budget: {formatCurrency(budget)}</span>
-                            <span>Remaining: {formatCurrency(remaining)}</span>
-                        </div>
-                        <Progress value={progress} className="h-2 bg-black/30" indicatorClassName="bg-white" />
-                        <div className="flex justify-between text-[10px] text-white/60">
-                            <span>{progress.toFixed(1)}% used</span>
-                            {/* Simple generic message or date calc */}
-                            <span>{new Date().getDate()}th of Month</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Spending by Category */}
-            <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-bold">Spending by Category</h3>
-                    <span className="text-xs bg-secondary/30 px-3 py-1 rounded-full text-primary border border-primary/20">Current Month</span>
-                </div>
-
-                <Card className="border-none bg-card/40 backdrop-blur-md shadow-none">
-                    <CardContent className="p-4 flex items-center justify-between gap-4">
-                        {/* Chart Circle */}
-                        {spendingData.length > 0 ? (
-                            <>
-                                <div className="w-32 h-32 relative flex-shrink-0">
-                                    <ChartContainer
-                                        config={chartConfig}
-                                        className="mx-auto aspect-square max-h-[250px]"
-                                    >
-                                        <PieChart>
-                                            <ChartTooltip
-                                                cursor={false}
-                                                content={<ChartTooltipContent hideLabel />}
-                                            />
-                                            <Pie
-                                                data={spendingData}
-                                                dataKey="value"
-                                                nameKey="name"
-                                                innerRadius={40}
-                                                outerRadius={60}
-                                                paddingAngle={5}
-                                                cornerRadius={5}
-                                                strokeWidth={0}
-                                            />
-                                        </PieChart>
-                                    </ChartContainer>
-                                </div>
-
-                                {/* Legend */}
-                                <div className="flex-1 space-y-3">
-                                    {spendingData.map((item) => (
-                                        <div key={item.name} className="flex items-center justify-between text-xs">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
-                                                <span className="text-foreground/80">{item.name}</span>
-                                            </div>
-                                            <div className="flex flex-col items-end">
-                                                <span className="font-semibold">{formatCurrency(item.value)}</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </>
-                        ) : (
-                            <div className="w-full text-center py-8 text-muted-foreground text-sm">
-                                No expenses yet. Click + to add one!
+                    <div className="relative z-10 space-y-6">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <p className="text-white/80 text-sm font-medium">Total Spent This Month</p>
+                                <h2 className="text-4xl font-bold text-white mt-1">{formatCurrency(totalSpent)}</h2>
                             </div>
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
+                            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                                <span className="text-xl font-bold text-white">{currency === 'EUR' ? '€' : currency === 'INR' ? '₹' : '$'}</span>
+                            </div>
+                        </div>
 
-            {/* Recent Transactions */}
-            <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-bold">Recent Transactions</h3>
+                        <div className="space-y-2">
+                            <div className="flex justify-between text-xs font-medium text-white/80">
+                                <span>Budget: {formatCurrency(monthlyBudget)}</span>
+                                <span>Remaining: {formatCurrency(remaining)}</span>
+                            </div>
+                            <Progress value={progress} className="h-2 bg-black/30" indicatorClassName="bg-white" />
+                            <div className="flex justify-between text-[10px] text-white/60">
+                                <span>{progress.toFixed(1)}% used</span>
+                                {/* Simple generic message or date calc */}
+                                <span>{new Date().getDate()}th of Month</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                    <Dialog>
-                        <DialogTrigger asChild>
-                            <button className="text-xs text-primary hover:text-primary/80">View All</button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-md max-h-[80vh] flex flex-col">
-                            <DialogHeader>
-                                <DialogTitle>All Transactions</DialogTitle>
-                                <DialogDescription>
-                                    History of all your expenses.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <ScrollArea className="flex-1 -mr-4 pr-4">
-                                <div className="space-y-3 pt-4">
-                                    {transactions.map((tx) => (
-                                        <div key={tx.id} className="flex items-center justify-between p-3 rounded-2xl bg-card/20 border border-white/5 hover:bg-card/40 transition-colors">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center border border-white/5">
-                                                    {getIconForCategory(tx.category)}
+                {/* Spending by Category */}
+                <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-bold">Spending by Category</h3>
+                        <span className="text-xs bg-secondary/30 px-3 py-1 rounded-full text-primary border border-primary/20">Current Month</span>
+                    </div>
+
+                    <Card className="border-none bg-card/40 backdrop-blur-md shadow-none">
+                        <CardContent className="p-4 flex items-center justify-between gap-4">
+                            {/* Chart Circle */}
+                            {spendingData.length > 0 ? (
+                                <>
+                                    <div className="w-32 h-32 relative flex-shrink-0">
+                                        <ChartContainer
+                                            config={chartConfig}
+                                            className="mx-auto aspect-square max-h-[250px]"
+                                        >
+                                            <PieChart>
+                                                <ChartTooltip
+                                                    cursor={false}
+                                                    content={<ChartTooltipContent hideLabel />}
+                                                />
+                                                <Pie
+                                                    data={spendingData}
+                                                    dataKey="value"
+                                                    nameKey="name"
+                                                    innerRadius={40}
+                                                    outerRadius={60}
+                                                    paddingAngle={5}
+                                                    cornerRadius={5}
+                                                    strokeWidth={0}
+                                                />
+                                            </PieChart>
+                                        </ChartContainer>
+                                    </div>
+
+                                    {/* Legend */}
+                                    <div className="flex-1 space-y-3">
+                                        {spendingData.map((item) => (
+                                            <div key={item.name} className="flex items-center justify-between text-xs">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                                                    <span className="text-foreground/80">{item.name}</span>
                                                 </div>
-                                                <div>
-                                                    <p className="font-medium text-sm">{tx.description}</p>
-                                                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                                                        <span className="px-1.5 py-0.5 rounded bg-primary/10 text-[10px] text-primary border border-primary/10 capitalize">{tx.category}</span>
-                                                        <span>• {format(new Date(tx.date), 'MMM d, yyyy')}</span>
+                                                <div className="flex flex-col items-end">
+                                                    <span className="font-semibold">{formatCurrency(item.value)}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="w-full text-center py-8 text-muted-foreground text-sm">
+                                    No expenses yet. Click + to add one!
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Recent Transactions */}
+                <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-bold">Recent Transactions</h3>
+
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <button className="text-xs text-primary hover:text-primary/80">View All</button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-md max-h-[80vh] flex flex-col">
+                                <DialogHeader>
+                                    <DialogTitle>All Transactions</DialogTitle>
+                                    <DialogDescription>
+                                        History of all your expenses.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <ScrollArea className="flex-1 -mr-4 pr-4">
+                                    <div className="space-y-3 pt-4">
+                                        {transactions.map((tx) => (
+                                            <div key={tx.id} className="flex items-center justify-between p-3 rounded-2xl bg-card/20 border border-white/5 hover:bg-card/40 transition-colors">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center border border-white/5">
+                                                        {getIconForCategory(tx.category)}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-medium text-sm">{tx.description}</p>
+                                                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                                                            <span className="px-1.5 py-0.5 rounded bg-primary/10 text-[10px] text-primary border border-primary/10 capitalize">{tx.category}</span>
+                                                            <span>• {format(new Date(tx.date), 'MMM d, yyyy')}</span>
+                                                        </div>
                                                     </div>
                                                 </div>
+                                                <span className="font-bold text-sm">-{formatCurrency(Number(tx.amount), tx.currency)}</span>
                                             </div>
-                                            <span className="font-bold text-sm">-{formatCurrency(Number(tx.amount), tx.currency)}</span>
-                                        </div>
-                                    ))}
-                                    {transactions.length === 0 && (
-                                        <div className="text-center py-8 text-muted-foreground">
-                                            No transactions found.
-                                        </div>
-                                    )}
-                                </div>
-                            </ScrollArea>
-                        </DialogContent>
-                    </Dialog>
-                </div>
+                                        ))}
+                                        {transactions.length === 0 && (
+                                            <div className="text-center py-8 text-muted-foreground">
+                                                No transactions found.
+                                            </div>
+                                        )}
+                                    </div>
+                                </ScrollArea>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
 
-                <div className="space-y-3">
-                    {transactions.slice(0, 5).map((tx) => (
-                        <div key={tx.id} className="flex items-center justify-between p-3 rounded-2xl bg-card/30 border border-white/5 hover:bg-card/50 transition-colors">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center border border-white/5">
-                                    {getIconForCategory(tx.category)}
-                                </div>
-                                <div>
-                                    <p className="font-medium text-sm">{tx.description}</p>
-                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                        <span className="px-1.5 py-0.5 rounded bg-primary/10 text-[10px] text-primary capitalize">{tx.category}</span>
-                                        <span>• {format(new Date(tx.date), 'MMM d')}</span>
+                    <div className="space-y-3">
+                        {transactions.slice(0, 5).map((tx) => (
+                            <div key={tx.id} className="flex items-center justify-between p-3 rounded-2xl bg-card/30 border border-white/5 hover:bg-card/50 transition-colors">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center border border-white/5">
+                                        {getIconForCategory(tx.category)}
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-sm">{tx.description}</p>
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                            <span className="px-1.5 py-0.5 rounded bg-primary/10 text-[10px] text-primary capitalize">{tx.category}</span>
+                                            <span>• {format(new Date(tx.date), 'MMM d')}</span>
+                                        </div>
                                     </div>
                                 </div>
+                                <span className="font-semibold text-sm">-{formatCurrency(Number(tx.amount), tx.currency)}</span>
                             </div>
-                            <span className="font-semibold text-sm">-{formatCurrency(Number(tx.amount), tx.currency)}</span>
-                        </div>
-                    ))}
-                    {transactions.length === 0 && (
-                        <div className="text-center text-xs text-muted-foreground py-4">
-                            No recent transactions found.
-                        </div>
-                    )}
+                        ))}
+                        {transactions.length === 0 && (
+                            <div className="text-center text-xs text-muted-foreground py-4">
+                                No recent transactions found.
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
