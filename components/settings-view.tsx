@@ -15,6 +15,8 @@ import { AlertBanner } from '@/components/ui/alert-banner';
 import { AnimatePresence } from 'framer-motion';
 import { generateCSV, generatePDF } from '@/utils/export-utils';
 import { ChangePasswordDialog } from '@/components/change-password-dialog';
+import { FileTriggerButton } from '@/components/ui/file-trigger';
+import { Camera } from 'lucide-react';
 
 export function SettingsView() {
     const router = useRouter();
@@ -27,6 +29,8 @@ export function SettingsView() {
     // Removed local budgetAlertsEnabled state
     const [showAlert, setShowAlert] = useState(false);
     const [loadingExport, setLoadingExport] = useState(false);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const {
         currency,
         setCurrency,
@@ -60,7 +64,7 @@ export function SettingsView() {
 
             const { data, error } = await supabase
                 .from('profiles')
-                .select('full_name, monthly_budget')
+                .select('full_name, monthly_budget, avatar_url')
                 .eq('id', user.id)
                 .single();
 
@@ -70,6 +74,7 @@ export function SettingsView() {
 
             if (data) {
                 setFullName(data.full_name || '');
+                setAvatarUrl(data.avatar_url);
                 // Budget is handled by provider now
             }
         } catch (error) {
@@ -105,6 +110,50 @@ export function SettingsView() {
             toast.error('Error updating profile: ' + error.message);
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleAvatarUpload = async (file: File) => {
+        try {
+            setUploadingAvatar(true);
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            // Upload the file to Supabase Storage
+            const { error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(filePath, file);
+
+            if (uploadError) {
+                throw uploadError;
+            }
+
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('avatars')
+                .getPublicUrl(filePath);
+
+            // Update profile
+            const { error: updateError } = await supabase
+                .from('profiles')
+                .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
+                .eq('id', user.id);
+
+            if (updateError) {
+                throw updateError;
+            }
+
+            setAvatarUrl(publicUrl);
+            toast.success('Avatar updated successfully');
+        } catch (error: any) {
+            console.error('Error uploading avatar:', error);
+            toast.error('Error uploading avatar: ' + error.message);
+        } finally {
+            setUploadingAvatar(false);
         }
     };
 
@@ -178,9 +227,29 @@ export function SettingsView() {
                 </div>
 
                 <div className="flex gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center text-xl font-bold shadow-lg shadow-primary/20 text-white uppercase">
-                        {fullName ? fullName.substring(0, 2) : userEmail.substring(0, 2)}
+                    <div className="relative group self-start">
+                        <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center text-xl font-bold shadow-lg shadow-primary/20 text-white uppercase overflow-hidden relative">
+                            {avatarUrl ? (
+                                <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                                fullName ? fullName.substring(0, 2) : userEmail.substring(0, 2)
+                            )}
+                            {uploadingAvatar && (
+                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
+                                    <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* File Trigger - Pencil Icon */}
+                        <div className="absolute bottom-0 right-0 z-10 translate-x-1/4 translate-y-1/4">
+                            <FileTriggerButton
+                                onSelect={(file) => handleAvatarUpload(file)}
+                                currentAvatarUrl={avatarUrl}
+                            />
+                        </div>
                     </div>
+
                     <div className="flex-1 space-y-3">
                         <div className="space-y-1">
                             <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Full Name</label>
