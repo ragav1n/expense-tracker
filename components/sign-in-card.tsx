@@ -82,6 +82,7 @@ export function Component({ isSignUp = false }: { isSignUp?: boolean }) {
           password,
           options: {
             data: { full_name: name },
+            emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
           },
         });
 
