@@ -60,7 +60,8 @@ export function AddExpenseView() {
                 category: selectedCategory,
                 date: format(date, 'yyyy-MM-dd'),
                 payment_method: paymentMethod,
-                notes
+                notes,
+                currency: currency // Store the transaction currency
             });
 
             if (error) throw error;
@@ -103,7 +104,9 @@ export function AddExpenseView() {
                         onChange={(e) => setAmount(e.target.value)}
                         className="h-16 text-3xl font-bold pl-12 bg-secondary/10 border-primary/50 focus-visible:ring-primary/50"
                     />
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-primary">{currency === 'EUR' ? '€' : '$'}</span>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-primary">
+                        {currency === 'EUR' ? '€' : currency === 'INR' ? '₹' : '$'}
+                    </span>
                 </div>
             </div>
 

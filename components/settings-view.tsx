@@ -212,6 +212,15 @@ export function SettingsView() {
                             >
                                 EUR
                             </button>
+                            <button
+                                onClick={() => setCurrency('INR')}
+                                className={cn(
+                                    "px-3 py-1 text-xs font-medium rounded-md transition-all",
+                                    currency === 'INR' ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
+                                )}
+                            >
+                                INR
+                            </button>
                         </div>
                     </div>
 

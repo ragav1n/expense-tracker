@@ -49,6 +49,8 @@ type Transaction = {
     category: string;
     date: string;
     created_at: string;
+
+    currency?: string; // Optional for backward compatibility
     icon?: string; // Derived for display
 };
 
@@ -66,7 +68,7 @@ export function DashboardView() {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
 
     const [loading, setLoading] = useState(true);
-    const { formatCurrency, currency } = useUserPreferences();
+    const { formatCurrency, currency, convertAmount } = useUserPreferences();
 
     useEffect(() => {
         async function fetchData() {
@@ -105,16 +107,19 @@ export function DashboardView() {
         fetchData();
     }, []);
 
-    // Calculate totals
-    const totalSpent = transactions.reduce((acc, tx) => acc + Number(tx.amount), 0);
+    // Calculate totals based on ALL transactions, converted to current currency
+    const totalSpent = transactions.reduce((acc, tx) => {
+        return acc + convertAmount(Number(tx.amount), tx.currency || 'USD');
+    }, 0);
+
     const remaining = budget - totalSpent;
     const progress = Math.min((totalSpent / budget) * 100, 100);
 
-    // Calculate Spending by Category
+    // Calculate Spending by Category (converted)
     const spendingByCategory = transactions.reduce((acc, tx) => {
         const cat = tx.category.toLowerCase();
         if (!acc[cat]) acc[cat] = 0;
-        acc[cat] += Number(tx.amount);
+        acc[cat] += convertAmount(Number(tx.amount), tx.currency || 'USD');
         return acc;
     }, {} as Record<string, number>);
 
@@ -192,7 +197,7 @@ export function DashboardView() {
             {/* Total Spent Card */}
             <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#8A2BE2] to-[#4B0082] p-6 shadow-xl shadow-primary/20">
                 <div className="absolute top-0 right-0 p-6 opacity-10">
-                    <span className="text-9xl font-bold text-white">{currency === 'EUR' ? '€' : '$'}</span>
+                    <span className="text-9xl font-bold text-white">{currency === 'EUR' ? '€' : currency === 'INR' ? '₹' : '$'}</span>
                 </div>
 
                 <div className="relative z-10 space-y-6">
@@ -202,7 +207,7 @@ export function DashboardView() {
                             <h2 className="text-4xl font-bold text-white mt-1">{formatCurrency(totalSpent)}</h2>
                         </div>
                         <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                            <span className="text-xl font-bold text-white">{currency === 'EUR' ? '€' : '$'}</span>
+                            <span className="text-xl font-bold text-white">{currency === 'EUR' ? '€' : currency === 'INR' ? '₹' : '$'}</span>
                         </div>
                     </div>
 
@@ -313,7 +318,7 @@ export function DashboardView() {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <span className="font-bold text-sm">-{formatCurrency(Number(tx.amount))}</span>
+                                            <span className="font-bold text-sm">-{formatCurrency(Number(tx.amount), tx.currency)}</span>
                                         </div>
                                     ))}
                                     {transactions.length === 0 && (
@@ -342,7 +347,7 @@ export function DashboardView() {
                                     </div>
                                 </div>
                             </div>
-                            <span className="font-semibold text-sm">-{formatCurrency(Number(tx.amount))}</span>
+                            <span className="font-semibold text-sm">-{formatCurrency(Number(tx.amount), tx.currency)}</span>
                         </div>
                     ))}
                     {transactions.length === 0 && (

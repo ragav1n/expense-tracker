@@ -4,13 +4,14 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
-type Currency = 'USD' | 'EUR';
+type Currency = 'USD' | 'EUR' | 'INR';
 
 interface UserPreferencesContextType {
     currency: Currency;
     setCurrency: (currency: Currency) => void;
-    formatCurrency: (amount: number) => string;
+    formatCurrency: (amount: number, currencyOverride?: string) => string;
     refreshPreferences: () => Promise<void>;
+    convertAmount: (amount: number, fromCurrency: string) => number;
 }
 
 const UserPreferencesContext = createContext<UserPreferencesContextType | undefined>(undefined);
@@ -18,6 +19,25 @@ const UserPreferencesContext = createContext<UserPreferencesContextType | undefi
 export function UserPreferencesProvider({ children }: { children: React.ReactNode }) {
     const [currency, setCurrencyState] = useState<Currency>('USD');
     const [loading, setLoading] = useState(true);
+    const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({});
+
+    // Fetch Exchange Rates when currency changes
+    useEffect(() => {
+        const fetchRates = async () => {
+            try {
+                // api.frankfurter.dev requires the base currency to be different from the target or it returns empty/error sometimes for same base
+                // simpler: just fetch latest with base = currency
+                const response = await fetch(`https://api.frankfurter.dev/v1/latest?base=${currency}`);
+                if (!response.ok) throw new Error('Failed to fetch rates');
+                const data = await response.json();
+                setExchangeRates(data.rates);
+            } catch (error) {
+                console.error('Error fetching exchange rates:', error);
+            }
+        };
+
+        fetchRates();
+    }, [currency]);
 
     const refreshPreferences = async () => {
         try {
@@ -89,15 +109,45 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
         }
     };
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat(currency === 'EUR' ? 'de-DE' : 'en-US', {
+    const formatCurrency = (amount: number, currencyOverride?: string) => {
+        const targetCurrency = currencyOverride || currency;
+
+        // Custom formatting for Euro to ensure prefix
+        if (targetCurrency === 'EUR') {
+            return new Intl.NumberFormat('en-IE', {
+                style: 'currency',
+                currency: 'EUR',
+            }).format(amount);
+        }
+
+        // Custom formatting for INR
+        if (targetCurrency === 'INR') {
+            return new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                maximumFractionDigits: 0
+            }).format(amount);
+        }
+
+        return new Intl.NumberFormat('en-US', {
             style: 'currency',
-            currency: currency,
+            currency: targetCurrency,
         }).format(amount);
     };
 
+    const convertAmount = (amount: number, fromCurrency: string): number => {
+        if (!fromCurrency || fromCurrency === currency) return amount;
+
+        const rate = exchangeRates[fromCurrency];
+        if (rate) {
+            return amount / rate;
+        }
+
+        return amount;
+    };
+
     return (
-        <UserPreferencesContext.Provider value={{ currency, setCurrency, formatCurrency, refreshPreferences }}>
+        <UserPreferencesContext.Provider value={{ currency, setCurrency, formatCurrency, refreshPreferences, convertAmount }}>
             {children}
         </UserPreferencesContext.Provider>
     );

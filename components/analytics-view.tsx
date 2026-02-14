@@ -85,11 +85,11 @@ export function AnalyticsView() {
     const [categoryBreakdown, setCategoryBreakdown] = useState<any[]>([]);
     const [totalSpentInRange, setTotalSpentInRange] = useState(0);
     const [dateRange, setDateRange] = useState<DateRange>('6M');
-    const { formatCurrency } = useUserPreferences();
+    const { formatCurrency, currency, convertAmount } = useUserPreferences();
 
     useEffect(() => {
         fetchData();
-    }, [dateRange]);
+    }, [dateRange, currency]);
 
     const fetchData = async () => {
         setLoading(true);
@@ -166,7 +166,7 @@ export function AnalyticsView() {
             if (monthsMap[monthKey]) {
                 const cat = tx.category.toLowerCase();
                 if (!monthsMap[monthKey][cat]) monthsMap[monthKey][cat] = 0; // Init if category new
-                monthsMap[monthKey][cat] += Number(tx.amount);
+                monthsMap[monthKey][cat] += convertAmount(Number(tx.amount), tx.currency || 'USD');
             }
         });
 
@@ -188,7 +188,7 @@ export function AnalyticsView() {
 
         transactions.forEach(tx => {
             const cat = tx.category.toLowerCase();
-            const amount = Number(tx.amount);
+            const amount = convertAmount(Number(tx.amount), tx.currency || 'USD');
             breakdownMap[cat] = (breakdownMap[cat] || 0) + amount;
             total += amount;
         });

@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 import { format, parseISO, isSameWeek, isSameMonth } from 'date-fns';
 import { WaveLoader } from '@/components/ui/wave-loader';
+import { useUserPreferences } from '@/components/providers/user-preferences-provider';
 
 type Transaction = {
     id: string;
@@ -17,6 +18,7 @@ type Transaction = {
     date: string;
     payment_method: string;
     created_at: string;
+    currency?: string;
 };
 
 const filters = [
@@ -38,6 +40,7 @@ export function SearchView() {
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilters, setActiveFilters] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
+    const { formatCurrency, convertAmount } = useUserPreferences();
 
     useEffect(() => {
         fetchTransactions();
@@ -126,7 +129,7 @@ export function SearchView() {
         }
     };
 
-    const totalFilteredAmount = filteredTransactions.reduce((sum, tx) => sum + Number(tx.amount), 0);
+    const totalFilteredAmount = filteredTransactions.reduce((sum, tx) => sum + convertAmount(Number(tx.amount), tx.currency || 'USD'), 0);
 
     return (
         <div className="p-5 space-y-6 max-w-md mx-auto relative pb-24 h-full flex flex-col">
@@ -209,7 +212,7 @@ export function SearchView() {
                                         </div>
                                     </div>
                                 </div>
-                                <span className="font-bold text-sm">-${Number(tx.amount).toFixed(2)}</span>
+                                <span className="font-bold text-sm">-{formatCurrency(Number(tx.amount), tx.currency)}</span>
                             </div>
                         ))
                     ) : (
@@ -227,7 +230,7 @@ export function SearchView() {
                         <p className="text-xs text-muted-foreground">Total Filtered</p>
                         <p className="text-[10px] text-muted-foreground/60">{filteredTransactions.length} transactions</p>
                     </div>
-                    <span className="text-xl font-bold">-${totalFilteredAmount.toFixed(2)}</span>
+                    <span className="text-xl font-bold">{formatCurrency(totalFilteredAmount)}</span>
                 </div>
             </div>
         </div>
