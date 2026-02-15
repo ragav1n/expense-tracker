@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ChevronLeft, CreditCard, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, Wallet, Banknote } from 'lucide-react';
+import { ChevronLeft, CreditCard, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, Wallet, Banknote, HelpCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,8 @@ const dropdownCategories: Category[] = [
     { id: 'bills', label: 'Bills & Utilities', icon: Zap, color: '#F9C74F' },
     { id: 'shopping', label: 'Shopping', icon: ShoppingBag, color: '#A06CD5' },
     { id: 'healthcare', label: 'Healthcare', icon: HeartPulse, color: '#FF9F1C' },
-    { id: 'entertainment', label: 'Entertainment', icon: Clapperboard, color: '#2EC4B6' },
+    { id: 'entertainment', label: 'Entertainment', icon: Clapperboard, color: '#FF1493' }, // Updated color
+    { id: 'others', label: 'Others', icon: HelpCircle, color: '#C7F464' },
 ];
 
 export function AddExpenseView() {

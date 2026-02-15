@@ -44,7 +44,7 @@ const CATEGORY_COLORS: Record<string, string> = {
     bills: '#4ECDC4',     // Teal
     shopping: '#F9C74F',  // Yellow
     healthcare: '#FF9F1C', // Orange
-    entertainment: '#2EC4B6', // Light Blue
+    entertainment: '#FF1493', // Deep Pink
     others: '#C7F464',    // Lime
     settlement: '#10B981', // Emerald for settlement
 };
