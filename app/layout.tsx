@@ -23,7 +23,8 @@ export const metadata: Metadata = {
     icon: '/Novira.png',
     shortcut: '/Novira.png',
     apple: '/Novira.png',
-  }
+  },
+  manifest: '/manifest.json',
 }
 
 export const viewport = {
