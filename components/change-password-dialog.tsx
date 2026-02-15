@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
+import { validatePassword } from '@/utils/password-validation';
+import { PasswordRequirements } from './password-requirements';
 
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
     return (
@@ -31,8 +33,10 @@ interface ChangePasswordDialogProps {
 
 export function ChangePasswordDialog({ trigger }: ChangePasswordDialogProps) {
     const [open, setOpen] = useState(false);
+    const [currentPassword, setCurrentPassword] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -41,30 +45,49 @@ export function ChangePasswordDialog({ trigger }: ChangePasswordDialogProps) {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!password || !confirmPassword) {
-            toast.error('Please fill in get fields');
+        if (!currentPassword || !password || !confirmPassword) {
+            toast.error('Please fill in all fields');
             return;
         }
 
         if (password !== confirmPassword) {
-            toast.error('Passwords do not match');
+            toast.error('New passwords do not match');
             return;
         }
 
-        if (password.length < 6) {
-            toast.error('Password must be at least 6 characters');
+        if (password === currentPassword) {
+            toast.error('New password cannot be the same as the old password');
+            return;
+        }
+
+        const { isValid, error: validationError } = validatePassword(password);
+        if (!isValid) {
+            toast.error(validationError || 'Invalid password');
             return;
         }
 
         setIsLoading(true);
 
         try {
+            // First, re-authenticate to verify current password
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+                email: (await supabase.auth.getUser()).data.user?.email || '',
+                password: currentPassword,
+            });
+
+            if (signInError) {
+                toast.error('Incorrect current password');
+                setIsLoading(false);
+                return;
+            }
+
             const { error } = await supabase.auth.updateUser({ password });
 
             if (error) throw error;
 
             toast.success('Password updated successfully');
             setOpen(false);
+            setCurrentPassword('');
             setPassword('');
             setConfirmPassword('');
         } catch (error: any) {
@@ -113,6 +136,42 @@ export function ChangePasswordDialog({ trigger }: ChangePasswordDialogProps) {
 
                         {/* Form */}
                         <form onSubmit={handleSubmit} className="space-y-4">
+
+                            {/* Current Password Input */}
+                            <motion.div
+                                className={`relative ${focusedInput === "currentPassword" ? 'z-10' : ''}`}
+                                whileFocus={{ scale: 1.02 }}
+                                whileHover={{ scale: 1.01 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                            >
+                                <div className="absolute -inset-[0.5px] bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none" />
+
+                                <div className="relative flex items-center overflow-hidden rounded-lg">
+                                    <Lock className={`absolute left-3 w-4 h-4 transition-all duration-300 ${focusedInput === "currentPassword" ? 'text-primary' : 'text-muted-foreground'}`} />
+
+                                    <Input
+                                        type={showCurrentPassword ? "text" : "password"}
+                                        placeholder="Current Password"
+                                        value={currentPassword}
+                                        onChange={(e) => setCurrentPassword(e.target.value)}
+                                        onFocus={() => setFocusedInput("currentPassword")}
+                                        onBlur={() => setFocusedInput(null)}
+                                        className="w-full bg-white/5 border-transparent focus:border-primary/40 text-white placeholder:text-white/30 h-10 transition-all duration-300 pl-10 pr-10 focus:bg-white/10"
+                                    />
+
+                                    <div
+                                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                        className="absolute right-3 cursor-pointer"
+                                    >
+                                        {showCurrentPassword ? (
+                                            <Eye className="w-4 h-4 text-muted-foreground hover:text-primary transition-colors duration-300" />
+                                        ) : (
+                                            <EyeClosed className="w-4 h-4 text-muted-foreground hover:text-primary transition-colors duration-300" />
+                                        )}
+                                    </div>
+                                </div>
+                            </motion.div>
+
                             {/* New Password Input */}
                             <motion.div
                                 className={`relative ${focusedInput === "password" ? 'z-10' : ''}`}

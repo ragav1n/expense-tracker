@@ -91,10 +91,9 @@ export default function ForgotPassword() {
         authRateLimiter.recordOK();
 
         try {
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || window.location.origin;
             const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: process.env.NEXT_PUBLIC_APP_URL
-                    ? `${process.env.NEXT_PUBLIC_APP_URL}/update-password`
-                    : `${window.location.origin}/update-password`,
+                redirectTo: `${appUrl}/update-password`,
             });
 
             if (error) throw error;

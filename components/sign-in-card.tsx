@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils"
 import { FallingPattern } from './ui/falling-pattern';
 import { supabase } from '@/lib/supabase';
 import { authRateLimiter } from '@/utils/auth-rate-limiter';
+import { validatePassword } from '@/utils/password-validation';
+import { PasswordRequirements } from './password-requirements';
 
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
@@ -93,6 +95,16 @@ export function Component({ isSignUp = false }: { isSignUp?: boolean }) {
       return;
     }
 
+    // ... (Inside Component)
+
+    if (isSignUp) {
+      const { isValid, error: validationError } = validatePassword(password);
+      if (!isValid) {
+        setError(validationError || 'Invalid password');
+        return;
+      }
+    }
+
     // 3. Set Lock & Loading
     isSubmittingRef.current = true;
     setIsLoading(true);
@@ -106,9 +118,7 @@ export function Component({ isSignUp = false }: { isSignUp?: boolean }) {
           password,
           options: {
             data: { full_name: name },
-            emailRedirectTo: process.env.NEXT_PUBLIC_APP_URL
-              ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`
-              : (typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined),
+            emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || (typeof window !== 'undefined' ? window.location.origin : '')}/auth/callback`,
           },
         });
 
@@ -244,6 +254,20 @@ export function Component({ isSignUp = false }: { isSignUp?: boolean }) {
                   }
                 }}
               />
+
+              {/* Password Requirements Checklist */}
+              <AnimatePresence>
+                {isSignUp && (focusedInput === "password" || password.length > 0) && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mt-2 text-left"
+                  >
+                    <PasswordRequirements password={password} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Bottom light beam - enhanced glow */}
               <motion.div

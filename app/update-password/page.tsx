@@ -8,6 +8,8 @@ import { supabase } from '@/lib/supabase';
 import { FallingPattern } from '@/components/ui/falling-pattern';
 import { cn } from "@/lib/utils";
 import { toast } from 'sonner';
+import { validatePassword } from '@/utils/password-validation';
+import { PasswordRequirements } from '@/components/password-requirements';
 
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
     return (
@@ -52,6 +54,8 @@ export default function UpdatePassword() {
         mouseY.set(0);
     };
 
+    // ... (inside UpdatePassword)
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
@@ -66,8 +70,9 @@ export default function UpdatePassword() {
             return;
         }
 
-        if (password.length < 6) {
-            setError('Password must be at least 6 characters');
+        const { isValid, error: validationError } = validatePassword(password);
+        if (!isValid) {
+            setError(validationError || 'Invalid password');
             return;
         }
 
@@ -219,6 +224,14 @@ export default function UpdatePassword() {
                                             )}
                                         </div>
                                     </div>
+
+                                    <AnimatePresence>
+                                        {(focusedInput === "password" || password.length > 0) && (
+                                            <div className="mt-2">
+                                                <PasswordRequirements password={password} />
+                                            </div>
+                                        )}
+                                    </AnimatePresence>
                                 </motion.div>
 
                                 {/* Confirm Password Input */}
@@ -300,6 +313,6 @@ export default function UpdatePassword() {
                     </div>
                 </motion.div>
             </motion.div>
-        </div>
+        </div >
     );
 }
