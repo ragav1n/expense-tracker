@@ -122,6 +122,12 @@ export function SettingsView() {
 
     const handleAvatarUpload = async (file: File) => {
         try {
+            const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+            if (file.size > MAX_SIZE) {
+                toast.error('File size too large. Maximum size is 10MB.');
+                return;
+            }
+
             setUploadingAvatar(true);
             if (!userId) return;
 
