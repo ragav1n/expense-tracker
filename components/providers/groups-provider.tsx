@@ -77,18 +77,20 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
     const [pendingSplits, setPendingSplits] = useState<Split[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const { userId, convertAmount, currency: userCurrency } = useUserPreferences();
+    const { userId, convertAmount, currency: userCurrency, isLoading: authLoading } = useUserPreferences();
 
-    const refreshData = async (currentSession?: any) => {
+    const refreshData = async () => {
+        if (!userId) {
+            setGroups([]);
+            setFriends([]);
+            setFriendRequests([]);
+            setBalances({ totalOwed: 0, totalOwedToMe: 0 });
+            setPendingSplits([]);
+            setLoading(false);
+            return;
+        }
+
         try {
-            let session = currentSession;
-            if (!session) {
-                const { data } = await supabase.auth.getSession();
-                session = data.session;
-            }
-            const user = session?.user;
-            if (!user) return;
-
             // 1. Fetch Groups
             const { data: myGroups, error: groupsError } = await supabase
                 .from('groups')
@@ -113,7 +115,7 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
                     }))
                 }));
                 setGroups(formattedGroups.filter(g =>
-                    g.members.some((m: any) => m.user_id === user.id)
+                    g.members.some((m: any) => m.user_id === userId)
                 ));
             }
 
@@ -128,7 +130,7 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
                     friend:profiles!friend_id(id, full_name, avatar_url, email),
                     user:profiles!user_id(id, full_name, avatar_url, email)
                 `)
-                .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
+                .or(`user_id.eq.${userId},friend_id.eq.${userId}`);
 
             if (friendsError) throw friendsError;
 
@@ -137,7 +139,7 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
                 const incomingRequests: Friend[] = [];
 
                 allFriendships.forEach(f => {
-                    const isInitiator = f.user_id === user.id;
+                    const isInitiator = f.user_id === userId;
                     const profileData = isInitiator ? f.friend : f.user;
                     const friendProfile = Array.isArray(profileData) ? profileData[0] : profileData;
 
@@ -164,14 +166,13 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
             }
 
             // 3. Calculate Balances with Currency Conversion
-            // We need to fetch transactions to get currency details for conversion
             const { data: splitsIOwe, error: oweError } = await supabase
                 .from('splits')
                 .select(`
                     amount,
                     transaction:transactions(currency, exchange_rate, base_currency)
                 `)
-                .eq('user_id', user.id)
+                .eq('user_id', userId)
                 .eq('is_paid', false);
 
             if (oweError) throw oweError;
@@ -181,10 +182,8 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
                 const tx = s.transaction;
                 if (!tx) return acc + amount;
 
-                // If transaction currency matches user currency, use as is
                 if (tx.currency === userCurrency) return acc + amount;
 
-                // Use convertAmount for current rate estimate
                 return acc + convertAmount(amount, tx.currency);
             }, 0) || 0;
 
@@ -194,7 +193,7 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
                     amount,
                     transaction:transactions!inner(user_id, currency, exchange_rate, base_currency)
                 `)
-                .eq('transaction.user_id', user.id)
+                .eq('transaction.user_id', userId)
                 .eq('is_paid', false);
 
             if (owedToMeError) throw owedToMeError;
@@ -212,7 +211,6 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
             setBalances({ totalOwed, totalOwedToMe });
 
             // 4. Fetch Pending Splits
-            // 4a. Splits I owe
             const { data: myDebts, error: debtError } = await supabase
                 .from('splits')
                 .select(`
@@ -220,12 +218,11 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
                     profile:profiles(full_name),
                     transaction:transactions(description, date, user_id, currency, exchange_rate, base_currency, profile:profiles(full_name))
                 `)
-                .eq('user_id', user.id)
+                .eq('user_id', userId)
                 .eq('is_paid', false);
 
             if (debtError) throw debtError;
 
-            // 4b. Splits owed to me
             const { data: myCredits, error: creditError } = await supabase
                 .from('splits')
                 .select(`
@@ -233,7 +230,7 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
                     profile:profiles(full_name),
                     transaction:transactions!inner(description, date, user_id, currency, exchange_rate, base_currency, profile:profiles(full_name))
                 `)
-                .eq('transaction.user_id', user.id)
+                .eq('transaction.user_id', userId)
                 .eq('is_paid', false);
 
             if (creditError) throw creditError;
@@ -243,10 +240,10 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
 
             if (uniquePending.length > 0) {
                 const formatted = uniquePending.map((s: any) => {
-                    const isCreditor = s.transaction?.user_id === user.id;
+                    const isCreditor = s.transaction?.user_id === userId;
                     const payerName = isCreditor
-                        ? (s.profile?.full_name || 'Unknown')  // If I am creditor, show debtor name
-                        : (s.transaction?.profile?.full_name || 'Unknown'); // If I am debtor, show creditor name
+                        ? (s.profile?.full_name || 'Unknown')
+                        : (s.transaction?.profile?.full_name || 'Unknown');
 
                     return {
                         ...s,
@@ -270,43 +267,32 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
     };
 
     useEffect(() => {
-        if (userId) {
-            refreshData();
-        }
+        if (authLoading) return;
 
-        const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            if (session?.user && (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-                refreshData(session);
-            } else if (event === 'SIGNED_OUT') {
-                setGroups([]);
-                setFriends([]);
-                setFriendRequests([]);
-                setBalances({ totalOwed: 0, totalOwedToMe: 0 });
-                setPendingSplits([]);
-            }
-        });
+        refreshData();
 
         const channel = supabase.channel('splits-and-groups')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'splits' }, () => refreshData())
             .on('postgres_changes', { event: '*', schema: 'public', table: 'groups' }, () => refreshData())
-            // Also listen to group_members so member changes trigger refresh!
             .on('postgres_changes', { event: '*', schema: 'public', table: 'group_members' }, () => refreshData())
             .on('postgres_changes', { event: '*', schema: 'public', table: 'friendships' }, () => refreshData())
             .subscribe();
 
         return () => {
-            authSubscription.unsubscribe();
             supabase.removeChannel(channel);
         };
-    }, [userId, userCurrency]); // Re-fetch logic/conversions when currency changes
+    }, [userId, userCurrency, authLoading]);
+
+    // ... (keep createGroup, addFriendByEmail, etc. methods, but remove getSession calls if they use userId from closure or check context, though some methods might still need separate checks or can use userId from context safely)
+    // Actually, for helper methods called by UI, we can use `userId` from context.
+    // The previous implementation used getSession inside methods. Use userId from context instead.
 
     const createGroup = async (name: string) => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) throw new Error('Not authenticated');
+        if (!userId) throw new Error('Not authenticated');
 
         const { data: group, error } = await supabase
             .from('groups')
-            .insert({ name, created_by: session.user.id })
+            .insert({ name, created_by: userId })
             .select()
             .single();
 
@@ -314,7 +300,7 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
 
         const { error: memberError } = await supabase.from('group_members').insert({
             group_id: group.id,
-            user_id: session.user.id
+            user_id: userId
         });
 
         if (memberError) throw memberError;
@@ -324,8 +310,7 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
     };
 
     const addFriendByEmail = async (email: string) => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) throw new Error('Not authenticated');
+        if (!userId) throw new Error('Not authenticated');
 
         const { data: friendProfileData, error: searchError } = await supabase
             .rpc('get_profile_by_email', { email_input: email })
@@ -337,14 +322,14 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
             throw new Error('User not found. They must be registered with Novira.');
         }
 
-        if (friendProfile.id === session.user.id) {
+        if (friendProfile.id === userId) {
             throw new Error("You cannot add yourself as a friend");
         }
 
         const { error: friendError } = await supabase
             .from('friendships')
             .insert({
-                user_id: session.user.id,
+                user_id: userId,
                 friend_id: friendProfile.id,
                 status: 'pending'
             });
@@ -381,14 +366,13 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
     };
 
     const leaveGroup = async (groupId: string) => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) throw new Error('Not authenticated');
+        if (!userId) throw new Error('Not authenticated');
 
         const { error } = await supabase
             .from('group_members')
             .delete()
             .eq('group_id', groupId)
-            .eq('user_id', session.user.id);
+            .eq('user_id', userId);
 
         if (error) throw error;
         refreshData();
@@ -404,21 +388,23 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
         refreshData();
     };
 
-    const addMemberToGroup = async (groupId: string, userId: string) => {
+    const addMemberToGroup = async (groupId: string, memberId: string) => {
         const { error } = await supabase
             .from('group_members')
-            .insert({ group_id: groupId, user_id: userId });
+            .insert({ group_id: groupId, user_id: memberId });
         if (error) throw error;
         refreshData();
         return true;
     };
 
     const settleSplit = async (splitId: string) => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) throw new Error('Not authenticated');
+        if (!userId) throw new Error('Not authenticated');
+        // RPC uses auth.uid() usually on server side, but here we call it.
+        // Wait, settle_split RPC likely uses `auth.uid()`? 
+        // If it relies on session being present in the connection, we strictly need a valid session.
+        // supabase-js client handles passing the token automatically if session exists.
+        // `UserPreferencesProvider` ensures we have a session (via its internal logic).
 
-        // Use RPC to settle split and create reciprocal transactions
-        // ensuring both the payer (debtor) and payee (creditor) see the settlement.
         const { error } = await supabase.rpc('settle_split', { split_id: splitId });
 
         if (error) throw error;

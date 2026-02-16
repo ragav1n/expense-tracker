@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { User, Session } from '@supabase/supabase-js';
 
 type Currency = 'USD' | 'EUR' | 'INR';
 
@@ -13,6 +14,13 @@ const DEFAULT_BUDGETS: Record<Currency, number> = {
 };
 
 interface UserPreferencesContextType {
+    // Auth State
+    user: User | null;
+    userId: string | null;
+    isAuthenticated: boolean;
+    isLoading: boolean;
+
+    // Preferences
     currency: Currency;
     setCurrency: (currency: Currency) => Promise<void>;
     formatCurrency: (amount: number, currencyOverride?: string) => string;
@@ -22,56 +30,78 @@ interface UserPreferencesContextType {
     setBudgetAlertsEnabled: (enabled: boolean) => Promise<void>;
     monthlyBudget: number;
     setMonthlyBudget: (budget: number) => Promise<void>;
-    userId: string | null;
 }
 
 const UserPreferencesContext = createContext<UserPreferencesContextType | undefined>(undefined);
 
 export function UserPreferencesProvider({ children }: { children: React.ReactNode }) {
+    // Auth State
+    const [user, setUser] = useState<User | null>(null);
+    const [userId, setUserId] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Preferences State
     const [currency, setCurrencyState] = useState<Currency>('USD');
     const [budgetAlertsEnabled, setBudgetAlertsEnabledState] = useState(false);
     const [monthlyBudget, setMonthlyBudgetState] = useState(DEFAULT_BUDGETS.USD);
     const [budgets, setBudgets] = useState<Record<string, number>>({});
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [loading, setLoading] = useState(true);
-    const [userId, setUserId] = useState<string | null>(null);
     const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({});
 
-
-    // Fetch Exchange Rates when currency changes
+    // Initialize Auth and Listen for Changes
     useEffect(() => {
-        const fetchRates = async () => {
+        let mounted = true;
+
+        const initializeAuth = async () => {
             try {
-                // api.frankfurter.dev requires the base currency to be different from the target or it returns empty/error sometimes for same base
-                // simpler: just fetch latest with base = currency
-                const response = await fetch(`https://api.frankfurter.dev/v1/latest?base=${currency}`);
-                if (!response.ok) throw new Error('Failed to fetch rates');
-                const data = await response.json();
-                setExchangeRates(data.rates);
+                const { data: { session } } = await supabase.auth.getSession();
+                if (mounted) {
+                    handleSession(session);
+                }
             } catch (error) {
-                console.error('Error fetching exchange rates:', error);
+                console.error('Auth initialization error:', error);
+            } finally {
+                if (mounted) setIsLoading(false);
             }
         };
 
-        fetchRates();
-    }, [currency]);
+        initializeAuth();
 
-    const refreshPreferences = async (currentSession?: any) => {
-        try {
-            let session = currentSession;
-            if (!session) {
-                const { data } = await supabase.auth.getSession();
-                session = data.session;
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (mounted) {
+                handleSession(session);
+                setIsLoading(false);
             }
+        });
 
-            const user = session?.user;
-            if (!user) return;
-            setUserId(user.id);
+        return () => {
+            mounted = false;
+            subscription.unsubscribe();
+        };
+    }, []);
 
+    const handleSession = async (session: Session | null) => {
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+        setUserId(currentUser?.id ?? null);
+
+        if (currentUser) {
+            await loadPreferences(currentUser.id);
+        } else {
+            // Reset preferences on logout
+            setCurrencyState('USD');
+            setBudgetAlertsEnabledState(false);
+            setMonthlyBudgetState(DEFAULT_BUDGETS.USD);
+            setBudgets({});
+            setExchangeRates({});
+        }
+    };
+
+    const loadPreferences = async (uid: string) => {
+        try {
             const { data, error } = await supabase
                 .from('profiles')
                 .select('currency, budget_alerts, monthly_budget, budgets')
-                .eq('id', user.id)
+                .eq('id', uid)
                 .single();
 
             if (data) {
@@ -84,159 +114,105 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
                 console.error('Error fetching preferences:', error);
             }
         } catch (error) {
-            console.error('Error fetching preferences:', error);
-        } finally {
-            setLoading(false);
+            console.error('Error loading preferences:', error);
         }
     };
 
-    const fetchedRef = React.useRef(false);
-
+    // Fetch Exchange Rates when currency changes
     useEffect(() => {
-        if (fetchedRef.current) return;
-        fetchedRef.current = true;
-
-        refreshPreferences();
-
-        // Subscribe to auth state changes
-        const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (session?.user) {
-                // Determine if we should refresh. 
-                // INITIAL_SESSION: happens on mount if session exists.
-                // SIGNED_IN: happens on login.
-                // TOKEN_REFRESHED: happens periodically.
-                if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-                    setUserId(session.user.id);
-                    refreshPreferences(session);
-                }
+        const fetchRates = async () => {
+            try {
+                const response = await fetch(`https://api.frankfurter.dev/v1/latest?base=${currency}`);
+                if (!response.ok) throw new Error('Failed to fetch rates');
+                const data = await response.json();
+                setExchangeRates(data.rates);
+            } catch (error) {
+                console.error('Error fetching exchange rates:', error);
             }
-
-            if (event === 'SIGNED_OUT') {
-                setUserId(null);
-                setCurrencyState('USD');
-                setBudgetAlertsEnabledState(false);
-                setMonthlyBudgetState(DEFAULT_BUDGETS.USD);
-                setBudgets({});
-                setExchangeRates({}); // Clear rates on logout
-            }
-        });
-
-        // Subscribe to realtime changes for instant updates across tabs/components
-        const channel = supabase
-            .channel('schema-db-changes')
-            .on(
-                'postgres_changes',
-                {
-                    event: 'UPDATE',
-                    schema: 'public',
-                    table: 'profiles',
-                },
-                (payload) => {
-                    if (payload.new) {
-                        const newData = payload.new as any;
-                        if (newData.currency) setCurrencyState(newData.currency as Currency);
-                        if (newData.budget_alerts !== undefined) setBudgetAlertsEnabledState(newData.budget_alerts);
-                        if (newData.monthly_budget) setMonthlyBudgetState(newData.monthly_budget);
-                        if (newData.budgets) setBudgets(newData.budgets as Record<string, number>);
-                    }
-                }
-            )
-            .subscribe();
-
-        return () => {
-            authSubscription.unsubscribe();
-            supabase.removeChannel(channel);
         };
-    }, []);
+
+        fetchRates();
+    }, [currency]);
+
+    const refreshPreferences = async () => {
+        if (userId) {
+            await loadPreferences(userId);
+        }
+    };
 
     const setCurrency = async (newCurrency: Currency) => {
         if (newCurrency === currency) return;
-
-        // Use stored budget for the currency if it exists, otherwise use default
         const newBudget = budgets[newCurrency] || DEFAULT_BUDGETS[newCurrency];
 
-        // Optimistic update
         setCurrencyState(newCurrency);
         setMonthlyBudgetState(newBudget);
 
-        try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const user = session?.user;
-            if (!user) return;
+        if (userId) {
+            try {
+                const { error } = await supabase
+                    .from('profiles')
+                    .update({
+                        currency: newCurrency,
+                        monthly_budget: newBudget
+                    })
+                    .eq('id', userId);
 
-            const { error } = await supabase
-                .from('profiles')
-                .update({
-                    currency: newCurrency,
-                    monthly_budget: newBudget
-                })
-                .eq('id', user.id);
-
-            if (error) throw error;
-
-            toast.success(`Currency switched to ${newCurrency}. Budget set to ${formatCurrency(newBudget, newCurrency)}`);
-        } catch (error) {
-            console.error('Error updating currency:', error);
-            toast.error('Failed to update currency preference');
-            refreshPreferences();
+                if (error) throw error;
+                toast.success(`Currency switched to ${newCurrency}. Budget set to ${formatCurrency(newBudget, newCurrency)}`);
+            } catch (error) {
+                console.error('Error updating currency:', error);
+                toast.error('Failed to update currency preference');
+                refreshPreferences();
+            }
         }
     };
 
     const setBudgetAlertsEnabled = async (enabled: boolean) => {
-        // Optimistic update
         setBudgetAlertsEnabledState(enabled);
 
-        try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const user = session?.user;
-            if (!user) return;
+        if (userId) {
+            try {
+                const { error } = await supabase
+                    .from('profiles')
+                    .update({ budget_alerts: enabled })
+                    .eq('id', userId);
 
-            const { error } = await supabase
-                .from('profiles')
-                .update({ budget_alerts: enabled })
-                .eq('id', user.id);
-
-            if (error) throw error;
-        } catch (error) {
-            console.error('Error updating budget alerts:', error);
-            toast.error('Failed to update budget alert preference');
-            refreshPreferences();
+                if (error) throw error;
+            } catch (error) {
+                console.error('Error updating budget alerts:', error);
+                toast.error('Failed to update budget alert preference');
+                refreshPreferences();
+            }
         }
     };
 
     const setMonthlyBudget = async (budget: number) => {
-        // Update local state for immediate feedback
         const updatedBudgets = { ...budgets, [currency]: budget };
-
-        // Optimistic update
         setMonthlyBudgetState(budget);
         setBudgets(updatedBudgets);
 
-        try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const user = session?.user;
-            if (!user) return;
+        if (userId) {
+            try {
+                const { error } = await supabase
+                    .from('profiles')
+                    .update({
+                        monthly_budget: budget,
+                        budgets: updatedBudgets
+                    })
+                    .eq('id', userId);
 
-            const { error } = await supabase
-                .from('profiles')
-                .update({
-                    monthly_budget: budget,
-                    budgets: updatedBudgets
-                })
-                .eq('id', user.id);
-
-            if (error) throw error;
-        } catch (error) {
-            console.error('Error updating budget:', error);
-            toast.error('Failed to update budget');
-            refreshPreferences();
+                if (error) throw error;
+            } catch (error) {
+                console.error('Error updating budget:', error);
+                toast.error('Failed to update budget');
+                refreshPreferences();
+            }
         }
     };
 
     const formatCurrency = (amount: number, currencyOverride?: string) => {
         const targetCurrency = currencyOverride || currency;
 
-        // Custom formatting for Euro to ensure prefix
         if (targetCurrency === 'EUR') {
             return new Intl.NumberFormat('en-IE', {
                 style: 'currency',
@@ -244,7 +220,6 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
             }).format(amount);
         }
 
-        // Custom formatting for INR
         if (targetCurrency === 'INR') {
             return new Intl.NumberFormat('en-IN', {
                 style: 'currency',
@@ -261,17 +236,16 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
 
     const convertAmount = (amount: number, fromCurrency: string): number => {
         if (!fromCurrency || fromCurrency === currency) return amount;
-
         const rate = exchangeRates[fromCurrency];
-        if (rate) {
-            return amount / rate;
-        }
-
-        return amount;
+        return rate ? amount / rate : amount;
     };
 
     return (
         <UserPreferencesContext.Provider value={{
+            user,
+            userId,
+            isAuthenticated: !!userId,
+            isLoading,
             currency,
             setCurrency,
             formatCurrency,
@@ -281,7 +255,6 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
             setBudgetAlertsEnabled,
             monthlyBudget,
             setMonthlyBudget,
-            userId
         }}>
             {children}
         </UserPreferencesContext.Provider>

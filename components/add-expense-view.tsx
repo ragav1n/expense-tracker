@@ -41,7 +41,7 @@ export function AddExpenseView() {
     const [date, setDate] = useState<Date | undefined>(new Date());
     const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Debit Card' | 'Credit Card'>('Cash');
     const [loading, setLoading] = useState(false);
-    const { currency } = useUserPreferences();
+    const { currency, userId } = useUserPreferences();
     const [txCurrency, setTxCurrency] = useState(currency);
     const { groups, friends } = useGroups();
 
@@ -64,10 +64,9 @@ export function AddExpenseView() {
         }
 
         setLoading(true);
+        setLoading(true);
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const user = session?.user;
-            if (!user) {
+            if (!userId) {
                 toast.error('You must be logged in');
                 router.push('/signin');
                 return;
@@ -100,7 +99,7 @@ export function AddExpenseView() {
             }
 
             const { data: transaction, error: txError } = await supabase.from('transactions').insert({
-                user_id: user.id,
+                user_id: userId,
                 amount: parseFloat(amount),
                 description,
                 category: selectedCategory,
@@ -127,7 +126,7 @@ export function AddExpenseView() {
                         .eq('group_id', selectedGroupId);
 
                     if (members) {
-                        debtors = members.map(m => m.user_id).filter(id => id !== user.id);
+                        debtors = members.map(m => m.user_id).filter(id => id !== userId);
                     }
                 } else {
                     debtors = selectedFriendIds;

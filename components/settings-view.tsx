@@ -40,7 +40,8 @@ export function SettingsView() {
         budgetAlertsEnabled,
         setBudgetAlertsEnabled,
         monthlyBudget,
-        setMonthlyBudget
+        setMonthlyBudget,
+        userId
     } = useUserPreferences();
 
     // Local state for budget input to allow typing before saving
@@ -52,22 +53,28 @@ export function SettingsView() {
 
     useEffect(() => {
         getProfile();
-    }, []);
+    }, [userId]);
 
     const getProfile = async () => {
         try {
+            if (!userId) return;
+            setUserEmail(''); // Email might not be available if not in session, but profile has it? No profile table might rely on sync. 
+            // Actually, email is in auth.users, not profiles usually, unless synced.
+            // Let's explicitly fetch email if needed or just skip it if not critical. 
+            // For now, let's try to get session ONLY for email if we really need it, or just ignore. 
+            // The UI uses email for avatar fallback. 
+            // Let's keep a single getSession call just for email if strictly needed, or better, 
+            // if we can get email from profile if we added it there. 
+            // Checking previous code: `user.email`. 
+            // We can fetch session for email, or just rely on profile name.
+
             const { data: { session } } = await supabase.auth.getSession();
-            const user = session?.user;
-            if (!user) {
-                router.push('/signin');
-                return;
-            }
-            setUserEmail(user.email || '');
+            if (session?.user?.email) setUserEmail(session.user.email);
 
             const { data, error } = await supabase
                 .from('profiles')
                 .select('full_name, monthly_budget, avatar_url')
-                .eq('id', user.id)
+                .eq('id', userId)
                 .single();
 
             if (error && error.code !== 'PGRST116') {
@@ -77,7 +84,6 @@ export function SettingsView() {
             if (data) {
                 setFullName(data.full_name || '');
                 setAvatarUrl(data.avatar_url);
-                // Budget is handled by provider now
             }
         } catch (error) {
             console.error('Error loading user data:', error);
@@ -89,12 +95,10 @@ export function SettingsView() {
     const updateProfile = async () => {
         setSaving(true);
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const user = session?.user;
-            if (!user) return;
+            if (!userId) return;
 
             const updates = {
-                id: user.id,
+                id: userId,
                 full_name: fullName,
                 monthly_budget: parseFloat(localBudget),
                 updated_at: new Date().toISOString(),
@@ -119,12 +123,10 @@ export function SettingsView() {
     const handleAvatarUpload = async (file: File) => {
         try {
             setUploadingAvatar(true);
-            const { data: { session } } = await supabase.auth.getSession();
-            const user = session?.user;
-            if (!user) return;
+            if (!userId) return;
 
             const fileExt = file.name.split('.').pop();
-            const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+            const fileName = `${userId}-${Math.random()}.${fileExt}`;
             const filePath = `${fileName}`;
 
             // Upload the file to Supabase Storage
@@ -145,7 +147,7 @@ export function SettingsView() {
             const { error: updateError } = await supabase
                 .from('profiles')
                 .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
-                .eq('id', user.id);
+                .eq('id', userId);
 
             if (updateError) {
                 throw updateError;
@@ -164,16 +166,14 @@ export function SettingsView() {
     const handleExport = async (type: 'csv' | 'pdf') => {
         setLoadingExport(true);
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const user = session?.user;
-            if (!user) return;
+            if (!userId) return;
 
             const { data: transactions, error } = await supabase
                 .from('transactions')
                 .select('*')
                 .order('date', { ascending: false });
 
-            if (error) throw error;
+            if (error) throw error; // And filter locally for safety/security or RLS handles it. RLS handles it.
 
             if (!transactions || transactions.length === 0) {
                 toast.error('No transactions to export');

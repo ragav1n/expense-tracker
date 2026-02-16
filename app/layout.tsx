@@ -43,13 +43,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body suppressHydrationWarning className={`${geist.variable} ${geistMono.variable} font-sans antialiased`}>
-        <MobileLayout>
-          <UserPreferencesProvider>
+        <UserPreferencesProvider>
+          <MobileLayout>
             <GroupsProvider>
               {children}
             </GroupsProvider>
-          </UserPreferencesProvider>
-        </MobileLayout>
+          </MobileLayout>
+        </UserPreferencesProvider>
         <Analytics />
       </body>
     </html>

@@ -102,9 +102,37 @@ export function DashboardView() {
     // Sync provider userId to local state if needed, or just use it directly
     // We kept the local state 'userId' for now to minimize refactor impact, 
     // but we'll sync it.
+    // Sync provider userId to local state if needed, or just use it directly
+    // We kept the local state 'userId' for now to minimize refactor impact, 
+    // but we'll sync it.
     useEffect(() => {
         if (providerUserId) {
             setUserId(providerUserId);
+            // Fetch Profile - optimization: could be in provider but keeping here for now
+            const fetchProfile = async () => {
+                try {
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('full_name, avatar_url')
+                        .eq('id', providerUserId)
+                        .single();
+
+                    if (profile) {
+                        setUserName(profile.full_name || 'User');
+                        setAvatarUrl(profile.avatar_url);
+                    }
+                    await loadTransactions(providerUserId);
+                } catch (error) {
+                    console.error("Error fetching data:", error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            fetchProfile();
+        } else if (!loading) {
+            // If provider finished loading and no user, we might want to redirect or just show empty?
+            // But layout handles redirect for protected pages.
+            setLoading(false);
         }
     }, [providerUserId]);
 
@@ -123,34 +151,6 @@ export function DashboardView() {
             console.error("Error loading transactions:", error);
         }
     };
-
-    useEffect(() => {
-        async function fetchData() {
-            if (!providerUserId) return; // Wait for provider to have user
-
-            try {
-                // Fetch Profile - we can probably optimize this too if provider has it, 
-                // but provider only has preferences. Let's keep profile fetch for now.
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('full_name, avatar_url')
-                    .eq('id', providerUserId)
-                    .single();
-
-                if (profile) {
-                    setUserName(profile.full_name || 'User');
-                    setAvatarUrl(profile.avatar_url);
-                }
-
-                await loadTransactions(providerUserId);
-            } catch (error) {
-                console.error("Error fetching data:", error);
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetchData();
-    }, [providerUserId]);
 
     const handleDeleteTransaction = async (txId: string) => {
         try {

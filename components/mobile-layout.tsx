@@ -9,6 +9,7 @@ import { ExpandableTabs } from '@/components/ui/expandable-tabs';
 import { Toaster } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
+import { useUserPreferences } from '@/components/providers/user-preferences-provider';
 
 export function MobileLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
@@ -37,22 +38,13 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
 
     const pathname = usePathname();
     const isAuthPage = ['/signin', '/signup', '/forgot-password', '/update-password'].includes(pathname);
-    const [hasSession, setHasSession] = React.useState<boolean | null>(null);
+    const { isAuthenticated, isLoading } = useUserPreferences();
 
-    React.useEffect(() => {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
-            setHasSession(!!session);
-        });
+    const showNav = !isAuthPage && isAuthenticated;
 
-        // Initial check
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setHasSession(!!session);
-        });
-
-        return () => subscription.unsubscribe();
-    }, []);
-
-    const showNav = !isAuthPage && hasSession;
+    if (isLoading) {
+        return null;
+    }
 
     return (
         <div className="min-h-screen w-full bg-background text-foreground relative overflow-hidden font-sans select-none flex flex-col">

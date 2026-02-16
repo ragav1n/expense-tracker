@@ -85,27 +85,18 @@ export function AnalyticsView() {
     const [categoryBreakdown, setCategoryBreakdown] = useState<any[]>([]);
     const [totalSpentInRange, setTotalSpentInRange] = useState(0);
     const [dateRange, setDateRange] = useState<DateRange>('1M');
-    const { formatCurrency, currency, convertAmount } = useUserPreferences();
-    const [userId, setUserId] = useState<string | null>(null);
+    const { formatCurrency, currency, convertAmount, userId } = useUserPreferences();
 
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setUserId(session?.user?.id || null);
-        });
-    }, []);
-
-
-    useEffect(() => {
-        fetchData();
+        if (userId) {
+            fetchData();
+        }
     }, [dateRange, currency, userId]);
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const user = session?.user;
-            if (!user) return;
-            setUserId(user.id);
+            if (!userId) return;
 
             let query = supabase
                 .from('transactions')
@@ -141,7 +132,7 @@ export function AnalyticsView() {
             const { data: transactions } = await query;
 
             if (transactions) {
-                processTransactions(transactions, dateRange, user.id);
+                processTransactions(transactions, dateRange, userId);
             }
         } catch (error) {
             console.error("Error fetching analytics:", error);
