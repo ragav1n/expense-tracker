@@ -10,6 +10,9 @@ interface Group {
     name: string;
     created_by: string;
     created_at: string;
+    type?: 'home' | 'trip' | 'couple' | 'other';
+    start_date?: string;
+    end_date?: string;
     members: {
         user_id: string;
         full_name: string;
@@ -57,7 +60,7 @@ interface GroupsContextType {
     pendingSplits: Split[];
     loading: boolean;
     refreshData: () => Promise<void>;
-    createGroup: (name: string) => Promise<string | null>;
+    createGroup: (name: string, type?: 'home' | 'trip' | 'couple' | 'other', startDate?: Date, endDate?: Date) => Promise<string | null>;
     addFriendByEmail: (email: string) => Promise<boolean>;
     addMemberToGroup: (groupId: string, userId: string) => Promise<boolean>;
     settleSplit: (splitId: string) => Promise<boolean>;
@@ -287,12 +290,18 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
     // Actually, for helper methods called by UI, we can use `userId` from context.
     // The previous implementation used getSession inside methods. Use userId from context instead.
 
-    const createGroup = async (name: string) => {
+    const createGroup = async (name: string, type: 'home' | 'trip' | 'couple' | 'other' = 'other', startDate?: Date, endDate?: Date) => {
         if (!userId) throw new Error('Not authenticated');
 
         const { data: group, error } = await supabase
             .from('groups')
-            .insert({ name, created_by: userId })
+            .insert({
+                name,
+                created_by: userId,
+                type,
+                start_date: startDate?.toISOString(),
+                end_date: endDate?.toISOString()
+            })
             .select()
             .single();
 
@@ -308,6 +317,8 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
         refreshData();
         return group.id;
     };
+
+    // ... existing addFriendByEmail logic ...
 
     const addFriendByEmail = async (email: string) => {
         if (!userId) throw new Error('Not authenticated');
