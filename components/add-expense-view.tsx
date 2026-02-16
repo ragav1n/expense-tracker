@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ChevronLeft, CreditCard, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, Wallet, Banknote, HelpCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronLeft, CreditCard, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, Wallet, Banknote, HelpCircle, RefreshCcw, Calendar as CalendarIcon, Users, User, CheckCircle2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { FloatingLabelInput } from '@/components/ui/floating-label';
 import { FluidDropdown, type Category } from '@/components/ui/fluid-dropdown';
 import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TimePicker } from "@/components/ui/datetime-picker";
@@ -20,7 +19,6 @@ import { useUserPreferences } from '@/components/providers/user-preferences-prov
 import { useGroups } from '@/components/providers/groups-provider';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Users, User, CheckCircle2 } from 'lucide-react';
 
 const dropdownCategories: Category[] = [
     { id: 'food', label: 'Food & Dining', icon: Utensils, color: '#FF6B6B' },
@@ -28,7 +26,7 @@ const dropdownCategories: Category[] = [
     { id: 'bills', label: 'Bills & Utilities', icon: Zap, color: '#F9C74F' },
     { id: 'shopping', label: 'Shopping', icon: ShoppingBag, color: '#A06CD5' },
     { id: 'healthcare', label: 'Healthcare', icon: HeartPulse, color: '#FF9F1C' },
-    { id: 'entertainment', label: 'Entertainment', icon: Clapperboard, color: '#FF1493' }, // Updated color
+    { id: 'entertainment', label: 'Entertainment', icon: Clapperboard, color: '#FF1493' },
     { id: 'others', label: 'Others', icon: HelpCircle, color: '#C7F464' },
 ];
 
@@ -45,10 +43,7 @@ export function AddExpenseView() {
     const [txCurrency, setTxCurrency] = useState(currency);
     const { groups, friends } = useGroups();
 
-    // Update txCurrency when profile currency changes (only if user hasn't manually changed it yet, or just default to it)
-    // Actually better to just default it on mount, or let it stay if user selected something else.
-    // For simplicity, let's just initialize it with currency. 
-    React.useEffect(() => {
+    useEffect(() => {
         setTxCurrency(currency);
     }, [currency]);
 
@@ -56,6 +51,10 @@ export function AddExpenseView() {
     const [isSplitEnabled, setIsSplitEnabled] = useState(false);
     const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
     const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
+
+    // Recurring State
+    const [isRecurring, setIsRecurring] = useState(false);
+    const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
 
     const handleSubmit = async () => {
         if (!amount || parseFloat(amount) <= 0 || !description || !date) {
@@ -75,7 +74,6 @@ export function AddExpenseView() {
                 return;
             }
 
-            // Fetch historical rate if needed
             let exchangeRate = 1;
             let convertedAmount = parseFloat(amount);
 
@@ -93,8 +91,6 @@ export function AddExpenseView() {
                         const data = await response.json();
                         exchangeRate = data.rates[currency];
                         convertedAmount = parseFloat(amount) * exchangeRate;
-                    } else {
-                        console.error('Failed to fetch exchange rate, using 1:1');
                     }
                 } catch (e) {
                     console.error('Error fetching historical rate:', e);
@@ -122,7 +118,6 @@ export function AddExpenseView() {
             if (isSplitEnabled) {
                 let debtors: string[] = [];
                 if (selectedGroupId) {
-                    // Fetch group members
                     const { data: members } = await supabase
                         .from('group_members')
                         .select('user_id')
@@ -147,6 +142,34 @@ export function AddExpenseView() {
                     const { error: splitError } = await supabase.from('splits').insert(splitRecords);
                     if (splitError) throw splitError;
                 }
+            }
+
+            // Handle Recurring
+            if (isRecurring) {
+                const nextDate = new Date(date);
+                if (frequency === 'daily') nextDate.setDate(nextDate.getDate() + 1);
+                else if (frequency === 'weekly') nextDate.setDate(nextDate.getDate() + 7);
+                else if (frequency === 'monthly') nextDate.setMonth(nextDate.getMonth() + 1);
+                else if (frequency === 'yearly') nextDate.setFullYear(nextDate.getFullYear() + 1);
+
+                const { error: recurringError } = await supabase.from('recurring_templates').insert({
+                    user_id: userId,
+                    description,
+                    amount: parseFloat(amount),
+                    category: selectedCategory,
+                    currency: txCurrency,
+                    group_id: selectedGroupId,
+                    payment_method: paymentMethod,
+                    frequency,
+                    next_occurrence: format(nextDate, 'yyyy-MM-dd'),
+                    metadata: {
+                        is_split: isSplitEnabled,
+                        friend_ids: selectedFriendIds,
+                        notes
+                    }
+                });
+
+                if (recurringError) throw recurringError;
             }
 
             toast.success('Expense added successfully!');
@@ -193,7 +216,6 @@ export function AddExpenseView() {
                         {txCurrency === 'EUR' ? '€' : txCurrency === 'INR' ? '₹' : '$'}
                     </span>
                 </div>
-                {/* Currency Selection */}
                 <div className="flex gap-2 mt-2">
                     {['USD', 'EUR', 'INR'].map((curr) => (
                         <button
@@ -267,42 +289,21 @@ export function AddExpenseView() {
                 <div className="space-y-2">
                     <label className="text-sm font-medium">Payment Method</label>
                     <div className="grid grid-cols-3 gap-2">
-                        <div
-                            onClick={() => setPaymentMethod('Cash')}
-                            className={cn(
-                                "flex flex-col items-center justify-center gap-1 p-3 rounded-xl border cursor-pointer transition-all",
-                                paymentMethod === 'Cash'
-                                    ? "bg-primary/20 border-primary text-primary"
-                                    : "bg-secondary/10 border-white/10 hover:bg-secondary/20"
-                            )}
-                        >
-                            <Banknote className="w-5 h-5" />
-                            <span className="text-xs">Cash</span>
-                        </div>
-                        <div
-                            onClick={() => setPaymentMethod('Debit Card')}
-                            className={cn(
-                                "flex flex-col items-center justify-center gap-1 p-3 rounded-xl border cursor-pointer transition-all",
-                                paymentMethod === 'Debit Card'
-                                    ? "bg-primary/20 border-primary text-primary"
-                                    : "bg-secondary/10 border-white/10 hover:bg-secondary/20"
-                            )}
-                        >
-                            <CreditCard className="w-5 h-5" />
-                            <span className="text-xs">Debit</span>
-                        </div>
-                        <div
-                            onClick={() => setPaymentMethod('Credit Card')}
-                            className={cn(
-                                "flex flex-col items-center justify-center gap-1 p-3 rounded-xl border cursor-pointer transition-all",
-                                paymentMethod === 'Credit Card'
-                                    ? "bg-primary/20 border-primary text-primary"
-                                    : "bg-secondary/10 border-white/10 hover:bg-secondary/20"
-                            )}
-                        >
-                            <Wallet className="w-5 h-5" />
-                            <span className="text-xs">Credit</span>
-                        </div>
+                        {(['Cash', 'Debit Card', 'Credit Card'] as const).map((method) => (
+                            <div
+                                key={method}
+                                onClick={() => setPaymentMethod(method)}
+                                className={cn(
+                                    "flex flex-col items-center justify-center gap-1 p-3 rounded-xl border cursor-pointer transition-all",
+                                    paymentMethod === method
+                                        ? "bg-primary/20 border-primary text-primary"
+                                        : "bg-secondary/10 border-white/10 hover:bg-secondary/20"
+                                )}
+                            >
+                                {method === 'Cash' ? <Banknote className="w-5 h-5" /> : method === 'Debit Card' ? <CreditCard className="w-5 h-5" /> : <Wallet className="w-5 h-5" />}
+                                <span className="text-xs">{method.split(' ')[0]}</span>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>
@@ -325,7 +326,6 @@ export function AddExpenseView() {
 
                 {isSplitEnabled && (
                     <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                        {/* Group Selection */}
                         <div className="space-y-2">
                             <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Split with Group</p>
                             <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
@@ -354,13 +354,9 @@ export function AddExpenseView() {
                                         <span className="text-[10px] font-medium truncate w-16 text-center">{group.name}</span>
                                     </div>
                                 ))}
-                                {groups.length === 0 && (
-                                    <p className="text-[11px] text-muted-foreground py-2">No groups found. Create one in Settings.</p>
-                                )}
                             </div>
                         </div>
 
-                        {/* Individual Friend Selection */}
                         <div className="space-y-2">
                             <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Or Split with Friends</p>
                             <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
@@ -370,9 +366,7 @@ export function AddExpenseView() {
                                         onClick={() => {
                                             if (selectedGroupId) setSelectedGroupId(null);
                                             setSelectedFriendIds(prev =>
-                                                prev.includes(friend.id)
-                                                    ? prev.filter(id => id !== friend.id)
-                                                    : [...prev, friend.id]
+                                                prev.includes(friend.id) ? prev.filter(id => id !== friend.id) : [...prev, friend.id]
                                             );
                                         }}
                                         className={cn(
@@ -399,36 +393,56 @@ export function AddExpenseView() {
                                         <span className="text-[10px] font-medium truncate w-16 text-center">{friend.full_name.split(' ')[0]}</span>
                                     </div>
                                 ))}
-                                {friends.length === 0 && (
-                                    <p className="text-[11px] text-muted-foreground py-2">No friends found.</p>
-                                )}
                             </div>
                         </div>
+                    </div>
+                )}
+            </div>
 
-                        {/* Split Summary */}
-                        {(selectedGroupId || selectedFriendIds.length > 0) && (
-                            <div className="bg-primary/5 rounded-xl p-3 border border-primary/10">
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="text-muted-foreground">Splitting with:</span>
-                                    <span className="font-semibold text-primary">
-                                        {selectedGroupId ? "Group" : `${selectedFriendIds.length} Friend${selectedFriendIds.length > 1 ? 's' : ''}`}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between items-center text-xs mt-1">
-                                    <span className="text-muted-foreground">Each person pays:</span>
-                                    <div className="flex flex-col items-end">
-                                        <span className="font-bold">
-                                            {(parseFloat(amount || '0') / ((selectedGroupId ? (groups.find(g => g.id === selectedGroupId)?.members.length || 1) : selectedFriendIds.length + 1))).toFixed(2)} {txCurrency === 'INR' ? '₹' : txCurrency === 'EUR' ? '€' : '$'}
-                                        </span>
-                                        {txCurrency !== currency && (
-                                            <span className="text-[10px] text-muted-foreground mt-0.5">
-                                                ≈ {formatCurrency(convertAmount(parseFloat(amount || '0') / ((selectedGroupId ? (groups.find(g => g.id === selectedGroupId)?.members.length || 1) : selectedFriendIds.length + 1)), txCurrency))}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+            {/* Recurring Expense Section */}
+            <div className="space-y-4 p-4 rounded-2xl bg-secondary/10 border border-white/5">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <RefreshCcw className="w-5 h-5 text-primary" />
+                        <div>
+                            <p className="text-sm font-medium">Recurring Expense</p>
+                            <p className="text-[10px] text-muted-foreground">Automatically post this expense</p>
+                        </div>
+                    </div>
+                    <Switch
+                        checked={isRecurring}
+                        onCheckedChange={setIsRecurring}
+                    />
+                </div>
+
+                {isRecurring && (
+                    <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="grid grid-cols-4 gap-2">
+                            {(['daily', 'weekly', 'monthly', 'yearly'] as const).map((freq) => (
+                                <button
+                                    key={freq}
+                                    onClick={() => setFrequency(freq)}
+                                    className={cn(
+                                        "py-2 text-[10px] font-bold uppercase tracking-wider rounded-xl border transition-all",
+                                        frequency === freq
+                                            ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
+                                            : "bg-background/20 border-white/5 text-muted-foreground hover:border-white/10"
+                                    )}
+                                >
+                                    {freq}
+                                </button>
+                            ))}
+                        </div>
+                        <p className="text-[10px] text-center text-muted-foreground italic">
+                            Next bill: {(() => {
+                                const next = new Date(date || new Date());
+                                if (frequency === 'daily') next.setDate(next.getDate() + 1);
+                                else if (frequency === 'weekly') next.setDate(next.getDate() + 7);
+                                else if (frequency === 'monthly') next.setMonth(next.getMonth() + 1);
+                                else if (frequency === 'yearly') next.setFullYear(next.getFullYear() + 1);
+                                return format(next, 'PPPP');
+                            })()}
+                        </p>
                     </div>
                 )}
             </div>
@@ -452,8 +466,6 @@ export function AddExpenseView() {
             >
                 {loading ? 'Adding Expense...' : 'Add Expense'}
             </Button>
-
-
         </div>
     );
 }

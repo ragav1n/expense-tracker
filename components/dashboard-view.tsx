@@ -4,7 +4,7 @@ import { useUserPreferences } from '@/components/providers/user-preferences-prov
 import { BudgetAlertManager } from '@/components/budget-alert-manager';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, CircleDollarSign, ArrowUpRight, ArrowDownLeft, Users, MoreVertical, Pencil, Trash2, X } from 'lucide-react';
+import { Plus, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, CircleDollarSign, ArrowUpRight, ArrowDownLeft, Users, MoreVertical, Pencil, Trash2, X, History, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Pie, PieChart, Cell } from 'recharts';
@@ -88,6 +88,16 @@ type SpendingCategory = {
     color: string;
     fill: string;
 };
+type AuditLog = {
+    id: string;
+    action: 'INSERT' | 'UPDATE' | 'DELETE';
+    old_data: any;
+    new_data: any;
+    created_at: string;
+    changed_by_profile?: {
+        full_name: string;
+    };
+};
 
 export function DashboardView() {
     const router = useRouter();
@@ -102,6 +112,10 @@ export function DashboardView() {
 
     const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
     const [isEditOpen, setIsEditOpen] = useState(false);
+
+    const [selectedAuditTx, setSelectedAuditTx] = useState<Transaction | null>(null);
+    const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+    const [loadingAudit, setLoadingAudit] = useState(false);
 
     // Sync provider userId to local state if needed, or just use it directly
     // We kept the local state 'userId' for now to minimize refactor impact, 
@@ -192,6 +206,26 @@ export function DashboardView() {
             if (userId) loadTransactions(userId);
         } catch (error: any) {
             toast.error('Failed to update: ' + error.message);
+        }
+    };
+
+    const loadAuditLogs = async (tx: Transaction) => {
+        setSelectedAuditTx(tx);
+        setLoadingAudit(true);
+        try {
+            const { data, error } = await supabase
+                .from('transaction_history')
+                .select('*, changed_by_profile:profiles(full_name)')
+                .eq('transaction_id', tx.id)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            setAuditLogs(data || []);
+        } catch (error: any) {
+            console.error("Error loading audit logs:", error);
+            toast.error("Failed to load history");
+        } finally {
+            setLoadingAudit(false);
         }
     };
 
@@ -629,7 +663,17 @@ export function DashboardView() {
                                             </span>
                                         )}
                                     </div>
-                                    <div className="w-6 h-6 flex items-center justify-center">
+                                    <div className="w-[56px] flex items-center justify-start gap-1.5 transition-opacity">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                loadAuditLogs(tx);
+                                            }}
+                                            className="p-1.5 rounded-full hover:bg-white/10 transition-colors text-muted-foreground hover:text-primary"
+                                            title="View History"
+                                        >
+                                            <History className="w-3.5 h-3.5" />
+                                        </button>
                                         {isRecentUserTransaction(tx) && !tx.is_settlement && (!tx.splits || tx.splits.length === 0) && (
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -668,7 +712,74 @@ export function DashboardView() {
                         <div className="text-center text-xs text-muted-foreground py-4">No recent transactions found.</div>
                     )}
                 </div>
+
+                {/* Audit Log Dialog */}
+                <Dialog open={!!selectedAuditTx} onOpenChange={(open) => !open && setSelectedAuditTx(null)}>
+                    <DialogContent className="max-w-[340px] max-h-[80vh] flex flex-col rounded-3xl border-white/10 bg-card/90 backdrop-blur-xl">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <History className="w-5 h-5 text-primary" />
+                                Transaction History
+                            </DialogTitle>
+                            <DialogDescription>
+                                Timeline of changes for "{selectedAuditTx?.description}"
+                            </DialogDescription>
+                        </DialogHeader>
+                        <ScrollArea className="flex-1 -mr-4 pr-4">
+                            {loadingAudit ? (
+                                <div className="py-20 flex justify-center">
+                                    <WaveLoader bars={3} />
+                                </div>
+                            ) : auditLogs.length > 0 ? (
+                                <div className="space-y-6 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-white/5 pt-4">
+                                    {auditLogs.map((log) => (
+                                        <div key={log.id} className="relative pl-10">
+                                            <div className="absolute left-2.5 top-1 w-3.5 h-3.5 rounded-full bg-background border-2 border-primary z-10" />
+                                            <div className="bg-secondary/10 rounded-2xl p-4 border border-white/5 space-y-2">
+                                                <div className="flex justify-between items-start">
+                                                    <span className={cn(
+                                                        "text-[10px] font-bold uppercase py-0.5 px-2 rounded",
+                                                        log.action === 'INSERT' ? "bg-emerald-500/20 text-emerald-500" :
+                                                            log.action === 'UPDATE' ? "bg-blue-500/20 text-blue-500" : "bg-rose-500/20 text-rose-500"
+                                                    )}>
+                                                        {log.action}
+                                                    </span>
+                                                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                                        <Clock className="w-3 h-3" />
+                                                        {format(new Date(log.created_at), 'MMM d, h:mm a')}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs font-medium">
+                                                    {log.changed_by_profile?.full_name || 'System'} {log.action === 'INSERT' ? 'created this transaction' : log.action === 'UPDATE' ? 'updated this transaction' : 'deleted this transaction'}
+                                                </p>
+                                                {log.action === 'UPDATE' && log.old_data && log.new_data && (
+                                                    <div className="text-[11px] space-y-1 pt-1 opacity-80">
+                                                        {Object.keys(log.new_data).map(key => {
+                                                            if (log.old_data[key] !== log.new_data[key] && !['updated_at', 'created_at'].includes(key)) {
+                                                                return (
+                                                                    <div key={key} className="flex flex-wrap gap-1">
+                                                                        <span className="font-bold text-muted-foreground">{key}:</span>
+                                                                        <span className="line-through text-rose-500/70">{JSON.stringify(log.old_data[key])}</span>
+                                                                        <span>→</span>
+                                                                        <span className="text-emerald-500">{JSON.stringify(log.new_data[key])}</span>
+                                                                    </div>
+                                                                );
+                                                            }
+                                                            return null;
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-10 text-muted-foreground text-sm">No history found.</div>
+                            )}
+                        </ScrollArea>
+                    </DialogContent>
+                </Dialog>
             </div>
-        </div>
+        </div >
     );
 }
