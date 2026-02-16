@@ -8,6 +8,7 @@ import { FallingPattern } from '@/components/ui/falling-pattern';
 import { ExpandableTabs } from '@/components/ui/expandable-tabs';
 import { Toaster } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { cn } from '@/lib/utils';
 
 export function MobileLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
@@ -35,7 +36,7 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
     };
 
     const pathname = usePathname();
-    const isAuthPage = ['/signin', '/signup'].includes(pathname);
+    const isAuthPage = ['/signin', '/signup', '/forgot-password', '/update-password'].includes(pathname);
     const [hasSession, setHasSession] = React.useState<boolean | null>(null);
 
     React.useEffect(() => {
@@ -54,10 +55,13 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
     const showNav = !isAuthPage && hasSession;
 
     return (
-        <div className="min-h-screen w-full bg-background text-foreground relative overflow-hidden font-sans select-none">
+        <div className="min-h-screen w-full bg-background text-foreground relative overflow-hidden font-sans select-none flex flex-col">
 
             {/* Main Content Area */}
-            <main className="h-full w-full pb-24 overflow-y-auto no-scrollbar relative z-10">
+            <main className={cn(
+                "flex-1 w-full overflow-y-auto no-scrollbar relative z-10 flex flex-col",
+                showNav ? "pb-24" : "pb-0"
+            )}>
                 {children}
             </main>
 

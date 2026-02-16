@@ -157,7 +157,7 @@ export function AddExpenseView() {
     };
 
     return (
-        <div className="p-5 space-y-6 max-w-md mx-auto pt-4 relative pb-24">
+        <div className="p-5 space-y-6 max-w-md mx-auto pt-4 relative min-h-full">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <button

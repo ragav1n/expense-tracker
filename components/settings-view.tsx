@@ -209,7 +209,7 @@ export function SettingsView() {
     }
 
     return (
-        <div className="p-5 space-y-6 max-w-md mx-auto relative pb-24">
+        <div className="p-5 space-y-6 max-w-md mx-auto relative min-h-full">
             {/* Header */}
             {/* Header */}
             <div className="flex items-center justify-between mb-6">

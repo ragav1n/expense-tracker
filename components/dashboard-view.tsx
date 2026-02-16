@@ -304,7 +304,7 @@ export function DashboardView() {
     });
 
     return (
-        <div className="p-5 space-y-6 max-w-md mx-auto relative pb-24">
+        <div className="p-5 space-y-6 max-w-md mx-auto relative min-h-full">
             {/* Header */}
             <div className="flex justify-between items-center pt-2">
                 <div className="flex items-center gap-3">

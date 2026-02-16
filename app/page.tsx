@@ -27,7 +27,7 @@ export default function Page() {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-background">
+      <div className="flex min-h-[100dvh] w-full items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     )
@@ -35,7 +35,7 @@ export default function Page() {
 
   if (!session) {
     return (
-      <div className="min-h-screen w-screen relative overflow-hidden flex items-center justify-center">
+      <div className="min-h-[100dvh] w-full relative overflow-hidden flex items-center justify-center">
         <div className="relative z-10">
           <SignInCard isSignUp={false} />
         </div>
