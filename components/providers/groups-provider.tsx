@@ -62,6 +62,7 @@ interface GroupsContextType {
     refreshData: () => Promise<void>;
     createGroup: (name: string, type?: 'home' | 'trip' | 'couple' | 'other', startDate?: Date, endDate?: Date) => Promise<string | null>;
     addFriendByEmail: (email: string) => Promise<boolean>;
+    addFriendById: (friendId: string) => Promise<boolean>;
     addMemberToGroup: (groupId: string, userId: string) => Promise<boolean>;
     settleSplit: (splitId: string) => Promise<boolean>;
     acceptFriendRequest: (requestId: string) => Promise<void>;
@@ -270,21 +271,57 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
     };
 
     useEffect(() => {
-        if (authLoading) return;
+        if (!userId) return;
 
+        // Initial fetch
         refreshData();
 
-        const channel = supabase.channel('splits-and-groups')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'splits' }, () => refreshData())
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'groups' }, () => refreshData())
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'group_members' }, () => refreshData())
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'friendships' }, () => refreshData())
-            .subscribe();
+        let channel: ReturnType<typeof supabase.channel> | null = null;
+
+        // Debounce subscription to prevent rapid reconnects during strict mode or auth state settling
+        const timer = setTimeout(() => {
+            console.log(`Initializing Realtime connection for ${userId}...`);
+            channel = supabase.channel(`realtime-groups-${userId}`)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'splits' }, () => {
+                    console.log('Realtime: Splits updated');
+                    refreshData();
+                })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'groups' }, () => {
+                    console.log('Realtime: Groups updated');
+                    refreshData();
+                })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'group_members' }, () => {
+                    console.log('Realtime: Group Members updated');
+                    refreshData();
+                })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'friendships' }, (payload) => {
+                    console.log('Realtime: Friendships updated', payload);
+                    refreshData();
+                })
+                .subscribe((status, err) => {
+                    console.log(`Realtime Subscription Status for ${userId}:`, status);
+                    if (status === 'SUBSCRIBED') {
+                        // Connected successfully
+                    }
+                    if (status === 'CHANNEL_ERROR') {
+                        console.error('Realtime Channel Error:', err);
+                        toast.error(`Realtime Error: ${err?.message || 'Unknown'}`);
+                    }
+                    if (status === 'TIMED_OUT') {
+                        console.error('Realtime Connection Timed Out');
+                        toast.error('Realtime Connection Timed Out. Retrying...');
+                    }
+                });
+        }, 500);
 
         return () => {
-            supabase.removeChannel(channel);
+            clearTimeout(timer);
+            if (channel) {
+                console.log('Cleaning up Realtime subscription...');
+                supabase.removeChannel(channel);
+            }
         };
-    }, [userId, userCurrency, authLoading]);
+    }, [userId]);
 
     // ... (keep createGroup, addFriendByEmail, etc. methods, but remove getSession calls if they use userId from closure or check context, though some methods might still need separate checks or can use userId from context safely)
     // Actually, for helper methods called by UI, we can use `userId` from context.
@@ -342,6 +379,44 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
             .insert({
                 user_id: userId,
                 friend_id: friendProfile.id,
+                status: 'pending'
+            });
+
+        if (friendError) {
+            if (friendError.code === '23505') {
+                throw new Error('You are already friends (or have a pending request) with this user');
+            }
+            throw friendError;
+        }
+
+        refreshData();
+        return true;
+    };
+
+    const addFriendById = async (friendId: string) => {
+        if (!userId) throw new Error('Not authenticated');
+
+        if (friendId === userId) {
+            throw new Error("You cannot add yourself as a friend");
+        }
+
+        // Check if user exists first using the secure RPC to bypass RLS
+        const { data: friendProfileData, error: searchError } = await supabase
+            .rpc('get_profile_by_id', { user_id_input: friendId })
+            .single();
+
+        // RPC returns the object directly if single() is used, but type assertion is helpful
+        const friendProfile = friendProfileData as { id: string, full_name: string } | null;
+
+        if (searchError || !friendProfile) {
+            throw new Error('User not found. Invalid QR code?');
+        }
+
+        const { error: friendError } = await supabase
+            .from('friendships')
+            .insert({
+                user_id: userId,
+                friend_id: friendId,
                 status: 'pending'
             });
 
@@ -427,7 +502,7 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
     return (
         <GroupsContext.Provider value={{
             groups, friends, friendRequests, balances, pendingSplits, loading,
-            refreshData, createGroup, addFriendByEmail, addMemberToGroup, settleSplit,
+            refreshData, createGroup, addFriendByEmail, addFriendById, addMemberToGroup, settleSplit,
             acceptFriendRequest, declineFriendRequest, leaveGroup, removeFriend
         }}>
             {children}

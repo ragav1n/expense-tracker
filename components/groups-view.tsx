@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import {
     ChevronLeft, Plus, Users, UserPlus, ArrowUpRight, ArrowDownLeft,
     Search, Mail, Check, X, Shield, MoreVertical, LogOut, ArrowRight, UserMinus,
-    Home, Plane, Heart, FileText, Calendar as CalendarIcon
+    Home, Plane, Heart, FileText, Calendar as CalendarIcon, Copy, Scan, QrCode
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,10 +30,12 @@ import { toast } from 'sonner';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { DateRange } from 'react-day-picker';
 import { format } from 'date-fns';
+import { NoviraQrCode } from '@/components/ui/qr-code';
+import { QrScanner } from '@/components/ui/qr-scanner';
 
 export function GroupsView() {
     const router = useRouter();
-    const { groups, friends, friendRequests, balances, pendingSplits, createGroup, addFriendByEmail, addMemberToGroup, settleSplit, acceptFriendRequest, declineFriendRequest, leaveGroup, removeFriend } = useGroups();
+    const { groups, friends, friendRequests, balances, pendingSplits, createGroup, addFriendByEmail, addFriendById, addMemberToGroup, settleSplit, acceptFriendRequest, declineFriendRequest, leaveGroup, removeFriend } = useGroups();
     const { formatCurrency, userId, currency, convertAmount } = useUserPreferences();
 
     const [isAddGroupOpen, setIsAddGroupOpen] = useState(false);
@@ -70,9 +72,16 @@ export function GroupsView() {
     };
 
     const handleAddFriend = async () => {
-        if (!friendEmail.trim()) return;
+        const input = friendEmail.trim();
+        if (!input) return;
+
         try {
-            await addFriendByEmail(friendEmail);
+            if (input.includes('@')) {
+                await addFriendByEmail(input);
+            } else {
+                // Assume it's an ID
+                await addFriendById(input);
+            }
             setFriendEmail('');
             setIsAddFriendOpen(false);
             toast.success('Friend request sent!');
@@ -150,21 +159,76 @@ export function GroupsView() {
                         <DialogContent className="max-w-[340px] rounded-3xl border-white/10 bg-card/90 backdrop-blur-xl">
                             <DialogHeader>
                                 <DialogTitle>Add Friend</DialogTitle>
-                                <DialogDescription>Enter your friend's email to find them.</DialogDescription>
+                                <DialogDescription>Add a friend by email or scan their code.</DialogDescription>
                             </DialogHeader>
-                            <div className="space-y-4 py-4">
-                                <div className="space-y-2">
-                                    <Input
-                                        placeholder="friend@example.com"
-                                        value={friendEmail}
-                                        onChange={(e) => setFriendEmail(e.target.value)}
-                                        className="bg-secondary/20 border-white/5 h-12 rounded-2xl"
-                                    />
-                                </div>
-                                <Button onClick={handleAddFriend} className="w-full h-12 rounded-2xl bg-primary hover:bg-primary/80 text-white font-bold">
-                                    Send Friend Request
-                                </Button>
-                            </div>
+
+                            <Tabs defaultValue="email" className="w-full mt-2">
+                                <TabsList className="grid w-full grid-cols-3 bg-secondary/20 p-1 rounded-xl h-9">
+                                    <TabsTrigger value="email" className="rounded-lg text-xs font-medium">Email / ID</TabsTrigger>
+                                    <TabsTrigger value="scan" className="rounded-lg text-xs font-medium">Scan</TabsTrigger>
+                                    <TabsTrigger value="code" className="rounded-lg text-xs font-medium">My Code</TabsTrigger>
+                                </TabsList>
+
+                                <TabsContent value="email" className="space-y-4 py-4">
+                                    <div className="space-y-2">
+                                        <Input
+                                            placeholder="friend@example.com or User ID"
+                                            value={friendEmail}
+                                            onChange={(e) => setFriendEmail(e.target.value)}
+                                            className="bg-secondary/20 border-white/5 h-12 rounded-2xl"
+                                        />
+                                    </div>
+                                    <Button onClick={handleAddFriend} className="w-full h-12 rounded-2xl bg-primary hover:bg-primary/80 text-white font-bold">
+                                        Send Friend Request
+                                    </Button>
+                                </TabsContent>
+
+                                <TabsContent value="scan" className="py-4 space-y-2">
+                                    <div className="h-64 w-full bg-black rounded-2xl overflow-hidden relative border border-white/10">
+                                        <QrScanner
+                                            onScan={async (scannedId) => {
+                                                console.log("Scanned:", scannedId);
+                                                try {
+                                                    await addFriendById(scannedId);
+                                                    setIsAddFriendOpen(false);
+                                                    toast.success('Friend request sent!');
+                                                } catch (error: any) {
+                                                    toast.error(error.message || 'Failed to add friend');
+                                                }
+                                            }}
+                                            className="w-full h-full"
+                                        />
+                                    </div>
+                                    <p className="text-[10px] text-center text-muted-foreground">
+                                        Align the QR code within the frame to scan.
+                                    </p>
+                                </TabsContent>
+
+                                <TabsContent value="code" className="py-6 space-y-6 flex flex-col items-center">
+                                    <div className="relative group">
+                                        <div className="absolute -inset-1 bg-gradient-to-r from-violet-600 to-pink-600 rounded-[2rem] blur opacity-40 group-hover:opacity-75 transition duration-500"></div>
+                                        <div className="relative">
+                                            <NoviraQrCode value={userId || ''} width={220} height={220} />
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground text-center px-4 max-w-[200px] leading-relaxed">
+                                        Let your friend scan this code to add you instantly.
+                                    </p>
+                                    <Button
+                                        variant="outline"
+                                        className="h-10 rounded-xl gap-2 text-xs border-white/10"
+                                        onClick={() => {
+                                            if (userId) {
+                                                navigator.clipboard.writeText(userId);
+                                                toast.success('User ID copied to clipboard');
+                                            }
+                                        }}
+                                    >
+                                        <Copy className="w-3.5 h-3.5" />
+                                        Copy My Code
+                                    </Button>
+                                </TabsContent>
+                            </Tabs>
                         </DialogContent>
                     </Dialog>
 
