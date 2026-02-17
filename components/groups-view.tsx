@@ -196,7 +196,7 @@ export function GroupsView() {
                                         <QrScanner
                                             onScan={async (scannedId) => {
                                                 if (isProcessing) return;
-                                                console.log("Scanned:", scannedId);
+                                                // Scanned ID handled
 
                                                 setIsProcessing(true);
                                                 try {

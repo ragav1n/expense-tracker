@@ -47,7 +47,8 @@ export function SettingsView() {
         monthlyBudget,
         setMonthlyBudget,
         userId,
-        user
+        user,
+        setAvatarUrl: setAvatarUrlProvider
     } = useUserPreferences();
 
     // Local state for budget input to allow typing before saving
@@ -165,6 +166,7 @@ export function SettingsView() {
             }
 
             setAvatarUrl(publicUrl);
+            setAvatarUrlProvider(publicUrl);
             toast.success('Avatar updated successfully');
         } catch (error: any) {
             console.error('Error uploading avatar:', error);

@@ -1,16 +1,42 @@
--- Secure Profiles Table
--- Drop the overly permissive public read policy
-drop policy "Public profiles are viewable by everyone." on profiles;
+-- Drop previous policies to avoid conflicts
+drop policy if exists "Public profiles are viewable by everyone." on profiles;
+drop policy if exists "Profiles are viewable by authenticated users." on profiles;
+drop policy if exists "Users can view relevant profiles" on profiles;
 
--- Create a new restrictive policy (Users can only see their own profile)
-create policy "Users can only view their own profile."
-  on profiles for select
-  using ( auth.uid() = id );
+-- Create a scoped policy for privacy
+create policy "Users can view relevant profiles" 
+on profiles for select 
+to authenticated
+using (
+    -- 1. Own profile
+    id = auth.uid() 
+    
+    OR 
+    
+    -- 2. Friends (Either side of friendship)
+    exists (
+        select 1 from friendships 
+        where (user_id = auth.uid() and friend_id = profiles.id) 
+           or (friend_id = auth.uid() and user_id = profiles.id)
+    )
+    
+    OR 
+    
+    -- 3. Group Members (Shared Groups)
+    exists (
+        select 1 from group_members gm1
+        join group_members gm2 on gm1.group_id = gm2.group_id
+        where gm1.user_id = auth.uid() and gm2.user_id = profiles.id
+    )
+);
 
 -- Secure Storage (Avatars)
 -- Drop the loose authenticated policies
-drop policy "Anyone can upload an avatar." on storage.objects;
-drop policy "Anyone can update their own avatar." on storage.objects;
+drop policy if exists "Anyone can upload an avatar." on storage.objects;
+drop policy if exists "Anyone can update their own avatar." on storage.objects;
+drop policy if exists "Users can only upload their own avatar." on storage.objects;
+drop policy if exists "Users can only update their own avatar." on storage.objects;
+drop policy if exists "Users can delete their own avatar." on storage.objects;
 
 -- Create stricter policies enforcing folder/filename ownership
 -- Allow upload only if the filename starts with the user's ID

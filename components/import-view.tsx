@@ -4,7 +4,7 @@ import React, { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDropzone } from 'react-dropzone';
 import Papa from 'papaparse';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { parse, isValid, format } from 'date-fns';
 import { Upload, ChevronRight, Check, AlertCircle, X, ArrowLeft, FileSpreadsheet, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -171,45 +171,55 @@ export function ImportView() {
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
         const file = acceptedFiles[0];
-        if (file) {
-            setFile(file);
-            const fileExt = file.name.split('.').pop()?.toLowerCase();
+        if (!file) return;
 
-            if (fileExt === 'csv') {
-                Papa.parse(file, {
-                    header: false, // We handle headers manually now
-                    skipEmptyLines: true,
-                    complete: (results) => {
-                        processData(results.data as any[][]);
-                    },
-                    error: (error) => {
-                        toast.error(`Error parsing CSV: ${error.message}`);
-                    }
-                });
-            } else if (fileExt === 'xlsx' || fileExt === 'xls') {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const data = e.target?.result;
-                        const workbook = XLSX.read(data, { type: 'binary' });
-                        const sheetName = workbook.SheetNames[0];
-                        const sheet = workbook.Sheets[sheetName];
-                        // Get raw array of arrays
-                        const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", raw: false }) as any[][];
+        // File size validation (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error('File size must be under 5MB.');
+            return;
+        }
 
-                        if (jsonData.length > 0) {
-                            processData(jsonData);
-                        } else {
-                            toast.error('Excel file appears to be empty.');
-                        }
-                    } catch (error: any) {
-                        toast.error(`Error parsing Excel: ${error.message}`);
+        const fileExt = file.name.split('.').pop()?.toLowerCase();
+        if (!['csv', 'xlsx', 'xls'].includes(fileExt || '')) {
+            toast.error('Unsupported file type. Please upload CSV or Excel.');
+            return;
+        }
+
+        setFile(file);
+
+        if (fileExt === 'csv') {
+            Papa.parse(file, {
+                header: false,
+                skipEmptyLines: true,
+                complete: (results) => {
+                    processData(results.data as any[][]);
+                },
+                error: (error) => {
+                    toast.error(`Error parsing CSV: ${error.message}`);
+                }
+            });
+        } else if (fileExt === 'xlsx' || fileExt === 'xls') {
+            const arrayBuffer = async () => {
+                try {
+                    const buffer = await file.arrayBuffer();
+                    const workbook = new ExcelJS.Workbook();
+                    await workbook.xlsx.load(buffer);
+                    const sheet = workbook.worksheets[0];
+                    const jsonData: any[][] = [];
+                    sheet.eachRow({ includeEmpty: false }, (row) => {
+                        jsonData.push((row.values as any[]).slice(1));
+                    });
+
+                    if (jsonData.length > 0) {
+                        processData(jsonData);
+                    } else {
+                        toast.error('Excel file appears to be empty.');
                     }
-                };
-                reader.readAsBinaryString(file);
-            } else {
-                toast.error('Unsupported file type. Please upload CSV or Excel.');
-            }
+                } catch (error: any) {
+                    toast.error(`Error parsing Excel: ${error.message}`);
+                }
+            };
+            arrayBuffer();
         }
     }, [mapping]);
 

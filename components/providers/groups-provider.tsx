@@ -280,26 +280,25 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
 
         // Debounce subscription to prevent rapid reconnects during strict mode or auth state settling
         const timer = setTimeout(() => {
-            console.log(`Initializing Realtime connection for ${userId}...`);
             channel = supabase.channel(`realtime-groups-${userId}`)
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'splits' }, () => {
-                    console.log('Realtime: Splits updated');
+                    // Realtime: Splits updated
                     refreshData();
                 })
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'groups' }, () => {
-                    console.log('Realtime: Groups updated');
+                    // Realtime: Groups updated
                     refreshData();
                 })
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'group_members' }, () => {
-                    console.log('Realtime: Group Members updated');
+                    // Realtime: Group Members updated
                     refreshData();
                 })
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'friendships' }, (payload) => {
-                    console.log('Realtime: Friendships updated', payload);
+                    // Realtime: Friendships updated
                     refreshData();
                 })
                 .subscribe((status, err) => {
-                    console.log(`Realtime Subscription Status for ${userId}:`, status);
+                    // Realtime Subscription Status
                     if (status === 'SUBSCRIBED') {
                         // Connected successfully
                     }
@@ -318,7 +317,7 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
         return () => {
             clearTimeout(timer);
             if (channel) {
-                console.log('Cleaning up Realtime subscription...');
+                // Cleaning up Realtime subscription...
                 supabase.removeChannel(channel);
             }
         };

@@ -79,7 +79,7 @@ export function DeleteAccountDialog({ trigger }: DeleteAccountDialogProps) {
         return () => clearInterval(timer);
     }, [open, countdown]);
 
-    const isReadyToSubmit = hasPassword ? password.length > 0 : otp.length >= 6;
+    const isReadyToSubmit = hasPassword ? password.length > 0 : otp.length === 6;
 
     const handleSendCode = async () => {
         // Check rate limit first
@@ -99,6 +99,7 @@ export function DeleteAccountDialog({ trigger }: DeleteAccountDialogProps) {
         setCountdown(60); // Optimistic UI update
 
         try {
+            // ✅ Reverted back to reauthenticate() to guarantee an OTP code
             const { error } = await supabase.auth.reauthenticate();
             if (error) throw error;
 
@@ -107,10 +108,8 @@ export function DeleteAccountDialog({ trigger }: DeleteAccountDialogProps) {
         } catch (error: any) {
             // Check for rate limit error (status 429) from server as backup
             if (error.status === 429 || error.code === '429' || error.message?.toLowerCase().includes('rate limit')) {
-                const waitTimeMatch = error.message?.match(/after (\d+) seconds/);
-                const waitTime = waitTimeMatch ? parseInt(waitTimeMatch[1], 10) : 60;
-                setCountdown(waitTime);
-                toast.error(`Please wait ${waitTime} seconds before requesting a new code.`);
+                setCountdown(60);
+                toast.error('Please wait before requesting a new code.');
             } else {
                 toast.error(error.message || 'Failed to send code');
             }
@@ -121,17 +120,6 @@ export function DeleteAccountDialog({ trigger }: DeleteAccountDialogProps) {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        if (hasPassword && !password) {
-            toast.error('Please enter your password to confirm');
-            return;
-        }
-
-        if (!hasPassword && !otp) {
-            toast.error('Please enter the verification code');
-            return;
-        }
-
         setIsLoading(true);
 
         try {
@@ -141,10 +129,25 @@ export function DeleteAccountDialog({ trigger }: DeleteAccountDialogProps) {
                 return;
             }
 
+            // ✅ Verify OTP client-side with correct type for reauthenticate
+            if (!hasPassword && otp) {
+                const { error: otpError } = await supabase.auth.verifyOtp({
+                    email: user.email,
+                    token: otp,
+                    type: 'reauthentication' as any // ✅ Corresponds to reauthenticate()
+                });
+                if (otpError) {
+                    toast.error('Invalid or expired verification code');
+                    setIsLoading(false);
+                    return;
+                }
+            }
+
+            // ✅ Pass undefined for OTP since it's verified client-side
             const result = await deleteAccount(
                 user.email,
                 hasPassword ? password : undefined,
-                !hasPassword ? otp : undefined
+                undefined
             );
 
             if (result.error) {
@@ -167,6 +170,8 @@ export function DeleteAccountDialog({ trigger }: DeleteAccountDialogProps) {
         } catch (error: any) {
             toast.error('An unexpected error occurred');
             console.error('Delete account error:', error);
+            setIsLoading(false);
+        } finally {
             setIsLoading(false);
         }
     };

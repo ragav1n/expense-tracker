@@ -30,6 +30,8 @@ interface UserPreferencesContextType {
     setBudgetAlertsEnabled: (enabled: boolean) => Promise<void>;
     monthlyBudget: number;
     setMonthlyBudget: (budget: number) => Promise<void>;
+    avatarUrl: string | null;
+    setAvatarUrl: (url: string | null) => void;
 }
 
 const UserPreferencesContext = createContext<UserPreferencesContextType | undefined>(undefined);
@@ -44,6 +46,7 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
     const [currency, setCurrencyState] = useState<Currency>('USD');
     const [budgetAlertsEnabled, setBudgetAlertsEnabledState] = useState(false);
     const [monthlyBudget, setMonthlyBudgetState] = useState(DEFAULT_BUDGETS.USD);
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [budgets, setBudgets] = useState<Record<string, number>>({});
     const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({});
 
@@ -51,7 +54,7 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
         try {
             const { data, error } = await supabase
                 .from('profiles')
-                .select('currency, budget_alerts, monthly_budget, budgets')
+                .select('currency, budget_alerts, monthly_budget, budgets, avatar_url')
                 .eq('id', uid)
                 .single();
 
@@ -59,6 +62,7 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
                 if (data.currency) setCurrencyState(data.currency as Currency);
                 if (data.budget_alerts !== null) setBudgetAlertsEnabledState(data.budget_alerts);
                 if (data.monthly_budget) setMonthlyBudgetState(data.monthly_budget);
+                if (data.avatar_url) setAvatarUrl(data.avatar_url);
                 if (data.budgets) setBudgets(data.budgets as Record<string, number>);
             }
             if (error && error.code !== 'PGRST116') {
@@ -83,6 +87,7 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
             setMonthlyBudgetState(DEFAULT_BUDGETS.USD);
             setBudgets({});
             setExchangeRates({});
+            setAvatarUrl(null);
         }
     }, [loadPreferences]);
 
@@ -254,6 +259,8 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
         setBudgetAlertsEnabled,
         monthlyBudget,
         setMonthlyBudget,
+        avatarUrl,
+        setAvatarUrl,
     }), [
         user,
         userId,
@@ -267,6 +274,7 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
         setBudgetAlertsEnabled,
         monthlyBudget,
         setMonthlyBudget,
+        avatarUrl,
     ]);
 
     return (

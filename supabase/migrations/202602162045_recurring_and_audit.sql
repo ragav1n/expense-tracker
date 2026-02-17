@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS recurring_templates (
 
 -- RLS for recurring_templates
 ALTER TABLE recurring_templates ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can manage their own templates" ON recurring_templates;
 CREATE POLICY "Users can manage their own templates" ON recurring_templates FOR ALL USING (auth.uid() = user_id);
 
 -- 2. Transaction History (Audit Log)
@@ -36,6 +37,7 @@ CREATE TABLE IF NOT EXISTS transaction_history (
 
 -- RLS for transaction_history
 ALTER TABLE transaction_history ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can view relevant history" ON transaction_history;
 CREATE POLICY "Users can view relevant history" ON transaction_history FOR SELECT USING (
     EXISTS (
         SELECT 1 FROM transactions t
