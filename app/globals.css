@@ -34,6 +34,11 @@
   --ring: oklch(0.55 0.25 280);
   
   --radius: 0.75rem;
+
+  /* Sonner theme variables */
+  --normal-bg: var(--popover);
+  --normal-text: var(--popover-foreground);
+  --normal-border: var(--border);
 }
 
 @theme inline {

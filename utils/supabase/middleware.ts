@@ -44,6 +44,7 @@ export async function updateSession(request: NextRequest) {
         !request.nextUrl.pathname.startsWith('/forgot-password') &&
         !request.nextUrl.pathname.startsWith('/update-password') &&
         !request.nextUrl.pathname.startsWith('/auth') &&
+        !request.nextUrl.pathname.startsWith('/confirm-delete') &&
         !request.nextUrl.pathname.startsWith('/_next') &&
         !request.nextUrl.pathname.startsWith('/api') && // Don't redirect API routes, let them return 401 if needed
         !request.nextUrl.pathname.includes('.') // Don't redirect static files

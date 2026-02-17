@@ -6,19 +6,16 @@ import { createClient } from '@/utils/supabase/server';
 
 const DeleteAccountSchema = z.object({
     email: z.string().email(),
-    password: z.string().optional(),
-    otpToken: z.string().optional(),
 });
 
-export async function deleteAccount(email: string, password?: string, otpToken?: string) {
-    const result = DeleteAccountSchema.safeParse({ email, password, otpToken });
+export async function deleteAccount(email: string) {
+    const result = DeleteAccountSchema.safeParse({ email });
 
     if (!result.success) {
         return { error: 'Invalid input data' };
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
     const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
     if (!supabaseServiceRoleKey) {
@@ -28,6 +25,7 @@ export async function deleteAccount(email: string, password?: string, otpToken?:
 
     try {
         // 1. Verify current session and email match
+        // This is a critical security check to ensure users can only delete their own accounts
         const supabase = await createClient();
         const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
 
@@ -42,32 +40,7 @@ export async function deleteAccount(email: string, password?: string, otpToken?:
             }
         });
 
-        if (password) {
-            // Verify credentials by attempting to sign in
-            const authClient = createAdminClient(supabaseUrl, supabaseAnonKey);
-            const { error: signInError } = await authClient.auth.signInWithPassword({
-                email,
-                password,
-            });
-
-            if (signInError) {
-                return { error: 'Invalid password' };
-            }
-        } else {
-            // No password provided: Check if user has a password set
-            const providers = (currentUser.app_metadata?.providers as string[]) || [];
-            if (providers.includes('email')) {
-                return { error: 'Password is required to delete this account' };
-            }
-            // Logic reaches here if OTP was required and (ideally) already verified client-side
-            // If it wasn't verified, the RPC or next steps might fail depending on DB constraints
-            // but we trust the client-side check for this flow as requested.
-        }
-
-        // 3. Initialize admin client for deletion
-        // (adminClient is already initialized above)
-
-        // 4. Prepare data for deletion (RPC)
+        // 2. Prepare data for deletion (RPC)
         const { error: rpcError } = await adminClient.rpc('prepare_delete_account', {
             p_user_id: currentUser.id
         });
@@ -77,7 +50,7 @@ export async function deleteAccount(email: string, password?: string, otpToken?:
             return { error: 'Failed to clean up user data. Please try again.' };
         }
 
-        // 5. Delete the user from auth.users
+        // 3. Delete the user from auth.users using admin privileges
         const { error: deleteError } = await adminClient.auth.admin.deleteUser(currentUser.id);
 
         if (deleteError) {

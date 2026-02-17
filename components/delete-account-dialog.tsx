@@ -2,16 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, Eye, EyeClosed, X, AlertTriangle, Trash2 } from 'lucide-react';
+import { X, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
-import { deleteAccount } from '@/app/actions/delete-account';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
-import { authRateLimiter } from '@/utils/auth-rate-limiter';
 import { useUserPreferences } from '@/components/providers/user-preferences-provider';
 
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
@@ -35,143 +31,23 @@ interface DeleteAccountDialogProps {
 }
 
 export function DeleteAccountDialog({ trigger }: DeleteAccountDialogProps) {
-    const router = useRouter();
     const [open, setOpen] = useState(false);
-    const [password, setPassword] = useState('');
-    const [otp, setOtp] = useState('');
-    const [otpSent, setOtpSent] = useState(false);
-    const [isSendingCode, setIsSendingCode] = useState(false);
-    const [hasPassword, setHasPassword] = useState(false);
-    const [showPassword, setShowPassword] = useState(false);
-    const [countdown, setCountdown] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
-    const [focusedInput, setFocusedInput] = useState<string | null>(null);
     const { user } = useUserPreferences();
 
-    useEffect(() => {
-        if (open) {
-            if (user) {
-                const hasEmailIdentity = user.identities?.some(identity => identity.provider === 'email');
-                setHasPassword(!!hasEmailIdentity);
-            }
-
-            // Check for existing rate limit
-            const remaining = authRateLimiter.check('verify');
-            if (remaining > 0) {
-                setCountdown(Math.ceil(remaining / 1000));
-            }
-        } else {
-            // Reset state when closing
-            setOtpSent(false);
-            setOtp('');
-            setPassword('');
-            setCountdown(0);
-        }
-    }, [open, user]);
-
-    useEffect(() => {
-        let timer: NodeJS.Timeout;
-        if (open && countdown > 0) {
-            timer = setInterval(() => {
-                setCountdown((prev) => prev - 1);
-            }, 1000);
-        }
-        return () => clearInterval(timer);
-    }, [open, countdown]);
-
-    const isReadyToSubmit = hasPassword ? password.length > 0 : otp.length === 6;
-
-    const handleSendCode = async () => {
-        // Check rate limit first
-        const remaining = authRateLimiter.check('verify');
-        if (remaining > 0) {
-            const seconds = Math.ceil(remaining / 1000);
-            setCountdown(seconds);
-            toast.error(`Please wait ${seconds}s before requesting a new code.`);
-            return;
-        }
-
-        if (countdown > 0) return;
-
-        setIsSendingCode(true);
-        // Record attempt immediately to prevent spam
-        authRateLimiter.recordOK('verify');
-        setCountdown(60); // Optimistic UI update
-
-        try {
-            // ✅ Reverted back to reauthenticate() to guarantee an OTP code
-            const { error } = await supabase.auth.reauthenticate();
-            if (error) throw error;
-
-            setOtpSent(true);
-            toast.success('Verification code sent to your email');
-        } catch (error: any) {
-            // Check for rate limit error (status 429) from server as backup
-            if (error.status === 429 || error.code === '429' || error.message?.toLowerCase().includes('rate limit')) {
-                setCountdown(60);
-                toast.error('Please wait before requesting a new code.');
-            } else {
-                toast.error(error.message || 'Failed to send code');
-            }
-        } finally {
-            setIsSendingCode(false);
-        }
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = async () => {
         setIsLoading(true);
-
         try {
-            if (!user?.email) {
-                toast.error('Could not identify user account');
-                setIsLoading(false);
-                return;
-            }
-
-            // ✅ Verify OTP client-side with correct type for reauthenticate
-            if (!hasPassword && otp) {
-                const { error: otpError } = await supabase.auth.verifyOtp({
-                    email: user.email,
-                    token: otp,
-                    type: 'reauthentication' as any // ✅ Corresponds to reauthenticate()
-                });
-                if (otpError) {
-                    toast.error('Invalid or expired verification code');
-                    setIsLoading(false);
-                    return;
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    queryParams: { prompt: 'select_account' },
+                    redirectTo: `${window.location.origin}/confirm-delete`
                 }
-            }
-
-            // ✅ Pass undefined for OTP since it's verified client-side
-            const result = await deleteAccount(
-                user.email,
-                hasPassword ? password : undefined,
-                undefined
-            );
-
-            if (result.error) {
-                toast.error(result.error);
-                setIsLoading(false);
-                return;
-            }
-
-            toast.success('Account deleted successfully');
-            setOpen(false);
-
-            try {
-                await supabase.auth.signOut();
-            } catch (signOutError) {
-                console.warn('Sign out during deletion failed (expected):', signOutError);
-            }
-
-            router.push('/signin');
-
+            });
+            if (error) throw error;
         } catch (error: any) {
-            toast.error('An unexpected error occurred');
-            console.error('Delete account error:', error);
-            setIsLoading(false);
-        } finally {
+            toast.error(error.message || 'Failed to initiate deletion');
             setIsLoading(false);
         }
     };
@@ -218,107 +94,18 @@ export function DeleteAccountDialog({ trigger }: DeleteAccountDialogProps) {
                             </div>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            {!hasPassword ? (
-                                <AnimatePresence mode="wait">
-                                    {!otpSent ? (
-                                        <motion.div
-                                            key="send-code"
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: -10 }}
-                                            className="space-y-4"
-                                        >
-                                            <div className="bg-primary/5 rounded-xl p-4 border border-primary/20">
-                                                <p className="text-xs text-primary/80 leading-relaxed font-medium">
-                                                    To securely delete your account, we need to verify your identity. Click below to receive a verification code on your email.
-                                                </p>
-                                            </div>
-                                            <Button
-                                                type="button"
-                                                onClick={handleSendCode}
-                                                disabled={isSendingCode || countdown > 0}
-                                                className="w-full bg-primary/20 hover:bg-primary/30 text-primary border border-primary/20 h-10 font-bold text-xs uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                {isSendingCode ? (
-                                                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                                                ) : countdown > 0 ? (
-                                                    `Resend Code (${countdown}s)`
-                                                ) : (
-                                                    'Send Verification Code'
-                                                )}
-                                            </Button>
-                                        </motion.div>
-                                    ) : (
-                                        <motion.div
-                                            key="verify-otp"
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            className="space-y-4"
-                                        >
-                                            <div className="relative">
-                                                <label className="text-[10px] text-muted-foreground font-bold uppercase ml-1">Enter Verification Code</label>
-                                                <div className="relative mt-1">
-                                                    <Input
-                                                        type="text"
-                                                        maxLength={6}
-                                                        placeholder="000000"
-                                                        value={otp}
-                                                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                                                        onFocus={() => setFocusedInput("otp")}
-                                                        onBlur={() => setFocusedInput(null)}
-                                                        className="w-full bg-white/5 border-transparent focus:border-primary/40 text-white placeholder:text-white/20 h-11 text-center text-xl tracking-[0.5em] font-mono transition-all duration-300 px-3 focus:bg-white/10"
-                                                    />
-                                                </div>
-                                                <div className="mt-3 flex justify-between items-center px-1">
-                                                    <p className="text-[10px] text-muted-foreground">Check your registered email</p>
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleSendCode}
-                                                        disabled={isSendingCode || countdown > 0}
-                                                        className={`text-[10px] font-bold uppercase transition-colors ${isSendingCode || countdown > 0
-                                                            ? 'text-muted-foreground cursor-not-allowed'
-                                                            : 'text-primary hover:underline'
-                                                            }`}
-                                                    >
-                                                        {countdown > 0 ? `Resend in ${countdown}s` : 'Resend Code'}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            ) : (
-                                <motion.div
-                                    className={`relative ${focusedInput === "password" ? 'z-10' : ''}`}
-                                    whileFocus={{ scale: 1.02 }}
-                                    whileHover={{ scale: 1.01 }}
-                                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                                >
-                                    <div className="absolute -inset-[0.5px] bg-gradient-to-r from-destructive/20 via-destructive/10 to-destructive/20 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none" />
-                                    <div className="relative flex items-center overflow-hidden rounded-lg">
-                                        <Lock className={`absolute left-3 w-4 h-4 transition-all duration-300 ${focusedInput === "password" ? 'text-destructive' : 'text-muted-foreground'}`} />
-                                        <Input
-                                            type={showPassword ? "text" : "password"}
-                                            placeholder="Confirm Password"
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            onFocus={() => setFocusedInput("password")}
-                                            onBlur={() => setFocusedInput(null)}
-                                            className="w-full bg-white/5 border-transparent focus:border-destructive/40 text-white placeholder:text-white/30 h-10 transition-all duration-300 pl-10 pr-10 focus:bg-white/10"
-                                        />
-                                        <div onClick={() => setShowPassword(!showPassword)} className="absolute right-3 cursor-pointer">
-                                            {showPassword ? <Eye className="w-4 h-4 text-muted-foreground hover:text-white" /> : <EyeClosed className="w-4 h-4 text-muted-foreground hover:text-white" />}
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            )}
+                        <div className="space-y-4">
+                            <div className="bg-primary/5 rounded-xl p-4 border border-primary/20">
+                                <p className="text-xs text-primary/80 leading-relaxed font-medium">
+                                    To securely delete your account, we need to verify your identity. Click below to continue with Google.
+                                </p>
+                            </div>
 
                             <motion.button
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
-                                type="submit"
-                                disabled={isLoading || !isReadyToSubmit || (!hasPassword && !otpSent)}
+                                onClick={handleSubmit}
+                                disabled={isLoading}
                                 className="w-full relative group/button mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <div className="absolute inset-0 bg-destructive/20 rounded-lg blur-lg opacity-0 group-hover/button:opacity-70 transition-opacity duration-300" />
@@ -342,8 +129,7 @@ export function DeleteAccountDialog({ trigger }: DeleteAccountDialogProps) {
                                                 exit={{ opacity: 0 }}
                                                 className="flex items-center justify-center gap-2 text-sm font-bold"
                                             >
-                                                <Trash2 className="w-4 h-4" />
-                                                Permanently Delete
+                                                Continue with Google
                                             </motion.span>
                                         )}
                                     </AnimatePresence>
@@ -351,9 +137,9 @@ export function DeleteAccountDialog({ trigger }: DeleteAccountDialogProps) {
                             </motion.button>
 
                             <p className="text-[10px] text-center text-muted-foreground pt-2">
-                                By clicking delete, you agree to our Terms of Service.
+                                By clicking continue, you agree to our Terms of Service.
                             </p>
-                        </form>
+                        </div>
                     </div>
                 </div>
             </DialogContent>
