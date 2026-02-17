@@ -3,13 +3,25 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+      "script-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' blob: data: https://*.supabase.co",
       "font-src 'self'",
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.frankfurter.dev",
       "frame-ancestors 'none'",
     ].join('; '),
+  },
+  {
+    key: 'Access-Control-Allow-Origin',
+    value: process.env.NEXT_PUBLIC_APP_URL || '*',
+  },
+  {
+    key: 'Access-Control-Allow-Methods',
+    value: 'GET,DELETE,PATCH,POST,PUT',
+  },
+  {
+    key: 'Access-Control-Allow-Headers',
+    value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version',
   },
   {
     key: 'Permissions-Policy',
