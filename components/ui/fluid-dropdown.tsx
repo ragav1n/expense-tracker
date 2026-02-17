@@ -112,8 +112,8 @@ const itemVariants = {
         opacity: 1,
         y: 0,
         transition: {
-            duration: 0.3,
-            ease: [0.25, 0.1, 0.25, 1],
+            duration: 0.5,
+            ease: [0.32, 0.725, 0.32, 1],
         },
     },
 }
@@ -190,27 +190,23 @@ export function FluidDropdown({ items = categories, onSelect, className }: Fluid
                 <AnimatePresence>
                     {isOpen && (
                         <motion.div
-                            initial={{ opacity: 1, y: 0, height: 0 }}
+                            initial={{ opacity: 0, y: -10, height: 0 }}
                             animate={{
                                 opacity: 1,
                                 y: 0,
                                 height: "auto",
                                 transition: {
-                                    type: "spring",
-                                    stiffness: 500,
-                                    damping: 30,
-                                    mass: 1,
+                                    duration: 0.5,
+                                    ease: [0.32, 0.725, 0.32, 1],
                                 },
                             }}
                             exit={{
                                 opacity: 0,
-                                y: 0,
+                                y: -10,
                                 height: 0,
                                 transition: {
-                                    type: "spring",
-                                    stiffness: 500,
-                                    damping: 30,
-                                    mass: 1,
+                                    duration: 0.4,
+                                    ease: [0.32, 0.725, 0.32, 1],
                                 },
                             }}
                             className="absolute left-0 right-0 top-full mt-2 z-50"

@@ -412,7 +412,7 @@ export function SearchView() {
 
             <div className="space-y-3 overflow-y-auto pr-1 -mr-1 flex-1">
                 {loading ? (
-                    <div className="h-full w-full flex flex-col items-center justify-center min-h-[200px]">
+                    <div className="h-full w-full flex flex-col items-center justify-center min-h-[80vh]">
                         <WaveLoader bars={5} message="Loading..." />
                     </div>
                 ) : (

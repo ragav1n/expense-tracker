@@ -331,7 +331,7 @@ export function DashboardView() {
 
     if (loading) {
         return (
-            <div className="h-full w-full flex flex-col items-center justify-center min-h-[50vh]">
+            <div className="h-full w-full flex flex-col items-center justify-center min-h-[80vh]">
                 <WaveLoader bars={5} message="Loading dashboard..." />
             </div>
         );

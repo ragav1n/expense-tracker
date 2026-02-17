@@ -18,6 +18,9 @@ import { ChangePasswordDialog } from '@/components/change-password-dialog';
 import { FileTriggerButton } from '@/components/ui/file-trigger';
 import { Camera, Trash2 } from 'lucide-react';
 import { DeleteAccountDialog } from '@/components/delete-account-dialog';
+import { ExportDateRangeModal } from '@/components/export-date-range-modal';
+import { DateRange } from 'react-day-picker';
+import { format } from 'date-fns';
 
 export function SettingsView() {
     const router = useRouter();
@@ -30,6 +33,8 @@ export function SettingsView() {
     // Removed local budgetAlertsEnabled state
     const [showAlert, setShowAlert] = useState(false);
     const [loadingExport, setLoadingExport] = useState(false);
+    const [exportModalOpen, setExportModalOpen] = useState(false);
+    const [exportType, setExportType] = useState<'csv' | 'pdf' | null>(null);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const {
@@ -169,30 +174,46 @@ export function SettingsView() {
         }
     };
 
-    const handleExport = async (type: 'csv' | 'pdf') => {
+    const handleExportClick = (type: 'csv' | 'pdf') => {
+        setExportType(type);
+        setExportModalOpen(true);
+    };
+
+    const handleExportConfirm = async (dateRange: DateRange | null) => {
         setLoadingExport(true);
         try {
             if (!userId) return;
 
-            const { data: transactions, error } = await supabase
+            let query = supabase
                 .from('transactions')
                 .select('*')
                 .order('date', { ascending: false });
 
-            if (error) throw error; // And filter locally for safety/security or RLS handles it. RLS handles it.
+            if (dateRange?.from) {
+                query = query.gte('date', format(dateRange.from, 'yyyy-MM-dd'));
+            }
+            if (dateRange?.to) {
+                query = query.lte('date', format(dateRange.to, 'yyyy-MM-dd'));
+            }
+
+            const { data: transactions, error } = await query;
+
+            if (error) throw error;
 
             if (!transactions || transactions.length === 0) {
-                toast.error('No transactions to export');
+                toast.error('No transactions found for the selected period');
+                setExportModalOpen(false);
                 return;
             }
 
-            if (type === 'csv') {
+            if (exportType === 'csv') {
                 generateCSV(transactions, currency, convertAmount, formatCurrency);
                 toast.success('CSV Exported successfully');
             } else {
                 generatePDF(transactions, currency, convertAmount, formatCurrency);
                 toast.success('PDF Exported successfully');
             }
+            setExportModalOpen(false);
         } catch (error: any) {
             console.error('Export failed:', error);
             toast.error('Failed to export data');
@@ -208,7 +229,7 @@ export function SettingsView() {
 
     if (loading) {
         return (
-            <div className="h-full w-full flex flex-col items-center justify-center min-h-[50vh]">
+            <div className="h-full w-full flex flex-col items-center justify-center min-h-[80vh]">
                 <WaveLoader bars={5} message="Loading settings..." />
             </div>
         );
@@ -312,7 +333,7 @@ export function SettingsView() {
                     </Button>
                     <Button
                         variant="outline"
-                        onClick={() => handleExport('csv')}
+                        onClick={() => handleExportClick('csv')}
                         disabled={loadingExport}
                         className="h-16 flex flex-col items-center justify-center gap-1 bg-secondary/5 border-primary/20 hover:bg-primary/10 hover:border-primary/50 transition-all group"
                     >
@@ -321,7 +342,7 @@ export function SettingsView() {
                     </Button>
                     <Button
                         variant="outline"
-                        onClick={() => handleExport('pdf')}
+                        onClick={() => handleExportClick('pdf')}
                         disabled={loadingExport}
                         className="h-16 flex flex-col items-center justify-center gap-1 bg-secondary/5 border-primary/20 hover:bg-primary/10 hover:border-primary/50 transition-all group"
                     >
@@ -487,6 +508,14 @@ export function SettingsView() {
                     <span>Secure & Encrypted</span>
                 </div>
             </div>
+
+            <ExportDateRangeModal
+                isOpen={exportModalOpen}
+                onOpenChange={setExportModalOpen}
+                onExport={handleExportConfirm}
+                loading={loadingExport}
+                title={exportType === 'csv' ? 'Export CSV' : 'Export PDF'}
+            />
         </div>
     );
 }
