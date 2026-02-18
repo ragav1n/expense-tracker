@@ -1,5 +1,5 @@
 export const LATEST_FEATURE_ANNOUNCEMENT = {
-    id: 'new-personal-buckets-launch', // New ID to trigger the modal again
+    id: 'personal-buckets-and-updated-pdf-report-launch', // New ID to trigger the modal again
     title: 'New Updates!',
     features: [
         {
@@ -11,7 +11,12 @@ export const LATEST_FEATURE_ANNOUNCEMENT = {
             title: 'Personal Buckets',
             description: 'Organize your private spending with buckets. Set monthly budgets, choose unique icons, and track your progress with analytics.',
             icon: 'bucket'
-        }
+        },
+        {
+            title: 'Professional PDF Reports',
+            description: 'Your expense reports now include your profile identity and beautifully formatted data. Export your private buckets or global spending with a touch of class.',
+            icon: 'export'
+        },
     ],
     buttonText: 'Awesome!',
 };

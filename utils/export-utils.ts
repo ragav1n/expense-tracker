@@ -164,14 +164,25 @@ export const generateCSV = (
     link.click();
 };
 
-export const generatePDF = (
+const loadImage = (url: string): Promise<HTMLImageElement> => {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = (e) => reject(e);
+        img.src = url;
+    });
+};
+
+export const generatePDF = async (
     transactions: ExportTransaction[],
     currency: string,
     convertAmount: (amount: number, fromCurrency: string) => number,
     formatCurrency: (amount: number, currency?: string) => string,
     buckets: any[] = [],
     groups: any[] = [],
-    reportRange?: DateRange
+    reportRange?: DateRange,
+    ownerInfo?: { email?: string; avatarUrl?: string | null }
 ) => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
@@ -203,11 +214,27 @@ export const generatePDF = (
 
             // If bucket has dates, and report has a range, calculate allocation
             if (bucket.start_date && bucket.end_date && reportRange?.from && reportRange?.to) {
-                const bucketDays = Math.max(1, differenceInDays(new Date(bucket.end_date), new Date(bucket.start_date)));
-                const reportDays = Math.max(1, differenceInDays(reportRange.to, reportRange.from));
+                const bStart = new Date(bucket.start_date);
+                const bEnd = new Date(bucket.end_date);
+                const rStart = reportRange.from;
+                const rEnd = reportRange.to;
 
-                // Average daily budget * days in report
-                effectiveBudget = (bucket.budget / bucketDays) * reportDays;
+                // Calculate overlap
+                const overlapStart = new Date(Math.max(bStart.getTime(), rStart.getTime()));
+                const overlapEnd = new Date(Math.min(bEnd.getTime(), rEnd.getTime()));
+
+                if (overlapEnd > overlapStart) {
+                    // Proportional allocation for the overlapping period
+                    const bucketDays = Math.max(1, differenceInDays(bEnd, bStart));
+                    const overlapDays = Math.max(1, differenceInDays(overlapEnd, overlapStart) + 1);
+                    effectiveBudget = (bucket.budget / bucketDays) * overlapDays;
+                } else if (rEnd < bStart) {
+                    // Pre-trip phase: use full budget as reference so pre-spending is tracked correctly
+                    effectiveBudget = bucket.budget;
+                } else {
+                    // Post-trip or other: default to total budget
+                    effectiveBudget = bucket.budget;
+                }
             }
 
             if (!bucketTotals[bucket.name]) {
@@ -239,6 +266,22 @@ export const generatePDF = (
 
     doc.setFontSize(10);
     doc.text(`Generated on: ${format(new Date(), 'PPP')}`, 14, 32);
+
+    // Header with User Identity
+    if (ownerInfo) {
+        if (ownerInfo.avatarUrl) {
+            try {
+                const img = await loadImage(ownerInfo.avatarUrl);
+                // Draw avatar without the border circle
+                doc.addImage(img, 'JPEG', pageWidth - 28, 10, 14, 14, undefined, 'FAST');
+            } catch (e) {
+                console.warn('Failed to load avatar for PDF', e);
+            }
+        }
+        doc.setFontSize(9);
+        doc.setTextColor(230, 230, 230);
+        doc.text(ownerInfo.email || '', pageWidth - 14, 32, { align: 'right' });
+    }
 
     // Summary Boxes
     doc.setTextColor(50, 50, 50);

@@ -332,49 +332,53 @@ export function AnalyticsView() {
     return (
         <div className="p-5 space-y-6 max-w-md mx-auto relative min-h-full">
             {/* Header */}
-            <div className="flex items-center gap-2">
+            {/* Header */}
+            <div className="flex items-center justify-between relative min-h-[40px]">
                 <button
                     onClick={() => router.back()}
-                    className="p-1.5 rounded-full bg-secondary/30 hover:bg-secondary/50 transition-colors shrink-0"
+                    className="p-1.5 rounded-full bg-secondary/30 hover:bg-secondary/50 transition-colors shrink-0 z-10"
                 >
                     <ChevronLeft className="w-5 h-5" />
                 </button>
-                <div className="flex-1 min-w-0">
-                    <h2 className="text-lg font-semibold truncate leading-tight">Analytics</h2>
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <h2 className="text-lg font-semibold truncate text-center leading-tight">Analytics</h2>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0 ml-auto">
-                    <Select value={selectedBucketId} onValueChange={(val) => setSelectedBucketId(val)}>
-                        <SelectTrigger className="w-auto min-w-[90px] px-2 h-8 text-[12px] bg-amber-500/10 border-amber-500/20 text-amber-500 rounded-full font-normal">
-                            <SelectValue placeholder="All Spending" />
-                        </SelectTrigger>
-                        <SelectContent align="end">
-                            <SelectItem value="all">All Spending</SelectItem>
-                            {buckets.map(b => (
-                                <SelectItem key={b.id} value={b.id}>
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-4 h-4 flex items-center justify-center">
-                                            {getBucketIcon(b.icon)}
-                                        </div>
-                                        <span>{b.name}</span>
+                <div className="w-9 shrink-0 z-10" />
+            </div>
+
+            {/* Filters Row */}
+            <div className="flex items-center justify-center gap-2 px-1">
+                <Select value={selectedBucketId} onValueChange={(val) => setSelectedBucketId(val)}>
+                    <SelectTrigger className="flex-1 min-w-0 max-w-[160px] px-3 h-9 text-[12px] bg-amber-500/10 border-amber-500/20 text-amber-500 rounded-xl font-medium">
+                        <SelectValue placeholder="All Spending" />
+                    </SelectTrigger>
+                    <SelectContent align="center">
+                        <SelectItem value="all">All Spending</SelectItem>
+                        {buckets.map(b => (
+                            <SelectItem key={b.id} value={b.id}>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 flex items-center justify-center">
+                                        {getBucketIcon(b.icon)}
                                     </div>
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <Select value={dateRange} onValueChange={(val: DateRange) => setDateRange(val)}>
-                        <SelectTrigger className="w-auto min-w-[100px] px-2 h-8 text-[12px] bg-secondary/20 border-white/5 rounded-full font-normal">
-                            <SelectValue placeholder="Period" />
-                        </SelectTrigger>
-                        <SelectContent align="end">
-                            <SelectItem value="1M">Current Month</SelectItem>
-                            <SelectItem value="LM">Last Month</SelectItem>
-                            <SelectItem value="3M">Last 3 Months</SelectItem>
-                            <SelectItem value="6M">Last 6 Months</SelectItem>
-                            <SelectItem value="1Y">Last Year</SelectItem>
-                            <SelectItem value="ALL">All Time</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
+                                    <span>{b.name}</span>
+                                </div>
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <Select value={dateRange} onValueChange={(val: DateRange) => setDateRange(val)}>
+                    <SelectTrigger className="flex-1 min-w-0 max-w-[140px] px-3 h-9 text-[12px] bg-secondary/20 border-white/5 rounded-xl font-medium">
+                        <SelectValue placeholder="Period" />
+                    </SelectTrigger>
+                    <SelectContent align="center">
+                        <SelectItem value="1M">Current Month</SelectItem>
+                        <SelectItem value="LM">Last Month</SelectItem>
+                        <SelectItem value="3M">Last 3 Months</SelectItem>
+                        <SelectItem value="6M">Last 6 Months</SelectItem>
+                        <SelectItem value="1Y">Last Year</SelectItem>
+                        <SelectItem value="ALL">All Time</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
 
             {/* Bucket Progress Highlight */}

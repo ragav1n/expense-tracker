@@ -198,17 +198,21 @@ export function AddExpenseView() {
     return (
         <div className="p-5 space-y-6 max-w-md mx-auto pt-4 relative min-h-full">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between relative min-h-[40px]">
                 <button
                     onClick={() => router.back()}
-                    className="p-2 rounded-full bg-secondary/30 hover:bg-secondary/50 transition-colors"
+                    className="p-2 rounded-full bg-secondary/30 hover:bg-secondary/50 transition-colors shrink-0 z-10"
                 >
                     <ChevronLeft className="w-5 h-5" />
                 </button>
-                <div className="text-center">
-                    <h2 className="text-lg font-semibold">Add Expense</h2>
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <h2 className="text-lg font-semibold truncate px-12 text-center leading-tight">Add Expense</h2>
                 </div>
-                <button onClick={handleSubmit} disabled={loading} className="text-sm font-medium text-primary hover:text-primary/80 disabled:opacity-50">
+                <button
+                    onClick={handleSubmit}
+                    disabled={loading}
+                    className="text-sm font-medium text-primary hover:text-primary/80 disabled:opacity-50 shrink-0 z-10"
+                >
                     {loading ? 'Saving...' : 'Save'}
                 </button>
             </div>

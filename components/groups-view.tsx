@@ -35,6 +35,7 @@ import { DateRange } from 'react-day-picker';
 import { format, differenceInDays } from 'date-fns';
 import { NoviraQrCode } from '@/components/ui/qr-code';
 import { QrScanner } from '@/components/ui/qr-scanner';
+import { getBucketIcon } from '@/utils/icon-utils';
 
 export function GroupsView() {
     const router = useRouter();
@@ -157,14 +158,6 @@ export function GroupsView() {
         }
     };
 
-    const getBucketIcon = (iconName?: string) => {
-        const icons: Record<string, any> = {
-            Tag, Plane, Home, Gift, Car, Utensils, ShoppingCart,
-            Heart, Gamepad2, School, Laptop, Music
-        };
-        const Icon = icons[iconName || 'Tag'] || Tag;
-        return <Icon className="w-5 h-5" />;
-    };
 
     const getTypeIcon = (type?: string) => {
         switch (type) {
@@ -217,17 +210,17 @@ export function GroupsView() {
     return (
         <div className="p-5 space-y-6 max-w-md mx-auto relative pb-24">
             {/* Header */}
-            <div className="flex items-center justify-between relative">
+            <div className="flex items-center justify-between relative min-h-[40px]">
                 <button
                     onClick={() => router.back()}
-                    className="p-2 rounded-full bg-secondary/30 hover:bg-secondary/50 transition-colors shrink-0"
+                    className="p-2 rounded-full bg-secondary/30 hover:bg-secondary/50 transition-colors shrink-0 z-10"
                 >
                     <ChevronLeft className="w-5 h-5" />
                 </button>
-                <div className="flex-1 min-w-0 px-2">
-                    <h2 className="text-lg font-semibold truncate">Groups & Friends</h2>
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <h2 className="text-lg font-semibold truncate px-12">Groups & Friends</h2>
                 </div>
-                <div className="flex gap-2 shrink-0">
+                <div className="flex gap-2 shrink-0 z-10">
                     <Dialog open={isAddFriendOpen} onOpenChange={setIsAddFriendOpen}>
                         <DialogTrigger asChild>
                             <button className="p-2 rounded-full bg-primary/20 hover:bg-primary/30 text-primary transition-colors border border-primary/20">
@@ -496,7 +489,7 @@ export function GroupsView() {
                                         <div className="space-y-2">
                                             <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-1">Name</label>
                                             <Input
-                                                placeholder={selectedType === 'trip' ? "e.g. Goa Trip 2024" : "e.g. Apartment, Utilities"}
+                                                placeholder={selectedType === 'trip' ? "e.g. Trip" : "e.g. Apartment, Utilities"}
                                                 value={newGroupName}
                                                 onChange={(e) => setNewGroupName(e.target.value)}
                                                 className="bg-secondary/20 border-white/5 h-12 rounded-2xl"
@@ -569,6 +562,18 @@ export function GroupsView() {
                 <TabsContent value="personal" className="mt-6 space-y-6">
                     {/* Active Buckets */}
                     <div className="space-y-4">
+                        <div className="flex items-center justify-between px-1">
+                            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Active Buckets</h3>
+                            <Button
+                                onClick={() => setIsAddBucketOpen(true)}
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 rounded-xl bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 gap-1.5 px-3 border border-amber-500/20"
+                            >
+                                <Plus className="w-3.5 h-3.5" />
+                                <span className="text-[10px] font-bold">New Bucket</span>
+                            </Button>
+                        </div>
                         {buckets.filter(b => !b.is_archived).length > 0 ? (
                             buckets.filter(b => !b.is_archived).map((bucket) => {
                                 const spent = bucketSpending[bucket.id] || 0;
@@ -581,7 +586,7 @@ export function GroupsView() {
                                         <CardContent className="p-4 space-y-4">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center border bg-amber-500/10 border-amber-500/20 text-amber-500">
+                                                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center border bg-amber-500/10 border-amber-500/20 text-amber-500 p-2.5">
                                                         {getBucketIcon(bucket.icon)}
                                                     </div>
                                                     <div>
@@ -674,7 +679,7 @@ export function GroupsView() {
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-sm font-bold">No active buckets</p>
-                                    <p className="text-[10px] text-muted-foreground px-8">Create a bucket to track private spending like a "Goa Trip" or "Wedding Gift".</p>
+                                    <p className="text-[10px] text-muted-foreground px-8">Create a bucket to track private spending like a "Trip" or "Wedding Gift".</p>
                                 </div>
                                 <Button
                                     onClick={() => setIsAddBucketOpen(true)}
@@ -699,7 +704,7 @@ export function GroupsView() {
                                 <Card key={bucket.id} className="rounded-3xl overflow-hidden grayscale-[0.5] opacity-60 hover:opacity-100 transition-all border-white/5 bg-card/20 group">
                                     <CardContent className="p-4 flex items-center justify-between">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-xl flex items-center justify-center border bg-secondary/10 border-white/5 text-muted-foreground">
+                                            <div className="w-10 h-10 rounded-xl flex items-center justify-center border bg-secondary/10 border-white/5 text-muted-foreground p-2">
                                                 {getBucketIcon(bucket.icon)}
                                             </div>
                                             <div>

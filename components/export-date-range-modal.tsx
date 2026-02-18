@@ -10,6 +10,7 @@ import { Download, Calendar, Tag, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBuckets } from '@/components/providers/buckets-provider';
 import { useIsMobile } from '@/components/ui/use-mobile';
+import { getBucketIcon } from '@/utils/icon-utils';
 
 interface ExportDateRangeModalProps {
     isOpen: boolean;
@@ -162,8 +163,8 @@ export function ExportDateRangeModal({
                                                 : "bg-secondary/10 border-white/5 hover:border-white/10"
                                         )}
                                     >
-                                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-lg bg-secondary/20 border border-white/5">
-                                            {bucket.icon || '🏷️'}
+                                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-lg bg-secondary/20 border border-white/5 p-1.5 text-amber-500">
+                                            {getBucketIcon(bucket.icon || 'Tag')}
                                         </div>
                                         <span className="text-[10px] font-medium truncate w-14 text-center">{bucket.name}</span>
                                     </div>

@@ -220,7 +220,10 @@ export function SettingsView() {
                 generateCSV(transactions, currency, convertAmount, formatCurrency, buckets, groups);
                 toast.success('CSV Exported successfully');
             } else {
-                generatePDF(transactions, currency, convertAmount, formatCurrency, buckets, groups, dateRange || undefined);
+                await generatePDF(transactions, currency, convertAmount, formatCurrency, buckets, groups, dateRange || undefined, {
+                    email: user?.email,
+                    avatarUrl
+                });
                 toast.success('PDF Exported successfully');
             }
             setExportModalOpen(false);
@@ -256,15 +259,17 @@ export function SettingsView() {
     return (
         <div className="p-5 space-y-6 max-w-md mx-auto relative min-h-full">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6 relative min-h-[40px]">
                 <button
                     onClick={() => router.back()}
-                    className="p-2 rounded-full bg-secondary/30 hover:bg-secondary/50 transition-colors"
+                    className="p-2 rounded-full bg-secondary/30 hover:bg-secondary/50 transition-colors shrink-0 z-10"
                 >
                     <ChevronLeft className="w-5 h-5" />
                 </button>
-                <h2 className="text-lg font-semibold">Settings</h2>
-                <div className="w-9" /> {/* Spacer to balance Back button */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <h2 className="text-lg font-semibold truncate px-12">Settings</h2>
+                </div>
+                <div className="w-9 shrink-0 z-10" />
             </div>
 
             {/* Profile Section */}
