@@ -631,7 +631,7 @@ export function GroupsView() {
                                                 <p className="text-[9px] text-muted-foreground/60 uppercase tracking-wider font-bold">Archived</p>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="flex items-center gap-1">
                                             <button
                                                 onClick={() => archiveBucket(bucket.id, false)}
                                                 className="p-2 rounded-full hover:bg-primary/20 hover:text-primary transition-colors"

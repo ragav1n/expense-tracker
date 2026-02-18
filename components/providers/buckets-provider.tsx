@@ -128,6 +128,7 @@ export function BucketsProvider({ children }: { children: React.ReactNode }) {
 
             if (error) throw error;
             toast.success('Bucket created successfully');
+            await fetchBuckets();
             return bucket.id;
         } catch (error: any) {
             toast.error(error.message || 'Failed to create bucket');
@@ -144,6 +145,7 @@ export function BucketsProvider({ children }: { children: React.ReactNode }) {
 
             if (error) throw error;
             toast.success('Bucket updated');
+            await fetchBuckets();
         } catch (error: any) {
             toast.error(error.message || 'Failed to update bucket');
         }
@@ -158,6 +160,7 @@ export function BucketsProvider({ children }: { children: React.ReactNode }) {
 
             if (error) throw error;
             toast.success('Bucket deleted');
+            await fetchBuckets();
         } catch (error: any) {
             toast.error(error.message || 'Failed to delete bucket');
         }
