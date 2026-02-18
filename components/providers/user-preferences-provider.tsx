@@ -53,6 +53,19 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
     const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({});
     const [isNavigating, setIsNavigating] = useState(false);
 
+    const processRecurringExpenses = useCallback(async (uid: string) => {
+        try {
+            const { error } = await supabase.rpc('process_recurring_transactions', {
+                user_id_input: uid
+            });
+            if (error) {
+                console.error('Error processing recurring expenses:', error);
+            }
+        } catch (error) {
+            console.error('Error calling recurring expense RPC:', error);
+        }
+    }, []);
+
     const loadPreferences = useCallback(async (uid: string) => {
         try {
             const { data, error } = await supabase
@@ -82,7 +95,10 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
         setUserId(currentUser?.id ?? null);
 
         if (currentUser) {
-            await loadPreferences(currentUser.id);
+            await Promise.all([
+                loadPreferences(currentUser.id),
+                processRecurringExpenses(currentUser.id)
+            ]);
         } else {
             // Reset preferences on logout
             setCurrencyState('USD');

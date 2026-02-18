@@ -450,7 +450,7 @@ export function DashboardView() {
                                 </button>
                                 <button
                                     onClick={() => router.push('/groups')}
-                                    className="flex-1 bg-secondary/20 text-foreground text-xs font-bold py-2.5 px-4 rounded-xl hover:bg-secondary/30 transition-colors flex items-center justify-center gap-2 border border-white/5"
+                                    className="flex-1 bg-primary text-white text-xs font-bold py-2.5 px-4 rounded-xl hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 border border-primary/20"
                                 >
                                     <Users className="w-4 h-4" />
                                     Add Friends

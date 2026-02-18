@@ -68,7 +68,7 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
                                         Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">Novira</span>
                                     </h1>
                                     <p className="text-white/50 text-xs sm:text-sm max-w-[320px] mx-auto leading-relaxed">
-                                        The ultimate cosmic Hub to manage and split your expenses with style.
+                                        The Ultimate Hub to track, manage and split your expenses with ease.
                                     </p>
                                 </div>
 

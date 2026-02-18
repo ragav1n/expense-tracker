@@ -179,7 +179,8 @@ export function AddExpenseView() {
                     metadata: {
                         is_split: isSplitEnabled,
                         friend_ids: selectedFriendIds,
-                        notes
+                        notes,
+                        bucket_id: selectedBucketId
                     }
                 });
 

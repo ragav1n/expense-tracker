@@ -236,9 +236,9 @@ export function GroupsView() {
 
                                 <Tabs defaultValue="email" className="w-full mt-2">
                                     <TabsList className="grid w-full grid-cols-3 bg-secondary/20 p-1 rounded-xl h-9">
-                                        <TabsTrigger value="email" className="rounded-lg text-xs font-medium">Email / ID</TabsTrigger>
-                                        <TabsTrigger value="scan" className="rounded-lg text-xs font-medium">Scan</TabsTrigger>
-                                        <TabsTrigger value="code" className="rounded-lg text-xs font-medium">My Code</TabsTrigger>
+                                        <TabsTrigger value="email" className="rounded-lg text-xs font-medium data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Email / ID</TabsTrigger>
+                                        <TabsTrigger value="scan" className="rounded-lg text-xs font-medium data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Scan</TabsTrigger>
+                                        <TabsTrigger value="code" className="rounded-lg text-xs font-medium data-[state=active]:bg-primary data-[state=active]:text-white transition-all">My Code</TabsTrigger>
                                     </TabsList>
 
                                     <TabsContent value="email" className="space-y-4 py-4">
@@ -253,7 +253,7 @@ export function GroupsView() {
                                         <Button
                                             onClick={handleAddFriend}
                                             disabled={isProcessing}
-                                            className="w-full h-12 rounded-2xl bg-primary hover:bg-primary/80 text-white font-bold"
+                                            className="w-full h-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold transition-colors"
                                         >
                                             {isProcessing ? 'Sending...' : 'Send Friend Request'}
                                         </Button>
@@ -1057,7 +1057,7 @@ export function GroupsView() {
                                 <p className="text-xs text-muted-foreground mb-4">Add friends by email to start splitting bills.</p>
                                 <button
                                     onClick={() => setIsAddFriendOpen(true)}
-                                    className="w-full bg-secondary/20 text-foreground text-xs font-bold py-2.5 px-4 rounded-xl hover:bg-secondary/30 transition-colors flex items-center justify-center gap-2 border border-white/5"
+                                    className="w-full bg-primary text-white text-xs font-bold py-2.5 px-4 rounded-xl hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 border border-primary/20"
                                 >
                                     <UserPlus className="w-4 h-4" />
                                     Add Friend
