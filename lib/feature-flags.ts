@@ -1,5 +1,5 @@
 export const LATEST_FEATURE_ANNOUNCEMENT = {
-    id: 'new-personal-buckets-and-updated-pdf-report-launch', // New ID to trigger the modal again
+    id: 'personal-buckets-&-updated-pdf-report-launch', // New ID to trigger the modal again
     title: 'New Updates!',
     features: [
         {
