@@ -32,6 +32,8 @@ interface UserPreferencesContextType {
     setMonthlyBudget: (budget: number) => Promise<void>;
     avatarUrl: string | null;
     setAvatarUrl: (url: string | null) => void;
+    isNavigating: boolean;
+    setIsNavigating: (isNavigating: boolean) => void;
 }
 
 const UserPreferencesContext = createContext<UserPreferencesContextType | undefined>(undefined);
@@ -49,6 +51,7 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [budgets, setBudgets] = useState<Record<string, number>>({});
     const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({});
+    const [isNavigating, setIsNavigating] = useState(false);
 
     const loadPreferences = useCallback(async (uid: string) => {
         try {
@@ -261,6 +264,8 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
         setMonthlyBudget,
         avatarUrl,
         setAvatarUrl,
+        isNavigating,
+        setIsNavigating,
     }), [
         user,
         userId,
@@ -275,6 +280,7 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
         monthlyBudget,
         setMonthlyBudget,
         avatarUrl,
+        isNavigating,
     ]);
 
     return (

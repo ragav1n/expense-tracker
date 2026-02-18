@@ -12,7 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { WaveLoader } from '@/components/ui/wave-loader';
 import { AlertBanner } from '@/components/ui/alert-banner';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { generateCSV, generatePDF } from '@/utils/export-utils';
 import { ChangePasswordDialog } from '@/components/change-password-dialog';
 import { FileTriggerButton } from '@/components/ui/file-trigger';
@@ -247,321 +247,345 @@ export function SettingsView() {
         router.push('/signin');
     };
 
-    if (loading) {
-        return (
-            <div className="h-full w-full flex flex-col items-center justify-center min-h-[80vh]">
-                <WaveLoader bars={5} message="Loading settings..." />
-            </div>
-        );
-    }
 
 
     return (
-        <div className="p-5 space-y-6 max-w-md mx-auto relative min-h-full">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6 relative min-h-[40px]">
-                <button
-                    onClick={() => router.back()}
-                    className="p-2 rounded-full bg-secondary/30 hover:bg-secondary/50 transition-colors shrink-0 z-10"
-                >
-                    <ChevronLeft className="w-5 h-5" />
-                </button>
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <h2 className="text-lg font-semibold truncate px-12">Settings</h2>
-                </div>
-                <div className="w-9 shrink-0 z-10" />
-            </div>
-
-            {/* Profile Section */}
-            <div className="space-y-4">
-                <div className="flex items-center justify-between text-sm font-semibold text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                        <User className="w-4 h-4" />
-                        <span>Profile</span>
-                    </div>
-                </div>
-
-                <div className="flex gap-4">
-                    <div className="relative group self-start">
-                        <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center text-xl font-bold shadow-lg shadow-primary/20 text-white uppercase overflow-hidden relative">
-                            {avatarUrl ? (
-                                <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                            ) : (
-                                fullName ? fullName.substring(0, 2) : userEmail.substring(0, 2)
-                            )}
-                            {uploadingAvatar && (
-                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
-                                    <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-                                </div>
-                            )}
-                        </div>
-
-                        {/* File Trigger - Pencil Icon */}
-                        <div className="absolute bottom-0 right-0 z-10 translate-x-1/4 translate-y-1/4">
-                            <FileTriggerButton
-                                onSelect={(file) => handleAvatarUpload(file)}
-                                currentAvatarUrl={avatarUrl}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="flex-1 space-y-3">
-                        <div className="space-y-1">
-                            <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Full Name</label>
-                            <Input
-                                value={fullName}
-                                onChange={(e) => setFullName(e.target.value)}
-                                className="bg-secondary/10 border-white/5 h-9"
-                                placeholder="e.g. John Doe"
-                            />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Monthly Budget</label>
-                            <Input
-                                ref={budgetInputRef}
-                                value={localBudget}
-                                onChange={(e) => setLocalBudget(e.target.value)}
-                                className="bg-secondary/10 border-white/5 h-9"
-                                placeholder="e.g. 3000"
-                                type="number"
-                            />
-                        </div>
-                        <Button
-                            onClick={updateProfile}
-                            disabled={saving}
-                            className="w-full h-8 text-xs bg-primary/20 text-primary hover:bg-primary/30 border border-primary/20"
-                        >
-                            {saving ? 'Saving...' : 'Save Changes'}
-                        </Button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Data Management */}
-            <div className="space-y-3 pt-2">
-                <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                    <Download className="w-4 h-4" />
-                    <span>Data Management</span>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                    <Button
-                        variant="outline"
-                        onClick={() => router.push('/import')}
-                        disabled={loadingExport}
-                        className="h-16 flex flex-col items-center justify-center gap-1 bg-secondary/5 border-primary/20 hover:bg-primary/10 hover:border-primary/50 transition-all group col-span-2"
-                    >
-                        <FileSpreadsheet className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
-                        <span className="text-xs font-medium">Import Bank Statement (Excel/CSV)</span>
-                    </Button>
-                    <Button
-                        variant="outline"
-                        onClick={() => handleExportClick('csv')}
-                        disabled={loadingExport}
-                        className="h-16 flex flex-col items-center justify-center gap-1 bg-secondary/5 border-primary/20 hover:bg-primary/10 hover:border-primary/50 transition-all group"
-                    >
-                        <Download className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
-                        <span className="text-xs font-medium">{loadingExport ? 'Exporting...' : 'Export CSV'}</span>
-                    </Button>
-                    <Button
-                        variant="outline"
-                        onClick={() => handleExportClick('pdf')}
-                        disabled={loadingExport}
-                        className="h-16 flex flex-col items-center justify-center gap-1 bg-secondary/5 border-primary/20 hover:bg-primary/10 hover:border-primary/50 transition-all group"
-                    >
-                        <Download className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
-                        <span className="text-xs font-medium">{loadingExport ? 'Exporting...' : 'Export PDF'}</span>
-                    </Button>
-                </div>
-                <p className="text-[10px] text-muted-foreground">Import bank statements or export your expense data.</p>
-            </div>
-
-            {/* Preferences */}
-            <div className="space-y-3 pt-2">
-                <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                    <SlidersHorizontal className="w-4 h-4" />
-                    <span>Preferences</span>
-                </div>
-
-                <div className="bg-secondary/5 rounded-xl border border-white/5 divide-y divide-white/5">
-                    <div className="flex items-center justify-between p-3">
-                        <div className="flex items-center gap-3">
-                            <Banknote className="w-4 h-4 text-muted-foreground" />
-                            <div>
-                                <p className="text-sm font-medium">Currency</p>
-                                <p className="text-[10px] text-muted-foreground">Select your preferred currency</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center bg-secondary/20 rounded-lg p-0.5">
-                            <button
-                                onClick={() => setCurrency('USD')}
-                                className={cn(
-                                    "px-3 py-1 text-xs font-medium rounded-md transition-all",
-                                    currency === 'USD' ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
-                                )}
-                            >
-                                USD
-                            </button>
-                            <button
-                                onClick={() => setCurrency('EUR')}
-                                className={cn(
-                                    "px-3 py-1 text-xs font-medium rounded-md transition-all",
-                                    currency === 'EUR' ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
-                                )}
-                            >
-                                EUR
-                            </button>
-                            <button
-                                onClick={() => setCurrency('INR')}
-                                className={cn(
-                                    "px-3 py-1 text-xs font-medium rounded-md transition-all",
-                                    currency === 'INR' ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
-                                )}
-                            >
-                                INR
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3">
-                        <div className="flex items-center gap-3">
-                            <AlertTriangle className="w-4 h-4 text-muted-foreground" />
-                            <div>
-                                <p className="text-sm font-medium">Budget Alerts</p>
-                                <p className="text-[10px] text-muted-foreground">Alert when overspending</p>
-                            </div>
-                        </div>
-                        <Switch
-                            checked={budgetAlertsEnabled}
-                            onCheckedChange={(checked) => {
-                                setBudgetAlertsEnabled(checked);
-                                if (checked) {
-                                    setShowAlert(true);
-                                    setTimeout(() => setShowAlert(false), 5000);
-                                } else {
-                                    setShowAlert(false);
-                                }
-                            }}
-                        />
-                    </div>
-                </div>
-            </div>
-
+        <div className="relative min-h-screen">
             <AnimatePresence>
-                {showAlert && (
-                    <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-[90%] max-w-md z-50">
-                        <AlertBanner
-                            variant="warning"
-                            title="Budget Alerts Enabled"
-                            description="You'll be notified when you exceed 80% of your budget."
-                            onDismiss={() => setShowAlert(false)}
-                            primaryAction={{
-                                label: "Configure",
-                                onClick: () => {
-                                    setShowAlert(false);
-                                    budgetInputRef.current?.focus();
-                                    budgetInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                },
-                            }}
-                        />
-                    </div>
+                {loading && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-background/20 backdrop-blur-[2px]"
+                        style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: 'rgba(12, 8, 30, 0.2)',
+                            backdropFilter: 'blur(2px)',
+                            zIndex: 50
+                        }}
+                    >
+                        <WaveLoader bars={5} message="Loading settings..." />
+                    </motion.div>
                 )}
             </AnimatePresence>
 
-
-            {/* Security */}
-            <div className="space-y-3 pt-2">
-                <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                    <Shield className="w-4 h-4" />
-                    <span>Security & Privacy</span>
+            <div className={cn(
+                "p-5 space-y-6 max-w-md mx-auto relative transition-all duration-300",
+                loading ? "opacity-40 blur-[1px] pointer-events-none" : "opacity-100 blur-0"
+            )}>
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6 relative min-h-[40px]">
+                    <button
+                        onClick={() => router.back()}
+                        className="p-2 rounded-full bg-secondary/30 hover:bg-secondary/50 transition-colors shrink-0 z-10"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <h2 className="text-lg font-semibold truncate px-12">Settings</h2>
+                    </div>
+                    <div className="w-9 shrink-0 z-10" />
                 </div>
 
-                <div className="bg-secondary/5 rounded-xl border border-white/5 divide-y divide-white/5">
-                    {/* Primary Email (ReadOnly) */}
-                    <div className="flex items-center justify-between p-3">
-                        <div className="flex items-center gap-3">
-                            <Lock className="w-4 h-4 text-muted-foreground" />
-                            <div>
-                                <p className="text-sm font-medium">Account Email</p>
-                                <p className="text-[10px] text-muted-foreground">{userEmail}</p>
-                            </div>
-                        </div>
-                        <div className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-white/5 text-muted-foreground border border-white/10">
-                            Primary
+                {/* Profile Section */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between text-sm font-semibold text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                            <User className="w-4 h-4" />
+                            <span>Profile</span>
                         </div>
                     </div>
 
-                    {hasPassword ? (
-                        <ChangePasswordDialog
-                            mode="change"
-                            onSuccess={getProfile}
-                            trigger={
-                                <button className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors text-left outline-none group/btn">
-                                    <div className="flex items-center gap-3">
-                                        <Lock className="w-4 h-4 text-muted-foreground group-hover/btn:text-primary transition-colors" />
-                                        <span className="text-sm font-medium">Change Password</span>
+                    <div className="flex gap-4">
+                        <div className="relative group self-start">
+                            <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center text-xl font-bold shadow-lg shadow-primary/20 text-white uppercase overflow-hidden relative">
+                                {avatarUrl ? (
+                                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                                ) : (
+                                    fullName ? fullName.substring(0, 2) : userEmail.substring(0, 2)
+                                )}
+                                {uploadingAvatar && (
+                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
+                                        <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin" />
                                     </div>
-                                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover/btn:translate-x-0.5 transition-all" />
+                                )}
+                            </div>
+
+                            {/* File Trigger - Pencil Icon */}
+                            <div className="absolute bottom-0 right-0 z-10 translate-x-1/4 translate-y-1/4">
+                                <FileTriggerButton
+                                    onSelect={(file) => handleAvatarUpload(file)}
+                                    currentAvatarUrl={avatarUrl}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex-1 space-y-3">
+                            <div className="space-y-1">
+                                <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Full Name</label>
+                                <Input
+                                    value={fullName}
+                                    onChange={(e) => setFullName(e.target.value)}
+                                    className="bg-secondary/10 border-white/5 h-9"
+                                    placeholder="e.g. John Doe"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Monthly Budget</label>
+                                <Input
+                                    ref={budgetInputRef}
+                                    value={localBudget}
+                                    onChange={(e) => setLocalBudget(e.target.value)}
+                                    className="bg-secondary/10 border-white/5 h-9"
+                                    placeholder="e.g. 3000"
+                                    type="number"
+                                />
+                            </div>
+                            <Button
+                                onClick={updateProfile}
+                                disabled={saving}
+                                className="w-full h-8 text-xs bg-primary/20 text-primary hover:bg-primary/30 border border-primary/20"
+                            >
+                                {saving ? 'Saving...' : 'Save Changes'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Data Management */}
+                <div className="space-y-3 pt-2">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                        <Download className="w-4 h-4" />
+                        <span>Data Management</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Button
+                            variant="outline"
+                            onClick={() => router.push('/import')}
+                            disabled={loadingExport}
+                            className="h-16 flex flex-col items-center justify-center gap-1 bg-secondary/5 border-primary/20 hover:bg-primary/10 hover:border-primary/50 transition-all group col-span-2"
+                        >
+                            <FileSpreadsheet className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
+                            <span className="text-xs font-medium">Import Bank Statement (Excel/CSV)</span>
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => handleExportClick('csv')}
+                            disabled={loadingExport}
+                            className="h-16 flex flex-col items-center justify-center gap-1 bg-secondary/5 border-primary/20 hover:bg-primary/10 hover:border-primary/50 transition-all group"
+                        >
+                            <Download className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
+                            <span className="text-xs font-medium">{loadingExport ? 'Exporting...' : 'Export CSV'}</span>
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => handleExportClick('pdf')}
+                            disabled={loadingExport}
+                            className="h-16 flex flex-col items-center justify-center gap-1 bg-secondary/5 border-primary/20 hover:bg-primary/10 hover:border-primary/50 transition-all group"
+                        >
+                            <Download className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
+                            <span className="text-xs font-medium">{loadingExport ? 'Exporting...' : 'Export PDF'}</span>
+                        </Button>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">Import bank statements or export your expense data.</p>
+                </div>
+
+                {/* Preferences */}
+                <div className="space-y-3 pt-2">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                        <SlidersHorizontal className="w-4 h-4" />
+                        <span>Preferences</span>
+                    </div>
+
+                    <div className="bg-secondary/5 rounded-xl border border-white/5 divide-y divide-white/5">
+                        <div className="flex items-center justify-between p-3">
+                            <div className="flex items-center gap-3">
+                                <Banknote className="w-4 h-4 text-muted-foreground" />
+                                <div>
+                                    <p className="text-sm font-medium">Currency</p>
+                                    <p className="text-[10px] text-muted-foreground">Select your preferred currency</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center bg-secondary/20 rounded-lg p-0.5">
+                                <button
+                                    onClick={() => setCurrency('USD')}
+                                    className={cn(
+                                        "px-3 py-1 text-xs font-medium rounded-md transition-all",
+                                        currency === 'USD' ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    USD
+                                </button>
+                                <button
+                                    onClick={() => setCurrency('EUR')}
+                                    className={cn(
+                                        "px-3 py-1 text-xs font-medium rounded-md transition-all",
+                                        currency === 'EUR' ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    EUR
+                                </button>
+                                <button
+                                    onClick={() => setCurrency('INR')}
+                                    className={cn(
+                                        "px-3 py-1 text-xs font-medium rounded-md transition-all",
+                                        currency === 'INR' ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    INR
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between p-3">
+                            <div className="flex items-center gap-3">
+                                <AlertTriangle className="w-4 h-4 text-muted-foreground" />
+                                <div>
+                                    <p className="text-sm font-medium">Budget Alerts</p>
+                                    <p className="text-[10px] text-muted-foreground">Alert when overspending</p>
+                                </div>
+                            </div>
+                            <Switch
+                                checked={budgetAlertsEnabled}
+                                onCheckedChange={(checked) => {
+                                    setBudgetAlertsEnabled(checked);
+                                    if (checked) {
+                                        setShowAlert(true);
+                                        setTimeout(() => setShowAlert(false), 5000);
+                                    } else {
+                                        setShowAlert(false);
+                                    }
+                                }}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <AnimatePresence>
+                    {showAlert && (
+                        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-[90%] max-w-md z-50">
+                            <AlertBanner
+                                variant="warning"
+                                title="Budget Alerts Enabled"
+                                description="You'll be notified when you exceed 80% of your budget."
+                                onDismiss={() => setShowAlert(false)}
+                                primaryAction={{
+                                    label: "Configure",
+                                    onClick: () => {
+                                        setShowAlert(false);
+                                        budgetInputRef.current?.focus();
+                                        budgetInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    },
+                                }}
+                            />
+                        </div>
+                    )}
+                </AnimatePresence>
+
+
+                {/* Security */}
+                <div className="space-y-3 pt-2">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                        <Shield className="w-4 h-4" />
+                        <span>Security & Privacy</span>
+                    </div>
+
+                    <div className="bg-secondary/5 rounded-xl border border-white/5 divide-y divide-white/5">
+                        {/* Primary Email (ReadOnly) */}
+                        <div className="flex items-center justify-between p-3">
+                            <div className="flex items-center gap-3">
+                                <Lock className="w-4 h-4 text-muted-foreground" />
+                                <div>
+                                    <p className="text-sm font-medium">Account Email</p>
+                                    <p className="text-[10px] text-muted-foreground">{userEmail}</p>
+                                </div>
+                            </div>
+                            <div className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-white/5 text-muted-foreground border border-white/10">
+                                Primary
+                            </div>
+                        </div>
+
+                        {hasPassword ? (
+                            <ChangePasswordDialog
+                                mode="change"
+                                onSuccess={getProfile}
+                                trigger={
+                                    <button className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors text-left outline-none group/btn">
+                                        <div className="flex items-center gap-3">
+                                            <Lock className="w-4 h-4 text-muted-foreground group-hover/btn:text-primary transition-colors" />
+                                            <span className="text-sm font-medium">Change Password</span>
+                                        </div>
+                                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover/btn:translate-x-0.5 transition-all" />
+                                    </button>
+                                }
+                            />
+                        ) : (
+                            <div className="flex items-center justify-between p-3 bg-white/[0.02]">
+                                <div className="flex items-center gap-3">
+                                    <ShieldCheck className="w-4 h-4 text-primary" />
+                                    <span className="text-sm font-medium text-muted-foreground">Connected via Google</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Logout */}
+                <div className="pt-2">
+                    <button
+                        onClick={handleSignOut}
+                        className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-secondary/10 hover:bg-secondary/20 text-muted-foreground hover:text-foreground transition-colors duration-200 border border-white/5"
+                    >
+                        <LogOut className="w-4 h-4" />
+                        <span className="font-medium text-sm">Log Out</span>
+                    </button>
+                </div>
+
+                {/* Danger Zone - Refined */}
+                <div className="space-y-3 pt-2">
+                    <div className="bg-secondary/5 rounded-xl border border-white/5 overflow-hidden">
+                        <DeleteAccountDialog
+                            trigger={
+                                <button className="w-full flex items-center justify-between p-3 hover:bg-destructive/5 transition-colors text-left outline-none group">
+                                    <div className="flex items-center gap-3">
+                                        <Trash2 className="w-4 h-4 text-muted-foreground group-hover:text-destructive transition-colors" />
+                                        <span className="text-sm font-medium text-muted-foreground group-hover:text-destructive transition-colors">Delete Account</span>
+                                    </div>
+                                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-destructive/50 transition-colors" />
                                 </button>
                             }
                         />
-                    ) : (
-                        <div className="flex items-center justify-between p-3 bg-white/[0.02]">
-                            <div className="flex items-center gap-3">
-                                <ShieldCheck className="w-4 h-4 text-primary" />
-                                <span className="text-sm font-medium text-muted-foreground">Connected via Google</span>
-                            </div>
-                        </div>
-                    )}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground px-1">
+                        Permanently delete your account and all associated data.
+                    </p>
                 </div>
-            </div>
 
-            {/* Logout */}
-            <div className="pt-2">
-                <button
-                    onClick={handleSignOut}
-                    className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-secondary/10 hover:bg-secondary/20 text-muted-foreground hover:text-foreground transition-colors duration-200 border border-white/5"
-                >
-                    <LogOut className="w-4 h-4" />
-                    <span className="font-medium text-sm">Log Out</span>
-                </button>
-            </div>
-
-            {/* Danger Zone - Refined */}
-            <div className="space-y-3 pt-2">
-                <div className="bg-secondary/5 rounded-xl border border-white/5 overflow-hidden">
-                    <DeleteAccountDialog
-                        trigger={
-                            <button className="w-full flex items-center justify-between p-3 hover:bg-destructive/5 transition-colors text-left outline-none group">
-                                <div className="flex items-center gap-3">
-                                    <Trash2 className="w-4 h-4 text-muted-foreground group-hover:text-destructive transition-colors" />
-                                    <span className="text-sm font-medium text-muted-foreground group-hover:text-destructive transition-colors">Delete Account</span>
-                                </div>
-                                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-destructive/50 transition-colors" />
-                            </button>
-                        }
-                    />
+                {/* Footer Info */}
+                <div className="text-center py-4 space-y-2">
+                    <p className="text-xs text-muted-foreground font-medium">Novira v2.1</p>
+                    <div className="flex justify-center items-center gap-2 text-[10px] text-muted-foreground">
+                        <Shield className="w-3 h-3" />
+                        <span>Secure & Encrypted</span>
+                    </div>
                 </div>
-                <p className="text-[10px] text-muted-foreground px-1">
-                    Permanently delete your account and all associated data.
-                </p>
-            </div>
 
-            {/* Footer Info */}
-            <div className="text-center py-4 space-y-2">
-                <p className="text-xs text-muted-foreground font-medium">Novira v2.1</p>
-                <div className="flex justify-center items-center gap-2 text-[10px] text-muted-foreground">
-                    <Shield className="w-3 h-3" />
-                    <span>Secure & Encrypted</span>
-                </div>
+                <ExportDateRangeModal
+                    isOpen={exportModalOpen}
+                    onOpenChange={setExportModalOpen}
+                    onExport={handleExportConfirm}
+                    loading={loadingExport}
+                    title={exportType === 'csv' ? 'Export CSV' : 'Export PDF'}
+                />
             </div>
-
-            <ExportDateRangeModal
-                isOpen={exportModalOpen}
-                onOpenChange={setExportModalOpen}
-                onExport={handleExportConfirm}
-                loading={loadingExport}
-                title={exportType === 'csv' ? 'Export CSV' : 'Export PDF'}
-            />
         </div>
     );
 }

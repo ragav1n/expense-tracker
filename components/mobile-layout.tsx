@@ -10,6 +10,9 @@ import { Toaster } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { useUserPreferences } from '@/components/providers/user-preferences-provider';
+import { WaveLoader } from '@/components/ui/wave-loader';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useEffect } from 'react';
 
 export function MobileLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
@@ -27,18 +30,24 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
 
     const routes = ['/', '/add', '/analytics', '/groups', null, '/search', '/settings'];
 
+    const pathname = usePathname();
+    const isAuthPage = ['/signin', '/signup', '/forgot-password', '/update-password'].includes(pathname);
+    const { isAuthenticated, isLoading, isNavigating, setIsNavigating } = useUserPreferences();
+
+    // Reset navigation loading when pathname changes
+    useEffect(() => {
+        setIsNavigating(false);
+    }, [pathname, setIsNavigating]);
+
     const handleTabChange = (index: number | null) => {
         if (index !== null) {
             const route = routes[index];
-            if (route) {
+            if (route && route !== pathname) {
+                setIsNavigating(true);
                 router.push(route);
             }
         }
     };
-
-    const pathname = usePathname();
-    const isAuthPage = ['/signin', '/signup', '/forgot-password', '/update-password'].includes(pathname);
-    const { isAuthenticated, isLoading } = useUserPreferences();
 
     const showNav = !isAuthPage && isAuthenticated;
 
@@ -68,6 +77,33 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
                     />
                 </div>
             )}
+
+            {/* Navigation Loading Overlay */}
+            <AnimatePresence>
+                {isNavigating && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center bg-background/40 backdrop-blur-md"
+                        style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: 'rgba(12, 8, 30, 0.4)',
+                            backdropFilter: 'blur(12px)',
+                            zIndex: 9999
+                        }}
+                    >
+                        <WaveLoader bars={5} message="Loading..." />
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <Toaster />
         </div>

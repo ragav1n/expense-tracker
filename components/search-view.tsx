@@ -482,50 +482,75 @@ export function SearchView() {
                 </div>
             )}
 
-            <div className="space-y-3 overflow-y-auto pr-1 -mr-1 flex-1">
-                {loading ? (
-                    <div className="h-full w-full flex flex-col items-center justify-center min-h-[80vh]">
-                        <WaveLoader bars={5} message="Loading..." />
-                    </div>
-                ) : (
-                    <div className="space-y-3">
-                        <AnimatePresence mode="popLayout">
-                            {filteredTransactions.length > 0 ? (
-                                filteredTransactions.map((tx) => (
-                                    <motion.div
-                                        key={tx.id}
-                                        layout
-                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
-                                        className="flex items-center justify-between p-3 rounded-2xl bg-card/20 border border-white/5 hover:bg-card/40 transition-colors"
-                                    >
-                                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                                            <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center border border-white/5 shrink-0">
-                                                {getIconForCategory(tx.category)}
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="font-medium text-sm truncate">{tx.description}</p>
-                                                <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
-                                                    <span className="px-1.5 py-0.5 rounded bg-primary/10 text-[10px] text-primary border border-primary/10 capitalize shrink-0">{tx.category}</span>
-                                                    <span className="shrink-0">• {tx.payment_method}</span>
-                                                    <span className="shrink-0">• {format(parseISO(tx.date), 'MMM d')}</span>
-                                                    {tx.bucket_id && buckets.find(b => b.id === tx.bucket_id) && (
-                                                        <span className="flex items-center gap-1 font-bold text-amber-500 shrink-0">
-                                                            <span>•</span>
-                                                            <div className="w-3 h-3">
-                                                                {getBucketIcon(buckets.find(b => b.id === tx.bucket_id)?.icon)}
-                                                            </div>
-                                                            <span>{buckets.find(b => b.id === tx.bucket_id)?.name}</span>
-                                                        </span>
-                                                    )}
-                                                </div>
+            <div className="relative flex-1 min-h-[400px]">
+                <AnimatePresence>
+                    {loading && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-50 flex items-center justify-center bg-background/20 backdrop-blur-[2px]"
+                            style={{
+                                position: 'fixed',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                backgroundColor: 'rgba(12, 8, 30, 0.2)',
+                                backdropFilter: 'blur(2px)',
+                                zIndex: 50
+                            }}
+                        >
+                            <WaveLoader bars={5} message="Loading transactions..." />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                <div className={cn(
+                    "space-y-3 overflow-y-auto pr-1 -mr-1 h-full transition-all duration-300",
+                    loading ? "opacity-40 blur-[1px] pointer-events-none" : "opacity-100 blur-0"
+                )}>
+                    <AnimatePresence mode="popLayout">
+                        {filteredTransactions.length > 0 ? (
+                            filteredTransactions.map((tx) => (
+                                <motion.div
+                                    key={tx.id}
+                                    layout
+                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
+                                    className="flex items-center justify-between p-3 rounded-2xl bg-card/20 border border-white/5 hover:bg-card/40 transition-colors"
+                                >
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                        <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center border border-white/5 shrink-0">
+                                            {getIconForCategory(tx.category)}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="font-medium text-sm truncate">{tx.description}</p>
+                                            <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                                                <span className="px-1.5 py-0.5 rounded bg-primary/10 text-[10px] text-primary border border-primary/10 capitalize shrink-0">{tx.category}</span>
+                                                <span className="shrink-0">• {tx.payment_method}</span>
+                                                <span className="shrink-0">• {format(parseISO(tx.date), 'MMM d')}</span>
+                                                {tx.bucket_id && buckets.find(b => b.id === tx.bucket_id) && (
+                                                    <span className="flex items-center gap-1 font-bold text-amber-500 shrink-0">
+                                                        <span>•</span>
+                                                        <div className="w-3 h-3">
+                                                            {getBucketIcon(buckets.find(b => b.id === tx.bucket_id)?.icon)}
+                                                        </div>
+                                                        <span>{buckets.find(b => b.id === tx.bucket_id)?.name}</span>
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
-                                        <span className="font-bold text-sm shrink-0 ml-2 whitespace-nowrap">-{formatCurrency(Number(tx.amount), tx.currency)}</span>
-                                    </motion.div>
-                                ))
-                            ) : (
+                                    </div>
+                                    <span className="font-bold text-sm shrink-0 ml-2 whitespace-nowrap">-{formatCurrency(Number(tx.amount), tx.currency)}</span>
+                                </motion.div>
+                            ))
+                        ) : (
+                            !loading && (
                                 <motion.div
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
@@ -533,10 +558,10 @@ export function SearchView() {
                                 >
                                     No transactions found.
                                 </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                )}
+                            )
+                        )}
+                    </AnimatePresence>
+                </div>
             </div>
 
             {/* Total Footer (Always Visible but simplified) */}

@@ -10,6 +10,7 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "
 import { supabase } from '@/lib/supabase';
 import { format, subMonths, startOfMonth, endOfMonth, isSameMonth, parseISO, subYears } from 'date-fns';
 import { WaveLoader } from '@/components/ui/wave-loader';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
     Select,
     SelectContent,
@@ -321,206 +322,230 @@ export function AnalyticsView() {
         setCategoryBreakdown(breakdownData);
     };
 
-    if (loading) {
-        return (
-            <div className="h-full w-full flex flex-col items-center justify-center min-h-[80vh]">
-                <WaveLoader bars={5} message="Loading analytics..." />
-            </div>
-        );
-    }
 
     return (
-        <div className="p-5 space-y-6 max-w-md mx-auto relative min-h-full">
-            {/* Header */}
-            {/* Header */}
-            <div className="flex items-center justify-between relative min-h-[40px]">
-                <button
-                    onClick={() => router.back()}
-                    className="p-1.5 rounded-full bg-secondary/30 hover:bg-secondary/50 transition-colors shrink-0 z-10"
-                >
-                    <ChevronLeft className="w-5 h-5" />
-                </button>
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <h2 className="text-lg font-semibold truncate text-center leading-tight">Analytics</h2>
+        <div className="relative min-h-screen">
+            <AnimatePresence>
+                {loading && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-background/20 backdrop-blur-[2px]"
+                        style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: 'rgba(12, 8, 30, 0.2)',
+                            backdropFilter: 'blur(2px)',
+                            zIndex: 50
+                        }}
+                    >
+                        <WaveLoader bars={5} message="Loading analytics..." />
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <div className={cn(
+                "p-5 space-y-6 max-w-md mx-auto relative transition-all duration-300",
+                loading ? "opacity-40 blur-[1px] pointer-events-none" : "opacity-100 blur-0"
+            )}>
+                {/* Header */}
+                {/* Header */}
+                <div className="flex items-center justify-between relative min-h-[40px]">
+                    <button
+                        onClick={() => router.back()}
+                        className="p-1.5 rounded-full bg-secondary/30 hover:bg-secondary/50 transition-colors shrink-0 z-10"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <h2 className="text-lg font-semibold truncate text-center leading-tight">Analytics</h2>
+                    </div>
+                    <div className="w-9 shrink-0 z-10" />
                 </div>
-                <div className="w-9 shrink-0 z-10" />
-            </div>
 
-            {/* Filters Row */}
-            <div className="flex items-center justify-center gap-2 px-1">
-                <Select value={selectedBucketId} onValueChange={(val) => setSelectedBucketId(val)}>
-                    <SelectTrigger className="flex-1 min-w-0 max-w-[160px] px-3 h-9 text-[12px] bg-amber-500/10 border-amber-500/20 text-amber-500 rounded-xl font-medium">
-                        <SelectValue placeholder="All Spending" />
-                    </SelectTrigger>
-                    <SelectContent align="center">
-                        <SelectItem value="all">All Spending</SelectItem>
-                        {buckets.map(b => (
-                            <SelectItem key={b.id} value={b.id}>
-                                <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 flex items-center justify-center">
-                                        {getBucketIcon(b.icon)}
+                {/* Filters Row */}
+                <div className="flex items-center justify-center gap-2 px-1">
+                    <Select value={selectedBucketId} onValueChange={(val) => setSelectedBucketId(val)}>
+                        <SelectTrigger className="flex-1 min-w-0 max-w-[160px] px-3 h-9 text-[12px] bg-amber-500/10 border-amber-500/20 text-amber-500 rounded-xl font-medium">
+                            <SelectValue placeholder="All Spending" />
+                        </SelectTrigger>
+                        <SelectContent align="center">
+                            <SelectItem value="all">All Spending</SelectItem>
+                            {buckets.map(b => (
+                                <SelectItem key={b.id} value={b.id}>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 flex items-center justify-center">
+                                            {getBucketIcon(b.icon)}
+                                        </div>
+                                        <span>{b.name}</span>
                                     </div>
-                                    <span>{b.name}</span>
-                                </div>
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                <Select value={dateRange} onValueChange={(val: DateRange) => setDateRange(val)}>
-                    <SelectTrigger className="flex-1 min-w-0 max-w-[140px] px-3 h-9 text-[12px] bg-secondary/20 border-white/5 rounded-xl font-medium">
-                        <SelectValue placeholder="Period" />
-                    </SelectTrigger>
-                    <SelectContent align="center">
-                        <SelectItem value="1M">Current Month</SelectItem>
-                        <SelectItem value="LM">Last Month</SelectItem>
-                        <SelectItem value="3M">Last 3 Months</SelectItem>
-                        <SelectItem value="6M">Last 6 Months</SelectItem>
-                        <SelectItem value="1Y">Last Year</SelectItem>
-                        <SelectItem value="ALL">All Time</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select value={dateRange} onValueChange={(val: DateRange) => setDateRange(val)}>
+                        <SelectTrigger className="flex-1 min-w-0 max-w-[140px] px-3 h-9 text-[12px] bg-secondary/20 border-white/5 rounded-xl font-medium">
+                            <SelectValue placeholder="Period" />
+                        </SelectTrigger>
+                        <SelectContent align="center">
+                            <SelectItem value="1M">Current Month</SelectItem>
+                            <SelectItem value="LM">Last Month</SelectItem>
+                            <SelectItem value="3M">Last 3 Months</SelectItem>
+                            <SelectItem value="6M">Last 6 Months</SelectItem>
+                            <SelectItem value="1Y">Last Year</SelectItem>
+                            <SelectItem value="ALL">All Time</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
 
-            {/* Bucket Progress Highlight */}
-            {selectedBucketId !== 'all' && buckets.find(b => b.id === selectedBucketId) && (
-                <Card className="bg-amber-500/10 border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.05)]">
-                    <CardContent className="p-4 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-500 border border-amber-500/20">
-                                {getBucketIcon(buckets.find(b => b.id === selectedBucketId)?.icon)}
+                {/* Bucket Progress Highlight */}
+                {selectedBucketId !== 'all' && buckets.find(b => b.id === selectedBucketId) && (
+                    <Card className="bg-amber-500/10 border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.05)]">
+                        <CardContent className="p-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-500 border border-amber-500/20">
+                                    {getBucketIcon(buckets.find(b => b.id === selectedBucketId)?.icon)}
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-bold text-amber-500">{buckets.find(b => b.id === selectedBucketId)?.name}</h4>
+                                    <p className="text-[10px] text-amber-500/60 font-bold uppercase tracking-widest">Targeted View</p>
+                                </div>
                             </div>
-                            <div>
-                                <h4 className="text-sm font-bold text-amber-500">{buckets.find(b => b.id === selectedBucketId)?.name}</h4>
-                                <p className="text-[10px] text-amber-500/60 font-bold uppercase tracking-widest">Targeted View</p>
+                            <div className="text-right">
+                                <p className="text-[10px] text-amber-500/60 font-bold uppercase tracking-widest">Budget Remaining</p>
+                                <p className="text-sm font-bold text-amber-500">
+                                    {formatCurrency(Number(buckets.find(b => b.id === selectedBucketId)?.budget || 0) - totalSpentInRange)}
+                                </p>
                             </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Monthly Spending Trend */}
+                <Card className="bg-card/50 backdrop-blur-md border-white/5">
+                    <CardContent className="p-5 space-y-4">
+                        <div className="flex justify-between items-center">
+                            <h3 className="font-semibold text-sm">Spending Trend</h3>
+                            <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{dateRange === 'ALL' ? 'All Time' : dateRange}</span>
                         </div>
-                        <div className="text-right">
-                            <p className="text-[10px] text-amber-500/60 font-bold uppercase tracking-widest">Budget Remaining</p>
-                            <p className="text-sm font-bold text-amber-500">
-                                {formatCurrency(Number(buckets.find(b => b.id === selectedBucketId)?.budget || 0) - totalSpentInRange)}
-                            </p>
+
+                        <div className="h-48 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={categoryTrendData}>
+                                    <XAxis
+                                        dataKey="month"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }}
+                                        interval={dateRange === '1M' || dateRange === 'LM' ? 3 : (dateRange === '1Y' || dateRange === 'ALL' ? 'preserveStartEnd' : 0)}
+                                        tickFormatter={(value) => {
+                                            if (dateRange === '1M' || dateRange === 'LM') {
+                                                const parts = value.split(' ');
+                                                return parts.length === 2 ? parts[1] : value;
+                                            }
+                                            return value;
+                                        }}
+                                    />
+                                    <Tooltip content={<CustomTooltip />} />
+                                    {Object.keys(CATEGORY_COLORS).map((cat) => (
+                                        <Line
+                                            key={cat}
+                                            type="monotone"
+                                            dataKey={cat}
+                                            stroke={CATEGORY_COLORS[cat]}
+                                            strokeWidth={2}
+                                            dot={false}
+                                            connectNulls
+                                        />
+                                    ))}
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <div className="flex flex-col">
+                                <span className="text-[10px] text-muted-foreground">Total in Period</span>
+                                <span className="text-lg font-bold">{formatCurrency(totalSpentInRange)}</span>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
-            )}
 
-            {/* Monthly Spending Trend */}
-            <Card className="bg-card/50 backdrop-blur-md border-white/5">
-                <CardContent className="p-5 space-y-4">
-                    <div className="flex justify-between items-center">
-                        <h3 className="font-semibold text-sm">Spending Trend</h3>
-                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{dateRange === 'ALL' ? 'All Time' : dateRange}</span>
-                    </div>
-
-                    <div className="h-48 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={categoryTrendData}>
-                                <XAxis
-                                    dataKey="month"
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }}
-                                    interval={dateRange === '1M' || dateRange === 'LM' ? 3 : (dateRange === '1Y' || dateRange === 'ALL' ? 'preserveStartEnd' : 0)}
-                                    tickFormatter={(value) => {
-                                        if (dateRange === '1M' || dateRange === 'LM') {
-                                            const parts = value.split(' ');
-                                            return parts.length === 2 ? parts[1] : value;
-                                        }
-                                        return value;
-                                    }}
-                                />
-                                <Tooltip content={<CustomTooltip />} />
-                                {Object.keys(CATEGORY_COLORS).map((cat) => (
-                                    <Line
-                                        key={cat}
-                                        type="monotone"
-                                        dataKey={cat}
-                                        stroke={CATEGORY_COLORS[cat]}
-                                        strokeWidth={2}
-                                        dot={false}
-                                        connectNulls
-                                    />
-                                ))}
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                        <div className="flex flex-col">
-                            <span className="text-[10px] text-muted-foreground">Total in Period</span>
-                            <span className="text-lg font-bold">{formatCurrency(totalSpentInRange)}</span>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Category Breakdown including Pie Chart */}
-            <div className="space-y-4">
-                <h3 className="font-semibold text-sm">Category Breakdown</h3>
-
-                {/* Pie Chart Integration */}
-                <div className="h-[250px] w-full">
-                    {categoryBreakdown.length > 0 ? (
-                        <ChartContainer
-                            config={chartConfig}
-                            className="mx-auto aspect-square max-h-[250px]"
-                        >
-                            <PieChart>
-                                <ChartTooltip
-                                    cursor={false}
-                                    content={<ChartTooltipContent hideLabel />}
-                                />
-                                <Pie
-                                    data={categoryBreakdown}
-                                    dataKey="amount"
-                                    nameKey="name"
-                                    innerRadius={60}
-                                    strokeWidth={0}
-                                    paddingAngle={5}
-                                    cornerRadius={5}
-                                >
-                                    {categoryBreakdown.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.color} />
-                                    ))}
-                                </Pie>
-                            </PieChart>
-                        </ChartContainer>
-                    ) : (
-                        <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                            No data for this period
-                        </div>
-                    )}
-                </div>
-
+                {/* Category Breakdown including Pie Chart */}
                 <div className="space-y-4">
-                    {categoryBreakdown.map((cat) => (
-                        <div key={cat.name} className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                                <span className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.fill }} />
-                                    {cat.name}
-                                </span>
-                                <span className="font-semibold">{formatCurrency(cat.amount)}</span>
-                            </div>
+                    <h3 className="font-semibold text-sm">Category Breakdown</h3>
 
-                            {/* Simple Progress Bar */}
-                            <div className="h-2 w-full bg-secondary/20 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full rounded-full transition-all duration-500"
-                                    style={{ width: `${cat.value}%`, backgroundColor: cat.fill }}
-                                />
+                    {/* Pie Chart Integration */}
+                    <div className="h-[250px] w-full">
+                        {categoryBreakdown.length > 0 ? (
+                            <ChartContainer
+                                config={chartConfig}
+                                className="mx-auto aspect-square max-h-[250px]"
+                            >
+                                <PieChart>
+                                    <ChartTooltip
+                                        cursor={false}
+                                        content={<ChartTooltipContent hideLabel />}
+                                    />
+                                    <Pie
+                                        data={categoryBreakdown}
+                                        dataKey="amount"
+                                        nameKey="name"
+                                        innerRadius={60}
+                                        strokeWidth={0}
+                                        paddingAngle={5}
+                                        cornerRadius={5}
+                                    >
+                                        {categoryBreakdown.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                        ))}
+                                    </Pie>
+                                </PieChart>
+                            </ChartContainer>
+                        ) : (
+                            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                                No data for this period
                             </div>
+                        )}
+                    </div>
 
-                            <div className="flex justify-end text-[10px] text-muted-foreground">
-                                <span>{cat.value.toFixed(1)}%</span>
+                    <div className="space-y-4">
+                        {categoryBreakdown.map((cat) => (
+                            <div key={cat.name} className="space-y-2">
+                                <div className="flex justify-between text-sm">
+                                    <span className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.fill }} />
+                                        {cat.name}
+                                    </span>
+                                    <span className="font-semibold">{formatCurrency(cat.amount)}</span>
+                                </div>
+
+                                {/* Simple Progress Bar */}
+                                <div className="h-2 w-full bg-secondary/20 rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full rounded-full transition-all duration-500"
+                                        style={{ width: `${cat.value}%`, backgroundColor: cat.fill }}
+                                    />
+                                </div>
+
+                                <div className="flex justify-end text-[10px] text-muted-foreground">
+                                    <span>{cat.value.toFixed(1)}%</span>
+                                </div>
                             </div>
-                        </div>
-                    ))}
-                    {categoryBreakdown.length === 0 && (
-                        <div className="text-center text-xs text-muted-foreground">
-                            No transactions recorded.
-                        </div>
-                    )}
+                        ))}
+                        {categoryBreakdown.length === 0 && (
+                            <div className="text-center text-xs text-muted-foreground">
+                                No transactions recorded.
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

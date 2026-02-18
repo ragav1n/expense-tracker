@@ -43,7 +43,16 @@ export function WaveLoader({
     ...props
 }: HTMLMotionProps<"div"> & WaveLoaderProps) {
     return (
-        <div className={cn(waveLoaderVariants({ messagePlacement }), className)}>
+        <div
+            className={cn(waveLoaderVariants({ messagePlacement }), className)}
+            style={{
+                display: 'flex',
+                flexDirection: (messagePlacement || 'bottom') === 'bottom' ? 'column' : (messagePlacement === 'left' ? 'row-reverse' : 'row'),
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem'
+            }}
+        >
             <div className={cn("flex gap-1 items-center justify-center")}>
                 {Array(bars)
                     .fill(undefined)
@@ -62,7 +71,14 @@ export function WaveLoader({
                         />
                     ))}
             </div>
-            {message && <div className="text-xs text-muted-foreground animate-pulse">{message}</div>}
+            {message && (
+                <div
+                    className="text-xs text-muted-foreground animate-pulse mt-4"
+                    style={{ marginTop: '1rem' }}
+                >
+                    {message}
+                </div>
+            )}
         </div>
     )
 }
