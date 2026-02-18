@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Search, SlidersHorizontal, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, Wallet, Banknote, CreditCard, CircleDollarSign, HelpCircle } from 'lucide-react';
+import { ChevronLeft, Search, SlidersHorizontal, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, Wallet, Banknote, CreditCard, CircleDollarSign, HelpCircle, Tag, Plane, Home, Gift, ShoppingCart, Stethoscope, Gamepad2, School, Laptop, Music, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { format, parseISO, isSameWeek, isSameMonth, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
 import { WaveLoader } from '@/components/ui/wave-loader';
 import { useUserPreferences } from '@/components/providers/user-preferences-provider';
+import { useBuckets } from '@/components/providers/buckets-provider';
 import {
     Sheet,
     SheetContent,
@@ -44,6 +45,7 @@ type Transaction = {
     payment_method: string;
     created_at: string;
     currency?: string;
+    bucket_id?: string;
 };
 
 const categories = [
@@ -73,12 +75,14 @@ export function SearchView() {
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const { formatCurrency, convertAmount, currency } = useUserPreferences();
+    const { buckets } = useBuckets();
 
     // Advanced Filter State
     const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
     const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
+    const [selectedBucketId, setSelectedBucketId] = useState<string | null>(null);
     const [sortBy, setSortBy] = useState<SortOption>('date-desc');
     const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
 
@@ -91,7 +95,16 @@ export function SearchView() {
 
     useEffect(() => {
         applyFilters();
-    }, [searchQuery, priceRange, selectedCategories, selectedPayments, dateRange, sortBy, transactions]);
+    }, [searchQuery, priceRange, selectedCategories, selectedPayments, dateRange, selectedBucketId, sortBy, transactions]);
+
+    const getBucketIcon = (iconName?: string) => {
+        const icons: Record<string, any> = {
+            Tag, Plane, Home, Gift, Car, Utensils, ShoppingCart,
+            Heart, Gamepad2, School, Laptop, Music
+        };
+        const Icon = icons[iconName || 'Tag'] || Tag;
+        return <Icon className="w-full h-full" />;
+    };
 
     const fetchTransactions = async () => {
         try {
@@ -149,7 +162,12 @@ export function SearchView() {
             result = result.filter(tx => isBefore(parseISO(tx.date), endOfDay(dateRange.to!)) || format(parseISO(tx.date), 'yyyy-MM-dd') === format(dateRange.to!, 'yyyy-MM-dd'));
         }
 
-        // 6. Sorting
+        // 6. Buckets
+        if (selectedBucketId) {
+            result = result.filter(tx => tx.bucket_id === selectedBucketId);
+        }
+
+        // 7. Sorting
         result.sort((a, b) => {
             if (sortBy === 'date-desc') return new Date(b.date).getTime() - new Date(a.date).getTime();
             if (sortBy === 'date-asc') return new Date(a.date).getTime() - new Date(b.date).getTime();
@@ -166,6 +184,7 @@ export function SearchView() {
         setSelectedCategories([]);
         setSelectedPayments([]);
         setDateRange({ from: undefined, to: undefined });
+        setSelectedBucketId(null);
         setSortBy('date-desc');
         setSearchQuery('');
     };
@@ -176,6 +195,7 @@ export function SearchView() {
         if (selectedCategories.length > 0) count++;
         if (selectedPayments.length > 0) count++;
         if (dateRange.from || dateRange.to) count++;
+        if (selectedBucketId) count++;
         return count;
     };
 
@@ -304,6 +324,48 @@ export function SearchView() {
                                 </Popover>
                             </div>
 
+                            {/* Buckets Filter */}
+                            {buckets.length > 0 && (
+                                <div className="space-y-3">
+                                    <Label className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Bucket (Private)</Label>
+                                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                                        <div
+                                            onClick={() => setSelectedBucketId(null)}
+                                            className={cn(
+                                                "flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all min-w-[70px] cursor-pointer",
+                                                !selectedBucketId
+                                                    ? "bg-primary/20 border-primary/50"
+                                                    : "bg-secondary/10 border-white/5 hover:border-white/10"
+                                            )}
+                                        >
+                                            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-secondary/20 border border-white/5">
+                                                <X className="w-3.5 h-3.5 text-muted-foreground" />
+                                            </div>
+                                            <span className="text-[10px] font-medium truncate w-14 text-center">All</span>
+                                        </div>
+                                        {buckets.map((bucket) => (
+                                            <div
+                                                key={bucket.id}
+                                                onClick={() => setSelectedBucketId(bucket.id)}
+                                                className={cn(
+                                                    "flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all min-w-[70px] cursor-pointer",
+                                                    selectedBucketId === bucket.id
+                                                        ? "bg-amber-500/20 border-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.1)]"
+                                                        : "bg-secondary/10 border-white/5 hover:border-white/10"
+                                                )}
+                                            >
+                                                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-secondary/20 border border-white/5">
+                                                    <div className="w-4 h-4 text-amber-500">
+                                                        {getBucketIcon(bucket.icon)}
+                                                    </div>
+                                                </div>
+                                                <span className="text-[10px] font-medium truncate w-14 text-center">{bucket.name}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Categories (Multi-select) */}
                             <div className="space-y-3">
                                 <Label className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Categories</Label>
@@ -399,6 +461,14 @@ export function SearchView() {
                             {p} <X className="w-3 h-3 cursor-pointer" onClick={() => setSelectedPayments(prev => prev.filter(m => m !== p))} />
                         </div>
                     ))}
+                    {selectedBucketId && buckets.find(b => b.id === selectedBucketId) && (
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 border border-amber-500/20 rounded-full text-[10px] text-amber-500 whitespace-nowrap">
+                            <div className="w-3 h-3">
+                                {getBucketIcon(buckets.find(b => b.id === selectedBucketId)?.icon)}
+                            </div>
+                            Bucket: {buckets.find(b => b.id === selectedBucketId)?.name} <X className="w-3 h-3 cursor-pointer" onClick={() => setSelectedBucketId(null)} />
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -428,20 +498,29 @@ export function SearchView() {
                                         exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
                                         className="flex items-center justify-between p-3 rounded-2xl bg-card/20 border border-white/5 hover:bg-card/40 transition-colors"
                                     >
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center border border-white/5">
+                                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                                            <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center border border-white/5 shrink-0">
                                                 {getIconForCategory(tx.category)}
                                             </div>
-                                            <div>
-                                                <p className="font-medium text-sm">{tx.description}</p>
-                                                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                                                    <span className="px-1.5 py-0.5 rounded bg-primary/10 text-[10px] text-primary border border-primary/10 capitalize">{tx.category}</span>
-                                                    <span>• {tx.payment_method}</span>
-                                                    <span>• {format(parseISO(tx.date), 'MMM d')}</span>
+                                            <div className="min-w-0">
+                                                <p className="font-medium text-sm truncate">{tx.description}</p>
+                                                <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                                                    <span className="px-1.5 py-0.5 rounded bg-primary/10 text-[10px] text-primary border border-primary/10 capitalize shrink-0">{tx.category}</span>
+                                                    <span className="shrink-0">• {tx.payment_method}</span>
+                                                    <span className="shrink-0">• {format(parseISO(tx.date), 'MMM d')}</span>
+                                                    {tx.bucket_id && buckets.find(b => b.id === tx.bucket_id) && (
+                                                        <span className="flex items-center gap-1 font-bold text-amber-500 shrink-0">
+                                                            <span>•</span>
+                                                            <div className="w-3 h-3">
+                                                                {getBucketIcon(buckets.find(b => b.id === tx.bucket_id)?.icon)}
+                                                            </div>
+                                                            <span>{buckets.find(b => b.id === tx.bucket_id)?.name}</span>
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
-                                        <span className="font-bold text-sm">-{formatCurrency(Number(tx.amount), tx.currency)}</span>
+                                        <span className="font-bold text-sm shrink-0 ml-2 whitespace-nowrap">-{formatCurrency(Number(tx.amount), tx.currency)}</span>
                                     </motion.div>
                                 ))
                             ) : (

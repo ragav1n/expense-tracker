@@ -6,14 +6,15 @@ import { Button } from '@/components/ui/button';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear, subYears } from 'date-fns';
 import { DateRange } from 'react-day-picker';
-import { Download, Calendar } from 'lucide-react';
-import { cn } from '@/lib/utils'; // Assuming this exists
+import { Download, Calendar, Tag, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useBuckets } from '@/components/providers/buckets-provider';
 import { useIsMobile } from '@/components/ui/use-mobile';
 
 interface ExportDateRangeModalProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
-    onExport: (range: DateRange | null) => void;
+    onExport: (range: DateRange | null, bucketId: string | null) => void;
     title?: string;
     description?: string;
     loading?: boolean;
@@ -28,8 +29,10 @@ export function ExportDateRangeModal({
     loading = false
 }: ExportDateRangeModalProps) {
     const isMobile = useIsMobile();
+    const { buckets } = useBuckets();
     const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
     const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+    const [selectedBucketId, setSelectedBucketId] = useState<string | null>(null);
 
     const handlePresetSelect = (preset: string) => {
         const now = new Date();
@@ -71,30 +74,14 @@ export function ExportDateRangeModal({
     };
 
     const handleExportClick = () => {
-        // If 'all_time' is selected (range is undefined but preset is 'all_time'), pass null
-        // If range is undefined and no preset, defaulting to null (all time) or alerting?
-        // Let's assume if nothing is selected, we export nothing or default? 
-        // User asked for "all time". If range is undefined, it might mean "all time" or "nothing selected".
-        // Let's use null for "All Time".
-
+        let range: DateRange | null = null;
         if (selectedPreset === 'all_time') {
-            onExport(null);
+            range = null;
         } else if (dateRange?.from) {
-            onExport(dateRange);
-        } else {
-            // Default to all time if nothing selected?? Or force selection?
-            // Let's force selection or default to current month?
-            // Better to default to All Time if nothing selected? Or disable button?
-            // "Select Current Month... All Time".
-            // Let's disable export if no range and not all_time.
-            if (dateRange) {
-                onExport(dateRange);
-            } else {
-                // Maybe just default to null (All Time) if user didn't pick anything?
-                // Or better, set 'all_time' as default on open?
-                onExport(null);
-            }
+            range = dateRange;
         }
+
+        onExport(range, selectedBucketId);
     };
 
     // Auto-select 'current_month' on open if nothing selected?
@@ -144,6 +131,46 @@ export function ExportDateRangeModal({
                             className="w-full"
                         />
                     </div>
+
+                    {/* Bucket Filter */}
+                    {buckets.length > 0 && (
+                        <div className="space-y-3">
+                            <label className="text-sm font-medium text-muted-foreground">Target Bucket (Optional)</label>
+                            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                                <div
+                                    onClick={() => setSelectedBucketId(null)}
+                                    className={cn(
+                                        "flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all min-w-[70px] cursor-pointer",
+                                        !selectedBucketId
+                                            ? "bg-primary/20 border-primary/50"
+                                            : "bg-secondary/10 border-white/5 hover:border-white/10"
+                                    )}
+                                >
+                                    <div className="w-8 h-8 rounded-full flex items-center justify-center bg-secondary/20 border border-white/5">
+                                        <X className="w-3.5 h-3.5 text-muted-foreground" />
+                                    </div>
+                                    <span className="text-[10px] font-medium truncate w-14 text-center">All</span>
+                                </div>
+                                {buckets.map((bucket) => (
+                                    <div
+                                        key={bucket.id}
+                                        onClick={() => setSelectedBucketId(bucket.id)}
+                                        className={cn(
+                                            "flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all min-w-[70px] cursor-pointer",
+                                            selectedBucketId === bucket.id
+                                                ? "bg-primary/20 border-primary"
+                                                : "bg-secondary/10 border-white/5 hover:border-white/10"
+                                        )}
+                                    >
+                                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-lg bg-secondary/20 border border-white/5">
+                                            {bucket.icon || '🏷️'}
+                                        </div>
+                                        <span className="text-[10px] font-medium truncate w-14 text-center">{bucket.name}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <DialogFooter>

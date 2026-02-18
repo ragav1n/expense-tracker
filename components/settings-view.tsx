@@ -181,7 +181,7 @@ export function SettingsView() {
         setExportModalOpen(true);
     };
 
-    const handleExportConfirm = async (dateRange: DateRange | null) => {
+    const handleExportConfirm = async (dateRange: DateRange | null, bucketId: string | null) => {
         setLoadingExport(true);
         try {
             if (!userId) return;
@@ -196,6 +196,9 @@ export function SettingsView() {
             }
             if (dateRange?.to) {
                 query = query.lte('date', format(dateRange.to, 'yyyy-MM-dd'));
+            }
+            if (bucketId) {
+                query = query.eq('bucket_id', bucketId);
             }
 
             const { data: transactions, error } = await query;
@@ -528,7 +531,7 @@ export function SettingsView() {
 
             {/* Footer Info */}
             <div className="text-center py-4 space-y-2">
-                <p className="text-xs text-muted-foreground font-medium">Novira v1.3</p>
+                <p className="text-xs text-muted-foreground font-medium">Novira v2.1</p>
                 <div className="flex justify-center items-center gap-2 text-[10px] text-muted-foreground">
                     <Shield className="w-3 h-3" />
                     <span>Secure & Encrypted</span>

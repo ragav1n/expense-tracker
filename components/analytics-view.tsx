@@ -18,6 +18,11 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { useUserPreferences } from '@/components/providers/user-preferences-provider';
+import { useBuckets } from '@/components/providers/buckets-provider';
+import {
+    Tag, Plane, Home, Gift, Car, Utensils, ShoppingCart,
+    Heart, Gamepad2, School, Laptop, Music
+} from 'lucide-react';
 
 // Constants for consistent coloring
 const CATEGORY_COLORS: Record<string, string> = {
@@ -87,13 +92,25 @@ export function AnalyticsView() {
     const [categoryBreakdown, setCategoryBreakdown] = useState<any[]>([]);
     const [totalSpentInRange, setTotalSpentInRange] = useState(0);
     const [dateRange, setDateRange] = useState<DateRange>('1M');
+    const [selectedBucketId, setSelectedBucketId] = useState<string | 'all'>('all');
     const { formatCurrency, currency, convertAmount, userId } = useUserPreferences();
+
+    const getBucketIcon = (iconName?: string) => {
+        const icons: Record<string, any> = {
+            Tag, Plane, Home, Gift, Car, Utensils, ShoppingCart,
+            Heart, Gamepad2, School, Laptop, Music
+        };
+        const Icon = icons[iconName || 'Tag'] || Tag;
+        return <Icon className="w-full h-full" />;
+    };
+
+    const { buckets } = useBuckets();
 
     useEffect(() => {
         if (userId) {
             fetchData();
         }
-    }, [dateRange, currency, userId]);
+    }, [dateRange, currency, userId, selectedBucketId]);
 
     const fetchData = async () => {
         setLoading(true);
@@ -111,6 +128,10 @@ export function AnalyticsView() {
                     )
                 `)
                 .order('date', { ascending: true });
+
+            if (selectedBucketId !== 'all') {
+                query = query.eq('bucket_id', selectedBucketId);
+            }
 
             // Apply Date Filter
             const now = new Date();
@@ -311,17 +332,37 @@ export function AnalyticsView() {
     return (
         <div className="p-5 space-y-6 max-w-md mx-auto relative min-h-full">
             {/* Header */}
-            <div className="flex items-center justify-between relative">
+            <div className="flex items-center gap-2">
                 <button
                     onClick={() => router.back()}
-                    className="p-2 rounded-full bg-secondary/30 hover:bg-secondary/50 transition-colors"
+                    className="p-1.5 rounded-full bg-secondary/30 hover:bg-secondary/50 transition-colors shrink-0"
                 >
                     <ChevronLeft className="w-5 h-5" />
                 </button>
-                <h2 className="text-lg font-semibold absolute left-1/2 -translate-x-1/2">Analytics</h2>
-                <div className="flex items-center gap-2">
+                <div className="flex-1 min-w-0">
+                    <h2 className="text-lg font-semibold truncate leading-tight">Analytics</h2>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                    <Select value={selectedBucketId} onValueChange={(val) => setSelectedBucketId(val)}>
+                        <SelectTrigger className="w-auto min-w-[90px] px-2 h-8 text-[12px] bg-amber-500/10 border-amber-500/20 text-amber-500 rounded-full font-normal">
+                            <SelectValue placeholder="All Spending" />
+                        </SelectTrigger>
+                        <SelectContent align="end">
+                            <SelectItem value="all">All Spending</SelectItem>
+                            {buckets.map(b => (
+                                <SelectItem key={b.id} value={b.id}>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 flex items-center justify-center">
+                                            {getBucketIcon(b.icon)}
+                                        </div>
+                                        <span>{b.name}</span>
+                                    </div>
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                     <Select value={dateRange} onValueChange={(val: DateRange) => setDateRange(val)}>
-                        <SelectTrigger className="w-[110px] h-8 text-xs bg-secondary/20 border-white/5 rounded-full">
+                        <SelectTrigger className="w-auto min-w-[100px] px-2 h-8 text-[12px] bg-secondary/20 border-white/5 rounded-full font-normal">
                             <SelectValue placeholder="Period" />
                         </SelectTrigger>
                         <SelectContent align="end">
@@ -335,6 +376,29 @@ export function AnalyticsView() {
                     </Select>
                 </div>
             </div>
+
+            {/* Bucket Progress Highlight */}
+            {selectedBucketId !== 'all' && buckets.find(b => b.id === selectedBucketId) && (
+                <Card className="bg-amber-500/10 border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.05)]">
+                    <CardContent className="p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-500 border border-amber-500/20">
+                                {getBucketIcon(buckets.find(b => b.id === selectedBucketId)?.icon)}
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-bold text-amber-500">{buckets.find(b => b.id === selectedBucketId)?.name}</h4>
+                                <p className="text-[10px] text-amber-500/60 font-bold uppercase tracking-widest">Targeted View</p>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-[10px] text-amber-500/60 font-bold uppercase tracking-widest">Budget Remaining</p>
+                            <p className="text-sm font-bold text-amber-500">
+                                {formatCurrency(Number(buckets.find(b => b.id === selectedBucketId)?.budget || 0) - totalSpentInRange)}
+                            </p>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Monthly Spending Trend */}
             <Card className="bg-card/50 backdrop-blur-md border-white/5">

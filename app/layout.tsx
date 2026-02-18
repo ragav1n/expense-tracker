@@ -5,6 +5,7 @@ import './globals.css'
 import { MobileLayout } from '@/components/mobile-layout'
 import { UserPreferencesProvider } from '@/components/providers/user-preferences-provider'
 import { GroupsProvider } from '@/components/providers/groups-provider'
+import { BucketsProvider } from '@/components/providers/buckets-provider'
 
 const geist = Geist({
   subsets: ["latin"],
@@ -50,7 +51,9 @@ export default async function RootLayout({
         <UserPreferencesProvider>
           <MobileLayout>
             <GroupsProvider>
-              {children}
+              <BucketsProvider>
+                {children}
+              </BucketsProvider>
             </GroupsProvider>
           </MobileLayout>
         </UserPreferencesProvider>

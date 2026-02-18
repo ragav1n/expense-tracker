@@ -1,8 +1,19 @@
 export const LATEST_FEATURE_ANNOUNCEMENT = {
-    id: 'google-signin-launch', // Unique ID to track "seen" status
-    title: 'New: Sign in with Google!',
-    description: 'We have just added support for Google Sign-In. You can now access your account faster and more securely. If you already have an account, you can link it by simply signing in with the same email address.',
-    buttonText: 'Got it!',
+    id: 'new-personal-buckets-launch', // New ID to trigger the modal again
+    title: 'New Updates!',
+    features: [
+        {
+            title: 'Sign in with Google!',
+            description: 'We have just added support for Google Sign-In. Access your account faster and more securely. If you already have an account, you can link it by simply signing in with the same email.',
+            icon: 'google'
+        },
+        {
+            title: 'Personal Buckets',
+            description: 'Organize your private spending with buckets. Set monthly budgets, choose unique icons, and track your progress with analytics.',
+            icon: 'bucket'
+        }
+    ],
+    buttonText: 'Awesome!',
 };
 
 export const WELCOME_FEATURES = [

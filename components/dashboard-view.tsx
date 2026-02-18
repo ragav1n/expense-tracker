@@ -4,7 +4,7 @@ import { useUserPreferences } from '@/components/providers/user-preferences-prov
 import { BudgetAlertManager } from '@/components/budget-alert-manager';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, CircleDollarSign, ArrowUpRight, ArrowDownLeft, Users, MoreVertical, Pencil, Trash2, X, History, Clock, HelpCircle } from 'lucide-react';
+import { Plus, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, CircleDollarSign, ArrowUpRight, ArrowDownLeft, Users, MoreVertical, Pencil, Trash2, X, History, Clock, HelpCircle, Tag, Plane, Home, Gift, ShoppingCart, Stethoscope, Gamepad2, School, Laptop, Music, Heart } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Pie, PieChart, Cell } from 'recharts';
@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabase';
 import { format, isSameMonth, parseISO } from 'date-fns';
 import { WaveLoader } from '@/components/ui/wave-loader';
 import { useGroups } from './providers/groups-provider';
+import { useBuckets } from './providers/buckets-provider';
 import {
     Dialog,
     DialogContent,
@@ -77,6 +78,7 @@ type Transaction = {
     exchange_rate?: number;
     base_currency?: string;
     converted_amount?: number;
+    bucket_id?: string;
     splits?: {
         user_id: string;
         amount: number;
@@ -114,6 +116,7 @@ export function DashboardView() {
     const [loading, setLoading] = useState(true);
     const { formatCurrency, currency, convertAmount, monthlyBudget, userId: providerUserId } = useUserPreferences();
     const { balances, groups, friends } = useGroups();
+    const { buckets } = useBuckets();
 
     const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
     const [isEditOpen, setIsEditOpen] = useState(false);
@@ -210,7 +213,8 @@ export function DashboardView() {
                 .update({
                     description: editingTransaction.description,
                     category: editingTransaction.category,
-                    amount: editingTransaction.amount, // Allow amount edit if user knows what they are doing (splits might get weird if we don't handle them, but let's allow safe edits first)
+                    amount: editingTransaction.amount,
+                    bucket_id: editingTransaction.bucket_id || null,
                 })
                 .eq('id', editingTransaction.id);
 
@@ -327,6 +331,15 @@ export function DashboardView() {
         color: CATEGORY_COLORS[cat] || CATEGORY_COLORS.others,
         fill: CATEGORY_COLORS[cat] || CATEGORY_COLORS.others,
     }));
+
+    const getBucketIcon = (iconName?: string) => {
+        const icons: Record<string, any> = {
+            Tag, Plane, Home, Gift, Car, Utensils, ShoppingCart,
+            Heart, Gamepad2, School, Laptop, Music
+        };
+        const Icon = icons[iconName || 'Tag'] || Tag;
+        return <Icon className="w-full h-full" />;
+    };
 
     const getIconForCategory = (category: string) => {
         switch (category.toLowerCase()) {
@@ -554,26 +567,29 @@ export function DashboardView() {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <div>
-                                                        <p className="font-medium text-sm truncate max-w-[200px]" title={tx.description}>{tx.description}</p>
-                                                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                                                            <span className="px-1.5 py-0.5 rounded bg-primary/10 text-[10px] text-primary border border-primary/10 capitalize">{tx.category}</span>
-                                                            <span className="font-medium text-[10px] text-primary/80">
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="font-medium text-sm truncate" title={tx.description}>{tx.description}</p>
+                                                        <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                                                            <span className="px-1.5 py-0.5 rounded bg-primary/10 text-[10px] text-primary border border-primary/10 capitalize shrink-0">{tx.category}</span>
+                                                            <span className="font-medium text-[10px] text-primary/80 shrink-0">
                                                                 {tx.user_id === userId ? 'You paid' : `Paid by ${tx.profile?.full_name?.split(' ')[0] || 'Unknown'}`}
                                                             </span>
-                                                            <span>• {format(new Date(tx.date), 'MMM d, yyyy')}</span>
+                                                            <span className="shrink-0">• {format(new Date(tx.date), 'MMM d, yyyy')}</span>
+                                                            {tx.bucket_id && buckets.find(b => b.id === tx.bucket_id) && (
+                                                                <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-[10px] text-amber-500 border border-amber-500/10 font-bold flex items-center gap-1 shrink-0">
+                                                                    <div className="w-2.5 h-2.5">
+                                                                        {getBucketIcon(buckets.find(b => b.id === tx.bucket_id)?.icon)}
+                                                                    </div>
+                                                                    {buckets.find(b => b.id === tx.bucket_id)?.name}
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="flex flex-col items-end">
-
+                                                <div className="flex items-center gap-2 shrink-0 ml-2">
+                                                    <div className="flex flex-col items-end shrink-0">
                                                         <span className={cn(
-                                                            "font-bold text-sm",
-                                                            // If it's income (e.g. settlement where I am creditor), it might be handled differently,
-                                                            // but currently 'amount' in DB is usually positive for expense.
-                                                            // If I am creditor in settlement, amount is negative in DB (from our RPC).
-                                                            // calculateUserShare returns 'Number(tx.amount)' which is negative (-50).
+                                                            "font-bold text-sm whitespace-nowrap",
                                                             myShare < 0 ? "text-emerald-500" : ""
                                                         )}>
                                                             {myShare < 0 ? '+' : '-'}{formatCurrency(Math.abs(myShare), tx.currency)}
@@ -647,21 +663,29 @@ export function DashboardView() {
                                             </div>
                                         )}
                                     </div>
-                                    <div>
-                                        <p className="font-medium text-sm truncate max-w-[180px]" title={tx.description}>{tx.description}</p>
-                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                            <span className="px-1.5 py-0.5 rounded bg-primary/10 text-[10px] text-primary capitalize">{tx.category}</span>
-                                            <span className="font-medium text-[10px] text-primary/80">
+                                    <div className="min-w-0 flex-1">
+                                        <p className="font-medium text-sm truncate" title={tx.description}>{tx.description}</p>
+                                        <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                                            <span className="px-1.5 py-0.5 rounded bg-primary/10 text-[10px] text-primary capitalize shrink-0">{tx.category}</span>
+                                            <span className="font-medium text-[10px] text-primary/80 shrink-0">
                                                 {tx.user_id === userId ? 'You paid' : `Paid by ${tx.profile?.full_name?.split(' ')[0] || 'Unknown'}`}
                                             </span>
-                                            <span>• {format(new Date(tx.date), 'MMM d')}</span>
+                                            <span className="shrink-0">• {format(new Date(tx.date), 'MMM d')}</span>
+                                            {tx.bucket_id && buckets.find(b => b.id === tx.bucket_id) && (
+                                                <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-[10px] text-amber-500 border border-amber-500/10 font-bold flex items-center gap-1 shrink-0">
+                                                    <div className="w-2.5 h-2.5">
+                                                        {getBucketIcon(buckets.find(b => b.id === tx.bucket_id)?.icon)}
+                                                    </div>
+                                                    {buckets.find(b => b.id === tx.bucket_id)?.name}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="flex flex-col items-end">
+                                <div className="flex items-center gap-2 shrink-0 ml-2">
+                                    <div className="flex flex-col items-end shrink-0">
                                         <span className={cn(
-                                            "font-semibold text-sm",
+                                            "font-semibold text-sm whitespace-nowrap",
                                             myShare < 0 ? "text-emerald-500" : ""
                                         )}>
                                             {myShare < 0 ? '+' : '-'}{formatCurrency(Math.abs(myShare), tx.currency)}
@@ -796,6 +820,99 @@ export function DashboardView() {
                     </DialogContent>
                 </Dialog>
             </div>
+
+            {/* Edit Transaction Dialog */}
+            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                <DialogContent className="max-w-md rounded-3xl border-white/10 bg-card/95 backdrop-blur-xl">
+                    <DialogHeader>
+                        <DialogTitle>Edit Transaction</DialogTitle>
+                        <DialogDescription>Update your transaction details.</DialogDescription>
+                    </DialogHeader>
+                    {editingTransaction && (
+                        <form onSubmit={handleUpdateTransaction} className="space-y-4 pt-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-description">Description</Label>
+                                <Input
+                                    id="edit-description"
+                                    value={editingTransaction.description}
+                                    onChange={(e) => setEditingTransaction({ ...editingTransaction, description: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-amount">Amount</Label>
+                                <Input
+                                    id="edit-amount"
+                                    type="number"
+                                    step="0.01"
+                                    value={editingTransaction.amount}
+                                    onChange={(e) => setEditingTransaction({ ...editingTransaction, amount: parseFloat(e.target.value) })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-category">Category</Label>
+                                <Select
+                                    value={editingTransaction.category}
+                                    onValueChange={(val) => setEditingTransaction({ ...editingTransaction, category: val })}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select category" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-card/95 backdrop-blur-xl border-white/10">
+                                        {Object.keys(chartConfig).map((cat) => (
+                                            <SelectItem key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            {/* Bucket Selection in Edit Mode */}
+                            <div className="space-y-2">
+                                <Label>Personal Bucket (Private)</Label>
+                                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                                    <div
+                                        onClick={() => setEditingTransaction({ ...editingTransaction, bucket_id: undefined })}
+                                        className={cn(
+                                            "flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all min-w-[70px] cursor-pointer",
+                                            !editingTransaction.bucket_id
+                                                ? "bg-secondary/30 border-white/20"
+                                                : "bg-background/20 border-white/5 hover:border-white/10"
+                                        )}
+                                    >
+                                        <div className="w-8 h-8 rounded-full flex items-center justify-center bg-secondary/20 border border-white/5">
+                                            <X className="w-3.5 h-3.5 text-muted-foreground" />
+                                        </div>
+                                        <span className="text-[9px] font-medium truncate w-14 text-center">None</span>
+                                    </div>
+                                    {buckets.filter(b => !b.is_archived).map((bucket) => (
+                                        <div
+                                            key={bucket.id}
+                                            onClick={() => setEditingTransaction({ ...editingTransaction, bucket_id: bucket.id })}
+                                            className={cn(
+                                                "flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all min-w-[70px] cursor-pointer",
+                                                editingTransaction.bucket_id === bucket.id
+                                                    ? "bg-primary/20 border-primary shadow-[0_0_15px_rgba(138,43,226,0.2)]"
+                                                    : "bg-background/20 border-white/5 hover:border-white/10"
+                                            )}
+                                        >
+                                            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-secondary/20 border border-white/5">
+                                                <div className="w-4 h-4 text-primary">
+                                                    {getBucketIcon(bucket.icon)}
+                                                </div>
+                                            </div>
+                                            <span className="text-[9px] font-medium truncate w-14 text-center">{bucket.name}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <DialogFooter className="pt-4 gap-2 sm:gap-0">
+                                <DialogClose asChild>
+                                    <Button type="button" variant="outline" className="rounded-xl">Cancel</Button>
+                                </DialogClose>
+                                <Button type="submit" className="rounded-xl bg-primary hover:bg-primary/90">Save Changes</Button>
+                            </DialogFooter>
+                        </form>
+                    )}
+                </DialogContent>
+            </Dialog>
 
             {/* Feature Modals */}
             <WelcomeModal

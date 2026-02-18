@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, CreditCard, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, Wallet, Banknote, HelpCircle, RefreshCcw, Calendar as CalendarIcon, Users, User, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, CreditCard, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, Wallet, Banknote, HelpCircle, RefreshCcw, Calendar as CalendarIcon, Users, User, CheckCircle2, X, Tag, Plane, Home, Gift, ShoppingCart, Gamepad2, School, Laptop, Music, Heart } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useUserPreferences } from '@/components/providers/user-preferences-provider';
 import { useGroups } from '@/components/providers/groups-provider';
+import { useBuckets } from '@/components/providers/buckets-provider';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 
@@ -43,6 +44,8 @@ export function AddExpenseView() {
     const { currency, userId, formatCurrency, convertAmount } = useUserPreferences();
     const [txCurrency, setTxCurrency] = useState(currency);
     const { groups, friends } = useGroups();
+    const { buckets } = useBuckets();
+    const [selectedBucketId, setSelectedBucketId] = useState<string | null>(null);
 
     useEffect(() => {
         setTxCurrency(currency);
@@ -56,6 +59,15 @@ export function AddExpenseView() {
     // Recurring State
     const [isRecurring, setIsRecurring] = useState(false);
     const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
+
+    const getBucketIcon = (iconName?: string) => {
+        const icons: Record<string, any> = {
+            Tag, Plane, Home, Gift, Car, Utensils, ShoppingCart,
+            Heart, Gamepad2, School, Laptop, Music
+        };
+        const Icon = icons[iconName || 'Tag'] || Tag;
+        return <Icon className="w-full h-full" />;
+    };
 
     const handleSubmit = async () => {
         if (!amount || parseFloat(amount) <= 0 || !description || !date) {
@@ -108,6 +120,7 @@ export function AddExpenseView() {
                 notes,
                 currency: txCurrency,
                 group_id: selectedGroupId,
+                bucket_id: selectedBucketId,
                 exchange_rate: exchangeRate,
                 base_currency: currency,
                 converted_amount: convertedAmount
@@ -255,6 +268,48 @@ export function AddExpenseView() {
                     className="w-full max-w-none"
                 />
             </div>
+
+            {/* Personal Bucket Selection */}
+            {buckets.length > 0 && (
+                <div className="space-y-2">
+                    <label className="text-sm font-medium">Personal Bucket (Private)</label>
+                    <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+                        <div
+                            onClick={() => setSelectedBucketId(null)}
+                            className={cn(
+                                "flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all min-w-[80px] cursor-pointer",
+                                selectedBucketId === null
+                                    ? "bg-secondary/30 border-white/20"
+                                    : "bg-background/20 border-white/5 hover:border-white/10"
+                            )}
+                        >
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-secondary/20 border border-white/5">
+                                <X className="w-4 h-4 text-muted-foreground" />
+                            </div>
+                            <span className="text-[10px] font-medium truncate w-16 text-center">None</span>
+                        </div>
+                        {buckets.filter(b => !b.is_archived).map((bucket) => (
+                            <div
+                                key={bucket.id}
+                                onClick={() => setSelectedBucketId(bucket.id)}
+                                className={cn(
+                                    "flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all min-w-[80px] cursor-pointer",
+                                    selectedBucketId === bucket.id
+                                        ? "bg-primary/20 border-primary shadow-[0_0_15px_rgba(138,43,226,0.2)]"
+                                        : "bg-background/20 border-white/5 hover:border-white/10"
+                                )}
+                            >
+                                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-secondary/20 border border-white/5">
+                                    <div className="w-5 h-5 text-primary">
+                                        {getBucketIcon(bucket.icon)}
+                                    </div>
+                                </div>
+                                <span className="text-[10px] font-medium truncate w-16 text-center">{bucket.name}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Date & Payment */}
             <div className="space-y-4">
