@@ -62,20 +62,29 @@ export function ExpandableTabs({
         onChange?.(null);
     });
 
+    React.useEffect(() => {
+        if (selected !== null) {
+            const timer = setTimeout(() => {
+                setSelected(null);
+            }, 5000); // Auto-collapse after 5 seconds
+            return () => clearTimeout(timer);
+        }
+    }, [selected]);
+
     const handleSelect = (index: number) => {
         setSelected(index);
         onChange?.(index);
     };
 
     const Separator = () => (
-        <div className="mx-1 h-[24px] w-[1.2px] bg-border" aria-hidden="true" />
+        <div className="mx-0.5 h-[20px] w-[1px] bg-border/50" aria-hidden="true" />
     );
 
     return (
         <div
             ref={outsideClickRef}
             className={cn(
-                "flex flex-nowrap items-center gap-2 rounded-2xl border bg-background p-1 shadow-sm overflow-x-auto no-scrollbar",
+                "flex flex-nowrap items-center gap-1 sm:gap-2 rounded-2xl border bg-background p-1 shadow-sm overflow-x-auto no-scrollbar max-w-[calc(100vw-2rem)]",
                 className
             )}
         >
@@ -95,7 +104,7 @@ export function ExpandableTabs({
                         onClick={() => handleSelect(index)}
                         transition={transition}
                         className={cn(
-                            "relative flex items-center rounded-xl px-4 py-2 text-sm font-medium transition-colors duration-300",
+                            "relative flex items-center rounded-xl px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-colors duration-300 shrink-0",
                             selected === index
                                 ? cn("bg-muted", activeColor)
                                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
