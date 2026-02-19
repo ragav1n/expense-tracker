@@ -7,7 +7,7 @@ export async function proxy(request: NextRequest) {
 
     const csp = [
         "default-src 'self'",
-        `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval' blob: https://unpkg.com https://cdn.jsdelivr.net ${isDev ? "'unsafe-eval'" : ''}`,
+        `script-src 'self' 'nonce-${nonce}' 'wasm-unsafe-eval' blob: https://unpkg.com https://cdn.jsdelivr.net ${isDev ? "'unsafe-eval'" : ''}`,
         `style-src 'self' 'unsafe-inline'`,
         "img-src 'self' blob: data: https://*.supabase.co",
         "media-src 'self' blob: data:",

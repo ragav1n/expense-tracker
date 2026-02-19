@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { headers } from 'next/headers'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import { MobileLayout } from '@/components/mobile-layout'
@@ -49,11 +50,13 @@ export const viewport = {
   userScalable: false,
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const nonce = (await headers()).get('x-nonce') || '';
+
   return (
     <html lang="en">
       <body suppressHydrationWarning className={`${geist.variable} ${geistMono.variable} font-sans antialiased`}>
@@ -68,6 +71,8 @@ export default function RootLayout({
         </UserPreferencesProvider>
         <Analytics />
         <script
+          nonce={nonce}
+          suppressHydrationWarning={true}
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {
