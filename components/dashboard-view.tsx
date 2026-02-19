@@ -113,10 +113,9 @@ export function DashboardView() {
     const [userName, setUserName] = useState<string>('User');
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
-    const [userId, setUserId] = useState<string | null>(null);
 
     const [loading, setLoading] = useState(true);
-    const { formatCurrency, currency, convertAmount, monthlyBudget, userId: providerUserId } = useUserPreferences();
+    const { formatCurrency, currency, convertAmount, monthlyBudget, userId } = useUserPreferences();
     const { balances, groups, friends } = useGroups();
     const { buckets } = useBuckets();
 
@@ -131,7 +130,7 @@ export function DashboardView() {
     const [activeModal, setActiveModal] = useState<'welcome' | 'announcement' | null>(null);
 
     useEffect(() => {
-        if (!providerUserId) return;
+        if (!userId) return;
 
         const channel = supabase
             .channel('db-changes')
@@ -143,7 +142,7 @@ export function DashboardView() {
                     table: 'transactions',
                 },
                 () => {
-                    loadTransactions(providerUserId);
+                    loadTransactions(userId);
                 }
             )
             .subscribe();
@@ -151,23 +150,19 @@ export function DashboardView() {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [providerUserId]);
+    }, [userId]);
 
-    // Sync provider userId and handle modal sequencing
+    // Handle modal sequencing and initial data load
     useEffect(() => {
-        if (providerUserId) {
-            setUserId(providerUserId);
-
+        if (userId) {
             // Modal Sequencing Logic (Per-User)
-            const hasSeenWelcome = localStorage.getItem(`welcome_seen_${providerUserId}`);
-            const lastSeenFeatureId = localStorage.getItem(`last_seen_feature_id_${providerUserId}`) || localStorage.getItem('last_seen_feature_id');
+            const hasSeenWelcome = localStorage.getItem(`welcome_seen_${userId}`);
+            const lastSeenFeatureId = localStorage.getItem(`last_seen_feature_id_${userId}`) || localStorage.getItem('last_seen_feature_id');
             const hasNewAnnouncement = lastSeenFeatureId !== LATEST_FEATURE_ANNOUNCEMENT.id;
 
             if (!hasSeenWelcome) {
-                // New User (or newly recreated account): Show Welcome
                 setTimeout(() => setActiveModal('welcome'), 1500);
             } else if (hasNewAnnouncement) {
-                // Returning User with new update
                 setTimeout(() => setActiveModal('announcement'), 1500);
             }
 
@@ -177,14 +172,14 @@ export function DashboardView() {
                     const { data: profile } = await supabase
                         .from('profiles')
                         .select('full_name, avatar_url')
-                        .eq('id', providerUserId)
+                        .eq('id', userId)
                         .single();
 
                     if (profile) {
                         setUserName(profile.full_name || 'User');
                         setAvatarUrl(profile.avatar_url);
                     }
-                    await loadTransactions(providerUserId);
+                    await loadTransactions(userId);
                 } catch (error) {
                     console.error("Error fetching data:", error);
                 } finally {
@@ -195,7 +190,7 @@ export function DashboardView() {
         } else if (!loading) {
             setLoading(false);
         }
-    }, [providerUserId, loading]);
+    }, [userId, loading]);
 
     const loadTransactions = async (currentUserId: string) => {
         try {
@@ -385,8 +380,6 @@ export function DashboardView() {
     const displayTransactions = transactions.filter(tx => {
         if (tx.user_id === userId) return true; // I paid or created the settlement
         if (tx.splits && tx.splits.some(s => s.user_id === userId)) return true; // I'm in splits
-        // If it's a settlement transaction created by someone else for me
-        if (tx.is_settlement && tx.user_id === userId) return true; // Already covered by tx.user_id === userId
         return false;
     });
 
@@ -399,19 +392,6 @@ export function DashboardView() {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-50 flex items-center justify-center bg-background/20 backdrop-blur-[2px]"
-                        style={{
-                            position: 'fixed',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            backgroundColor: 'rgba(12, 8, 30, 0.2)',
-                            backdropFilter: 'blur(2px)',
-                            zIndex: 50
-                        }}
                     >
                         <WaveLoader bars={5} message="Loading dashboard..." />
                     </motion.div>
@@ -509,7 +489,7 @@ export function DashboardView() {
                             <Progress value={progress} className="h-2 bg-black/30" indicatorClassName="bg-white" />
                             <div className="flex justify-between text-[10px] text-white/60">
                                 <span>{progress.toFixed(1)}% used</span>
-                                <span>{new Date().getDate()}th of Month</span>
+                                <span>{(() => { const d = new Date().getDate(); const s = ['th', 'st', 'nd', 'rd']; const v = d % 100; return d + (s[(v - 20) % 10] || s[v] || s[0]); })()} of Month</span>
                             </div>
                         </div>
                     </div>
@@ -629,14 +609,16 @@ export function DashboardView() {
 
                                                             {(tx.bucket_id || tx.is_recurring) && (
                                                                 <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                                                                    {tx.bucket_id && buckets.find(b => b.id === tx.bucket_id) && (
-                                                                        <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-[10px] text-amber-500 border border-amber-500/10 font-bold flex items-center gap-1 shrink-0">
-                                                                            <div className="w-2.5 h-2.5">
-                                                                                {getBucketIcon(buckets.find(b => b.id === tx.bucket_id)?.icon)}
-                                                                            </div>
-                                                                            {buckets.find(b => b.id === tx.bucket_id)?.name}
-                                                                        </span>
-                                                                    )}
+                                                                    {(() => {
+                                                                        const txBucket = buckets.find(b => b.id === tx.bucket_id); return tx.bucket_id && txBucket ? (
+                                                                            <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-[10px] text-amber-500 border border-amber-500/10 font-bold flex items-center gap-1 shrink-0">
+                                                                                <div className="w-2.5 h-2.5">
+                                                                                    {getBucketIcon(txBucket.icon)}
+                                                                                </div>
+                                                                                {txBucket.name}
+                                                                            </span>
+                                                                        ) : null;
+                                                                    })()}
                                                                     {tx.is_recurring && (
                                                                         <span className="px-1.5 py-0.5 rounded bg-sky-500/10 text-[10px] text-sky-500 border border-sky-500/10 font-bold flex items-center gap-1 shrink-0">
                                                                             <RefreshCcw className="w-2.5 h-2.5" />
@@ -735,14 +717,16 @@ export function DashboardView() {
                                             </div>
                                             {(tx.bucket_id || tx.is_recurring) && (
                                                 <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                                                    {tx.bucket_id && buckets.find(b => b.id === tx.bucket_id) && (
-                                                        <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-[10px] text-amber-500 border border-amber-500/10 font-bold flex items-center gap-1 shrink-0">
-                                                            <div className="w-2.5 h-2.5">
-                                                                {getBucketIcon(buckets.find(b => b.id === tx.bucket_id)?.icon)}
-                                                            </div>
-                                                            {buckets.find(b => b.id === tx.bucket_id)?.name}
-                                                        </span>
-                                                    )}
+                                                    {(() => {
+                                                        const txBucket = buckets.find(b => b.id === tx.bucket_id); return tx.bucket_id && txBucket ? (
+                                                            <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-[10px] text-amber-500 border border-amber-500/10 font-bold flex items-center gap-1 shrink-0">
+                                                                <div className="w-2.5 h-2.5">
+                                                                    {getBucketIcon(txBucket.icon)}
+                                                                </div>
+                                                                {txBucket.name}
+                                                            </span>
+                                                        ) : null;
+                                                    })()}
                                                     {tx.is_recurring && (
                                                         <span className="px-1.5 py-0.5 rounded bg-sky-500/10 text-[10px] text-sky-500 border border-sky-500/10 font-bold flex items-center gap-1 shrink-0">
                                                             <RefreshCcw className="w-2.5 h-2.5" />

@@ -337,7 +337,7 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
     // Actually, for helper methods called by UI, we can use `userId` from context.
     // The previous implementation used getSession inside methods. Use userId from context instead.
 
-    const createGroup = async (name: string, type: 'home' | 'trip' | 'couple' | 'other' = 'other', startDate?: Date, endDate?: Date) => {
+    const createGroup = useCallback(async (name: string, type: 'home' | 'trip' | 'couple' | 'other' = 'other', startDate?: Date, endDate?: Date) => {
         if (!userId) throw new Error('Not authenticated');
 
         const { data: group, error } = await supabase
@@ -363,11 +363,11 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
 
         refreshData();
         return group.id;
-    };
+    }, [userId, refreshData]);
 
     // ... existing addFriendByEmail logic ...
 
-    const addFriendByEmail = async (email: string) => {
+    const addFriendByEmail = useCallback(async (email: string) => {
         if (!userId) throw new Error('Not authenticated');
 
         const { data: friendProfileData, error: searchError } = await supabase
@@ -401,9 +401,9 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
 
         refreshData();
         return true;
-    };
+    }, [userId, refreshData]);
 
-    const addFriendById = async (friendId: string) => {
+    const addFriendById = useCallback(async (friendId: string) => {
         if (!userId) throw new Error('Not authenticated');
 
         if (friendId === userId) {
@@ -415,7 +415,6 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
             .rpc('get_profile_by_id', { user_id_input: friendId })
             .single();
 
-        // RPC returns the object directly if single() is used, but type assertion is helpful
         const friendProfile = friendProfileData as { id: string, full_name: string } | null;
 
         if (searchError || !friendProfile) {
@@ -439,9 +438,9 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
 
         refreshData();
         return true;
-    };
+    }, [userId, refreshData]);
 
-    const acceptFriendRequest = async (requestId: string) => {
+    const acceptFriendRequest = useCallback(async (requestId: string) => {
         const { error } = await supabase
             .from('friendships')
             .update({ status: 'accepted' })
@@ -449,9 +448,9 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
 
         if (error) throw error;
         refreshData();
-    };
+    }, [refreshData]);
 
-    const declineFriendRequest = async (requestId: string) => {
+    const declineFriendRequest = useCallback(async (requestId: string) => {
         const { error } = await supabase
             .from('friendships')
             .delete()
@@ -459,9 +458,9 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
 
         if (error) throw error;
         refreshData();
-    };
+    }, [refreshData]);
 
-    const leaveGroup = async (groupId: string) => {
+    const leaveGroup = useCallback(async (groupId: string) => {
         if (!userId) throw new Error('Not authenticated');
 
         const { error } = await supabase
@@ -472,9 +471,9 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
 
         if (error) throw error;
         refreshData();
-    };
+    }, [userId, refreshData]);
 
-    const removeFriend = async (friendshipId: string) => {
+    const removeFriend = useCallback(async (friendshipId: string) => {
         const { error } = await supabase
             .from('friendships')
             .delete()
@@ -482,24 +481,19 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
 
         if (error) throw error;
         refreshData();
-    };
+    }, [refreshData]);
 
-    const addMemberToGroup = async (groupId: string, memberId: string) => {
+    const addMemberToGroup = useCallback(async (groupId: string, memberId: string) => {
         const { error } = await supabase
             .from('group_members')
             .insert({ group_id: groupId, user_id: memberId });
         if (error) throw error;
         refreshData();
         return true;
-    };
+    }, [refreshData]);
 
-    const settleSplit = async (splitId: string) => {
+    const settleSplit = useCallback(async (splitId: string) => {
         if (!userId) throw new Error('Not authenticated');
-        // RPC uses auth.uid() usually on server side, but here we call it.
-        // Wait, settle_split RPC likely uses `auth.uid()`? 
-        // If it relies on session being present in the connection, we strictly need a valid session.
-        // supabase-js client handles passing the token automatically if session exists.
-        // `UserPreferencesProvider` ensures we have a session (via its internal logic).
 
         const { error } = await supabase.rpc('settle_split', { split_id: splitId });
 
@@ -507,7 +501,7 @@ export function GroupsProvider({ children }: { children: React.ReactNode }) {
 
         refreshData();
         return true;
-    };
+    }, [userId, refreshData]);
 
     const contextValue = useMemo(() => ({
         groups, friends, friendRequests, balances, pendingSplits, loading,

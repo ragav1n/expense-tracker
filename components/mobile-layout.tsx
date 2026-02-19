@@ -4,10 +4,8 @@ import React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Home, Plus, BarChart2, Search, Settings, Users } from 'lucide-react';
 // Use the new components from ui folder
-import { FallingPattern } from '@/components/ui/falling-pattern';
 import { ExpandableTabs } from '@/components/ui/expandable-tabs';
 import { Toaster } from 'sonner';
-import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { useUserPreferences } from '@/components/providers/user-preferences-provider';
 import { WaveLoader } from '@/components/ui/wave-loader';
@@ -85,20 +83,7 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex items-center justify-center bg-background/40 backdrop-blur-md"
-                        style={{
-                            position: 'fixed',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            backgroundColor: 'rgba(12, 8, 30, 0.4)',
-                            backdropFilter: 'blur(12px)',
-                            zIndex: 9999
-                        }}
+                        className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/40 backdrop-blur-md"
                     >
                         <WaveLoader bars={5} message="Loading..." />
                     </motion.div>

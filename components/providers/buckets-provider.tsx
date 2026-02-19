@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useUserPreferences } from './user-preferences-provider';
 import { toast } from 'sonner';
@@ -172,17 +172,19 @@ export function BucketsProvider({ children }: { children: React.ReactNode }) {
         await updateBucket(id, { is_archived: archive });
     };
 
+    const contextValue = useMemo(() => ({
+        buckets,
+        loading,
+        createBucket,
+        updateBucket,
+        deleteBucket,
+        refreshBuckets: fetchBuckets,
+        archiveBucket,
+        bucketSpending
+    }), [buckets, loading, createBucket, updateBucket, deleteBucket, fetchBuckets, archiveBucket, bucketSpending]);
+
     return (
-        <BucketsContext.Provider value={{
-            buckets,
-            loading,
-            createBucket,
-            updateBucket,
-            deleteBucket,
-            refreshBuckets: fetchBuckets,
-            archiveBucket,
-            bucketSpending
-        }}>
+        <BucketsContext.Provider value={contextValue}>
             {children}
         </BucketsContext.Provider>
     );

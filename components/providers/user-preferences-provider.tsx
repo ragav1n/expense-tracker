@@ -108,7 +108,7 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
             setExchangeRates({});
             setAvatarUrl(null);
         }
-    }, [loadPreferences]);
+    }, [loadPreferences, processRecurringExpenses]);
 
     // Initialize Auth and Listen for Changes
     useEffect(() => {
@@ -116,9 +116,10 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
 
         const initializeAuth = async () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
+                const { data: { user } } = await supabase.auth.getUser();
                 if (mounted) {
-                    handleSession(session);
+                    // Construct a minimal session-like object for handleSession
+                    handleSession(user ? { user } as any : null);
                 }
             } catch (error) {
                 console.error('Auth initialization error:', error);
@@ -133,9 +134,9 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
         // Checks when the user returns to the tab or opens it.
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') {
-                supabase.auth.getSession().then(({ data: { session } }) => {
-                    if (session?.user?.id) {
-                        processRecurringExpenses(session.user.id);
+                supabase.auth.getUser().then(({ data: { user } }) => {
+                    if (user?.id) {
+                        processRecurringExpenses(user.id);
                     }
                 });
             }
@@ -155,7 +156,7 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
             subscription.unsubscribe();
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, []);
+    }, [handleSession, processRecurringExpenses]);
 
     // Fetch Exchange Rates when currency changes
     useEffect(() => {

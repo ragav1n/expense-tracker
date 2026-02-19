@@ -29,13 +29,11 @@ export async function updateSession(request: NextRequest) {
         }
     )
 
-    // refresh session if expired - required for Server Components
-    // https://supabase.com/docs/guides/auth/auth-helpers/nextjs#managing-session-with-middleware
+    // Validate user via getUser() which verifies the JWT against Supabase's auth server
+    // getSession() only reads from cookies and is NOT guaranteed to be authentic
     const {
-        data: { session },
-    } = await supabase.auth.getSession()
-
-    const user = session?.user
+        data: { user },
+    } = await supabase.auth.getUser()
 
     if (
         !user &&

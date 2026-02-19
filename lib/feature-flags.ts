@@ -28,7 +28,7 @@ export const WELCOME_FEATURES = [
         icon: 'zap'
     },
     {
-        title: 'Smart bill Splitting',
+        title: 'Smart Bill Splitting',
         description: 'Divide costs among friends or groups with flexible splitting rules.',
         icon: 'users'
     },
