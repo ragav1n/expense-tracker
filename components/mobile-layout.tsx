@@ -1,20 +1,90 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Home, Plus, BarChart2, Search, Settings, Users } from 'lucide-react';
-// Use the new components from ui folder
 import { ExpandableTabs } from '@/components/ui/expandable-tabs';
 import { Toaster } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useUserPreferences } from '@/components/providers/user-preferences-provider';
 import { WaveLoader } from '@/components/ui/wave-loader';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect } from 'react';
+import { useIsNative } from '@/hooks/use-native';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { App } from '@capacitor/app';
 
 export function MobileLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
+    const isNative = useIsNative();
 
+    // Configure the native status bar to overlay (transparent)
+    useEffect(() => {
+        if (!isNative) return;
+        import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
+            StatusBar.setStyle({ style: Style.Dark });
+            StatusBar.setOverlaysWebView({ overlay: true });
+        }).catch(() => { });
+
+        // Handle Deep Linking
+        const setupDeepLinks = async () => {
+            // 1. Handle URL events when the app is already open
+            App.addListener('appUrlOpen', (data) => {
+                console.log('[DeepLink] Received URL (open):', data.url);
+                let path = '';
+                if (data.url.includes('novira://')) {
+                    path = '/' + data.url.replace('novira://', '').replace(/^\//, '');
+                } else {
+                    try {
+                        const url = new URL(data.url);
+                        path = url.pathname + url.search;
+                    } catch (e) {
+                        console.error('[DeepLink] Failed to parse URL:', data.url, e);
+                    }
+                }
+
+                console.log('[DeepLink] Calculated path:', path);
+                if (path) {
+                    setTimeout(() => {
+                        console.log('[DeepLink] Navigating to:', path);
+                        router.push(path);
+                    }, 100);
+                }
+            });
+
+            // 2. Handle the URL that launched the app (cold start)
+            const launchUrl = await App.getLaunchUrl();
+            console.log('[DeepLink] Launch URL check:', launchUrl);
+
+            if (launchUrl && launchUrl.url) {
+                const url = launchUrl.url;
+                console.log('[DeepLink] Received URL (launch):', url);
+                let path = '';
+                if (url.includes('novira://')) {
+                    path = '/' + url.replace('novira://', '').replace(/^\//, '');
+                } else {
+                    try {
+                        const parsed = new URL(url);
+                        path = parsed.pathname + parsed.search;
+                    } catch (e) { }
+                }
+
+                console.log('[DeepLink] Calculated path (launch):', path);
+                // Navigate if it's not the default root (unless explicit)
+                if (path && path !== '/') {
+                    setTimeout(() => {
+                        console.log('[DeepLink] Navigating (launch) to:', path);
+                        router.push(path);
+                    }, 500); // Slightly more delay for cold starts
+                }
+            }
+        };
+
+        setupDeepLinks();
+
+        return () => {
+            App.removeAllListeners();
+        };
+    }, [isNative, router]);
 
     const tabs = [
         { title: "Home", icon: Home },
@@ -37,8 +107,13 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
         setIsNavigating(false);
     }, [pathname, setIsNavigating]);
 
-    const handleTabChange = (index: number | null) => {
+    const handleTabChange = async (index: number | null) => {
         if (index !== null) {
+            // Trigger haptic feedback on tap
+            if (isNative) {
+                Haptics.impact({ style: ImpactStyle.Light }).catch(() => { });
+            }
+
             const route = routes[index];
             if (route && route !== pathname) {
                 setIsNavigating(true);
@@ -54,7 +129,10 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <div className="min-h-screen w-full bg-background text-foreground relative overflow-hidden font-sans select-none flex flex-col">
+        <div className={cn(
+            "min-h-screen w-full bg-background text-foreground relative overflow-hidden font-sans select-none flex flex-col",
+            isNative && "pt-[env(safe-area-inset-top)]"
+        )}>
 
             {/* Main Content Area */}
             <main className={cn(
@@ -66,7 +144,10 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
 
             {/* Bottom Navigation */}
             {showNav && (
-                <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center px-4">
+                <div className={cn(
+                    "fixed bottom-6 left-0 right-0 z-50 flex justify-center px-4",
+                    isNative && "bottom-[calc(1.5rem+env(safe-area-inset-bottom))]"
+                )}>
                     <ExpandableTabs
                         tabs={tabs}
                         className="bg-background/80 backdrop-blur-xl border-white/10 shadow-2xl shadow-primary/20"

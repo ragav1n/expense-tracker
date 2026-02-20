@@ -32,4 +32,12 @@ ts-debug.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-supabase/email_templates
+# supabase
+/supabase/email_templates
+
+# capacitor
+/android/
+/ios/
+/electron/
+node_modules/
+

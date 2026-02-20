@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, CreditCard, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, Wallet, Banknote, HelpCircle, RefreshCcw, Calendar as CalendarIcon, Users, User, CheckCircle2, X, Tag, Plane, Home, Gift, ShoppingCart, Gamepad2, School, Laptop, Music, Heart, Smartphone } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useIsNative } from '@/hooks/use-native';
+import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -34,6 +36,7 @@ const dropdownCategories: Category[] = [
 
 export function AddExpenseView() {
     const router = useRouter();
+    const isNative = useIsNative();
     const [selectedCategory, setSelectedCategory] = useState('food');
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
@@ -218,9 +221,15 @@ export function AddExpenseView() {
                 if (recurringError) throw recurringError;
             }
 
+            if (isNative) {
+                Haptics.notification({ type: NotificationType.Success }).catch(() => { });
+            }
             toast.success('Expense added successfully!');
             router.push('/');
         } catch (error: any) {
+            if (isNative) {
+                Haptics.notification({ type: NotificationType.Error }).catch(() => { });
+            }
             toast.error('Failed to add expense: ' + error.message);
         } finally {
             setLoading(false);
@@ -232,7 +241,10 @@ export function AddExpenseView() {
             {/* Header */}
             <div className="flex items-center justify-between relative min-h-[40px]">
                 <button
-                    onClick={() => router.back()}
+                    onClick={() => {
+                        if (isNative) Haptics.impact({ style: ImpactStyle.Light }).catch(() => { });
+                        router.back();
+                    }}
                     className="p-2 rounded-full bg-secondary/30 hover:bg-secondary/50 transition-colors shrink-0 z-10"
                 >
                     <ChevronLeft className="w-5 h-5" />
@@ -241,7 +253,10 @@ export function AddExpenseView() {
                     <h2 className="text-lg font-semibold truncate px-12 text-center leading-tight">Add Expense</h2>
                 </div>
                 <button
-                    onClick={handleSubmit}
+                    onClick={() => {
+                        if (isNative) Haptics.impact({ style: ImpactStyle.Medium }).catch(() => { });
+                        handleSubmit();
+                    }}
                     disabled={loading}
                     className="text-sm font-medium text-primary hover:text-primary/80 disabled:opacity-50 shrink-0 z-10"
                 >
