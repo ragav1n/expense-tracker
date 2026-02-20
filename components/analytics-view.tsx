@@ -542,7 +542,7 @@ export function AnalyticsView() {
 
                 {/* Category Breakdown including Pie Chart */}
                 <div className="space-y-4">
-                    <h3 className="font-semibold text-sm">Category Breakdown</h3>
+                    <h3 className="font-semibold text-sm">Spending by Category</h3>
 
                     {/* Pie Chart Integration */}
                     <div className="h-[250px] w-full">
@@ -612,7 +612,7 @@ export function AnalyticsView() {
 
                 {/* Payment Methods Breakdown */}
                 <div className="space-y-4 pt-4 border-t border-white/5">
-                    <h3 className="font-semibold text-sm text-amber-500">Payment Methods Breakdown</h3>
+                    <h3 className="font-semibold text-sm text-foreground">Spending by Payment Method</h3>
 
                     <div className="h-[250px] w-full">
                         {paymentBreakdown.length > 0 ? (
@@ -647,7 +647,10 @@ export function AnalyticsView() {
                         )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className={cn(
+                        "grid gap-4",
+                        paymentBreakdown.length === 1 ? "grid-cols-1" : "grid-cols-2"
+                    )}>
                         {paymentBreakdown.map((pay) => (
                             <div key={pay.name} className="flex flex-col p-4 rounded-3xl bg-secondary/5 border border-white/5 hover:bg-secondary/10 transition-colors group">
                                 <span className="flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
