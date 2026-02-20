@@ -1,11 +1,11 @@
 export const LATEST_FEATURE_ANNOUNCEMENT = {
-    id: 'recurring-expenses-&-payment-analytics-launch', // New ID to trigger the modal again
+    id: 'latest-recurring-expenses-&-payment-analytics', // New ID to trigger the modal again
     title: 'New Updates!',
     features: [
         {
             title: 'Recurring Expenses',
             description: 'Automate your finances! Set up recurring transactions and manage them easily from your settings. We even check for duplicates automatically.',
-            icon: 'zap'
+            icon: 'recurring'
         },
         {
             title: 'Payment Analytics',

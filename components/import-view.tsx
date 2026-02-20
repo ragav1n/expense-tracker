@@ -7,7 +7,7 @@ import Papa from 'papaparse';
 import ExcelJS from 'exceljs';
 import { parse, isValid, format } from 'date-fns';
 import { Upload, ChevronRight, Check, AlertCircle, X, ArrowLeft, FileSpreadsheet, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/utils/haptics';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';

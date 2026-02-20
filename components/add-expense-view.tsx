@@ -14,7 +14,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TimePicker } from "@/components/ui/datetime-picker";
 import { supabase } from '@/lib/supabase';
-import { toast } from 'sonner';
+import { toast } from '@/utils/haptics';
 import { useUserPreferences } from '@/components/providers/user-preferences-provider';
 import { useGroups } from '@/components/providers/groups-provider';
 import { useBuckets } from '@/components/providers/buckets-provider';

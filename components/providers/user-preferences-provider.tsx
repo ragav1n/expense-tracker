@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
-import { toast } from 'sonner';
+import { toast } from '@/utils/haptics';
 import { User, Session } from '@supabase/supabase-js';
 
 type Currency = 'USD' | 'EUR' | 'INR';

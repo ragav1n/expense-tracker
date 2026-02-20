@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { deleteAccount } from '@/app/actions/delete-account'
-import { toast } from 'sonner'
+import { toast } from '@/utils/haptics'
 import { WaveLoader } from '@/components/ui/wave-loader'
 
 export default function ConfirmDeletePage() {

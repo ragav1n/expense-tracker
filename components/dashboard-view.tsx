@@ -36,7 +36,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { toast } from 'sonner';
+import { toast } from '@/utils/haptics';
 import { cn } from '@/lib/utils';
 import { FeatureAnnouncementModal } from '@/components/feature-announcement-modal';
 import { WelcomeModal } from '@/components/welcome-modal';

@@ -7,7 +7,7 @@ import { Lock, Eye, EyeClosed, ArrowRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { FallingPattern } from '@/components/ui/falling-pattern';
 import { cn } from "@/lib/utils";
-import { toast } from 'sonner';
+import { toast } from '@/utils/haptics';
 import { validatePassword } from '@/utils/password-validation';
 import { PasswordRequirements } from '@/components/password-requirements';
 

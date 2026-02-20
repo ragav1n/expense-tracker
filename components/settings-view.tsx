@@ -9,7 +9,7 @@ import { useUserPreferences } from '@/components/providers/user-preferences-prov
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
-import { toast } from 'sonner';
+import { toast } from '@/utils/haptics';
 import { WaveLoader } from '@/components/ui/wave-loader';
 import { AlertBanner } from '@/components/ui/alert-banner';
 import { AnimatePresence, motion } from 'framer-motion';

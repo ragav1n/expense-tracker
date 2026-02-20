@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useUserPreferences } from './user-preferences-provider';
-import { toast } from 'sonner';
+import { toast } from '@/utils/haptics';
 
 export interface Bucket {
     id: string;
