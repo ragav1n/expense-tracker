@@ -1,16 +1,16 @@
 'use client';
 
-import { useUserPreferences } from '@/components/providers/user-preferences-provider';
+import { useUserPreferences, CURRENCY_SYMBOLS, type Currency } from '@/components/providers/user-preferences-provider';
 import { BudgetAlertManager } from '@/components/budget-alert-manager';
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, CircleDollarSign, ArrowUpRight, ArrowDownLeft, Users, MoreVertical, Pencil, Trash2, X, History, Clock, HelpCircle, Tag, Plane, Home, Gift, ShoppingCart, Stethoscope, Gamepad2, School, Laptop, Music, Heart, RefreshCcw } from 'lucide-react';
+import { Plus, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, CircleDollarSign, ArrowUpRight, ArrowDownLeft, Users, MoreVertical, Pencil, Trash2, X, History, Clock, HelpCircle, Tag, Plane, Home, Gift, ShoppingCart, Stethoscope, Gamepad2, School, Laptop, Music, Heart, RefreshCcw, Wallet, ChevronRight, Check } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Pie, PieChart, Cell } from 'recharts';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/pie-chart";
 import { supabase } from '@/lib/supabase';
-import { format, isSameMonth, parseISO } from 'date-fns';
+import { format, isSameMonth, parseISO, differenceInDays } from 'date-fns';
 import { WaveLoader } from '@/components/ui/wave-loader';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useGroups } from './providers/groups-provider';
@@ -36,11 +36,14 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { toast } from '@/utils/haptics';
 import { cn } from '@/lib/utils';
 import { FeatureAnnouncementModal } from '@/components/feature-announcement-modal';
 import { WelcomeModal } from '@/components/welcome-modal';
 import { LATEST_FEATURE_ANNOUNCEMENT } from '@/lib/feature-flags';
+import { AddFundsDialog } from '@/components/add-funds-dialog';
+import { HowToUseDialog } from '@/components/how-to-use-dialog';
 
 // Constants
 const CATEGORY_COLORS: Record<string, string> = {
@@ -81,6 +84,7 @@ type Transaction = {
     converted_amount?: number;
     is_recurring?: boolean;
     bucket_id?: string;
+    exclude_from_allowance?: boolean;
     splits?: {
         user_id: string;
         amount: number;
@@ -115,7 +119,7 @@ export function DashboardView() {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
 
     const [loading, setLoading] = useState(true);
-    const { formatCurrency, currency, convertAmount, monthlyBudget, userId, isRatesLoading, CURRENCY_SYMBOLS } = useUserPreferences();
+    const { formatCurrency, currency, convertAmount, monthlyBudget, userId, isRatesLoading } = useUserPreferences();
     const { balances, groups, friends } = useGroups();
     const { buckets } = useBuckets();
 
@@ -125,6 +129,11 @@ export function DashboardView() {
     const [selectedAuditTx, setSelectedAuditTx] = useState<Transaction | null>(null);
     const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
     const [loadingAudit, setLoadingAudit] = useState(false);
+
+    // Dashboard Focus State
+    const [dashboardFocus, setDashboardFocus] = useState<string>('allowance');
+    const [isAddFundsOpen, setIsAddFundsOpen] = useState(false);
+    const [isHowToUseOpen, setIsHowToUseOpen] = useState(false);
 
     // Modal Sequencing State
     const [activeModal, setActiveModal] = useState<'welcome' | 'announcement' | null>(null);
@@ -295,6 +304,7 @@ export function DashboardView() {
                     category: savedEditingTx.category,
                     amount: savedEditingTx.amount,
                     bucket_id: savedEditingTx.bucket_id || null,
+                    exclude_from_allowance: savedEditingTx.exclude_from_allowance || false,
                 })
                 .eq('id', savedEditingTx.id);
 
@@ -351,37 +361,44 @@ export function DashboardView() {
         return 0;
     };
 
+    const focusedBucket = dashboardFocus !== 'allowance' ? buckets.find(b => b.id === dashboardFocus) : null;
+    const isBucketFocused = !!focusedBucket;
+    const bucketCurrency = (focusedBucket?.currency || currency).toUpperCase() as Currency;
+    const displayBudget = isBucketFocused ? Number(focusedBucket.budget) : monthlyBudget;
+
     // Calculate personal share for budget tracking
     const totalSpent = transactions.reduce((acc, tx) => {
         if (!userId) return acc;
 
-        // Exclude settlements from "Spent"? 
-        // NO. With Cash Basis logic:
-        // - Payer gets "Settled: Food" (Income/Negative). This reduces Total Spent. Correct.
-        // - Debtor gets "Settled: Food" (Expense/Positive). This increases Total Spent. Correct.
-        // So we include ALL transactions.
-
-        // Filter for current month using parseISO
-        const txDate = parseISO(tx.date);
-        if (!isSameMonth(txDate, new Date())) return acc;
+        if (isBucketFocused) {
+            // Project Focus: show all expenses for this project bucket (all time)
+            if (tx.bucket_id !== dashboardFocus) return acc;
+        } else {
+            // Allowance Focus: exclude project elements that are marked explicitly
+            if (tx.exclude_from_allowance) return acc;
+            
+            // Filter for current month using parseISO
+            const txDate = parseISO(tx.date);
+            if (!isSameMonth(txDate, new Date())) return acc;
+        }
 
         const myShare = calculateUserShare(tx, userId);
 
         // Conversion Logic:
-        // Prioritize stored rate ONLY if it's not 1 (which usually means a conversion failure during save)
-        // or if the currencies are actually the same.
-        const txCurr = tx.currency || 'USD';
-        const isSameCurrency = txCurr === currency;
+        const txCurr = (tx.currency || 'USD').toUpperCase();
+        const targetCurr = bucketCurrency;
         
-        if (!isSameCurrency && tx.exchange_rate && tx.exchange_rate !== 1 && tx.base_currency === currency) {
+        const isSameCurrency = txCurr === targetCurr;
+        
+        if (!isSameCurrency && tx.exchange_rate && tx.exchange_rate !== 1 && tx.base_currency === targetCurr) {
             return acc + (myShare * Number(tx.exchange_rate));
         }
 
-        return acc + convertAmount(myShare, txCurr);
+        return acc + convertAmount(myShare, txCurr, targetCurr);
     }, 0);
 
-    const remaining = monthlyBudget - totalSpent;
-    const progress = Math.min((totalSpent / monthlyBudget) * 100, 100);
+    const remaining = displayBudget - totalSpent;
+    const progress = displayBudget > 0 ? Math.min((totalSpent / displayBudget) * 100, 100) : 0;
 
     // Calculate Spending by Category (converted personal share)
     const spendingByCategory = transactions.reduce((acc, tx) => {
@@ -493,6 +510,13 @@ export function DashboardView() {
                             )}
                         </div>
                         <button
+                            onClick={() => setIsHowToUseOpen(true)}
+                            className="w-10 h-10 rounded-full bg-secondary/20 hover:bg-secondary/40 flex items-center justify-center border border-white/5 transition-colors shrink-0"
+                            title="How to use Novira"
+                        >
+                            <HelpCircle className="w-5 h-5 text-white/70" />
+                        </button>
+                        <button
                             onClick={() => router.push('/add')}
                             className="w-10 h-10 rounded-full bg-primary/20 hover:bg-primary/30 flex items-center justify-center border border-primary/20 transition-colors"
                         >
@@ -532,39 +556,158 @@ export function DashboardView() {
                     </Card>
                 )}
 
+                {/* Project Focus Selector (The Pill) */}
+                <div className="flex justify-center mb-4">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button className={cn(
+                                "flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-all shadow-lg active:scale-95",
+                                isBucketFocused 
+                                    ? "bg-amber-500 text-white shadow-amber-500/30" 
+                                    : "bg-secondary/50 backdrop-blur-md text-foreground shadow-black/5 border border-white/5"
+                            )}>
+                                {isBucketFocused ? (
+                                    <>
+                                        {focusedBucket.name} Focus
+                                    </>
+                                ) : (
+                                    <>
+                                        Monthly Allowance
+                                    </>
+                                )}
+                                <ChevronRight className="w-3.5 h-3.5 rotate-90 ml-1 opacity-70" />
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="center" className="w-64 bg-card/95 backdrop-blur-xl border-white/10 rounded-2xl p-1.5 shadow-2xl">
+                            <DropdownMenuItem 
+                                onClick={() => setDashboardFocus('allowance')}
+                                className={cn("rounded-xl py-3 cursor-pointer", !isBucketFocused && "bg-primary/20 text-primary focus:bg-primary/20")}
+                            >
+                                <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center mr-3">
+                                    <Wallet className="w-4 h-4 text-primary" />
+                                </div>
+                                <span className={cn("font-bold flex-1", !isBucketFocused && "text-primary")}>Monthly Allowance</span>
+                                {!isBucketFocused && <Check className="w-4 h-4 text-primary ml-2" />}
+                            </DropdownMenuItem>
+                            
+                            {buckets.filter(b => !b.is_archived).length > 0 && (
+                                <div className="px-2 py-1.5 mt-1 border-t border-white/5">
+                                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Active Missions</p>
+                                </div>
+                            )}
+
+                            {buckets.filter(b => !b.is_archived).map(bucket => (
+                                <DropdownMenuItem 
+                                    key={bucket.id}
+                                    onClick={() => setDashboardFocus(bucket.id)}
+                                    className={cn("rounded-xl py-3 cursor-pointer", dashboardFocus === bucket.id && "bg-amber-500/20 text-amber-500 focus:bg-amber-500/20")}
+                                >
+                                    <div className="w-7 h-7 rounded-full bg-amber-500/20 flex items-center justify-center mr-3 text-amber-500">
+                                        <div className="w-4 h-4">
+                                            {getBucketIcon(bucket.icon)}
+                                        </div>
+                                    </div>
+                                    <span className={cn("font-bold flex-1", dashboardFocus === bucket.id && "text-amber-500")}>{bucket.name}</span>
+                                    {dashboardFocus === bucket.id && <Check className="w-4 h-4 text-amber-500 ml-2" />}
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+
                 {/* Total Spent Card */}
-                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#8A2BE2] to-[#4B0082] p-6 shadow-xl shadow-primary/20">
-                    <div className="absolute top-0 right-0 p-6 opacity-10">
+                <div className={cn(
+                    "relative overflow-hidden rounded-3xl p-6 shadow-xl transition-all duration-500",
+                    isBucketFocused 
+                        ? "bg-gradient-to-br from-amber-500 to-orange-600 shadow-amber-500/20"
+                        : "bg-gradient-to-br from-[#8A2BE2] to-[#4B0082] shadow-primary/20"
+                )}>
+                    <div className="absolute top-0 right-0 p-6 opacity-10 transition-colors">
                         <span className="text-9xl font-bold text-white leading-none translate-x-4 -translate-y-4">
-                            {CURRENCY_SYMBOLS[currency as keyof typeof CURRENCY_SYMBOLS] || '$'}
+                            {CURRENCY_SYMBOLS[bucketCurrency] || '$'}
                         </span>
                     </div>
                     <div className="relative z-10 space-y-6">
                         <div className="flex justify-between items-start">
                             <div>
-                                <p className="text-white/80 text-sm font-medium">Personal Share Spent</p>
+                                <p className="text-white/80 text-sm font-medium">
+                                    {isBucketFocused ? "Total Mission Spent" : "Spent this Month"}
+                                </p>
                                 <h2 className="text-4xl font-bold text-white mt-1">
-                                    {isRatesLoading ? "..." : formatCurrency(totalSpent)}
+                                    {isRatesLoading ? "..." : formatCurrency(totalSpent, bucketCurrency)}
                                 </h2>
                             </div>
-                            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm shadow-sm">
                                 <span className="text-xl font-bold text-white">
-                                    {CURRENCY_SYMBOLS[currency as keyof typeof CURRENCY_SYMBOLS] || '$'}
+                                    {CURRENCY_SYMBOLS[bucketCurrency] || '$'}
                                 </span>
                             </div>
                         </div>
                         <div className="space-y-2">
                             <div className="flex justify-between text-xs font-medium text-white/80">
-                                <span>Budget: {formatCurrency(monthlyBudget)}</span>
-                                <span>Remaining: {isRatesLoading ? "..." : formatCurrency(remaining)}</span>
+                                <span>{isBucketFocused ? "Target" : "Allowance"}: {formatCurrency(displayBudget, bucketCurrency)}</span>
+                                <span className={remaining < 0 ? "text-red-200" : ""}>{remaining < 0 ? "Over by " : "Remaining: "}{isRatesLoading ? "..." : formatCurrency(Math.abs(remaining), bucketCurrency)}</span>
                             </div>
-                            <Progress value={progress} className="h-2 bg-black/30" indicatorClassName="bg-white" />
+                            <Progress value={progress} className="h-2 bg-black/30" indicatorClassName={cn(remaining < 0 ? "bg-red-400" : "bg-white")} />
                             <div className="flex justify-between text-[10px] text-white/60">
                                 <span>{progress.toFixed(1)}% used</span>
-                                <span>{(() => { const d = new Date().getDate(); const s = ['th', 'st', 'nd', 'rd']; const v = d % 100; return d + (s[(v - 20) % 10] || s[v] || s[0]); })()} of Month</span>
+                                <span className={isBucketFocused ? "flex flex-col items-end gap-1" : ""}>
+                                    {isBucketFocused ? (
+                                        <>
+                                            {focusedBucket?.start_date && focusedBucket?.end_date ? (
+                                                (() => {
+                                                    const today = new Date();
+                                                    const start = new Date(focusedBucket.start_date!);
+                                                    const end = new Date(focusedBucket.end_date!);
+                                                    
+                                                    // Only calculate pacing if the trip hasn't ended yet
+                                                    if (today > end) return <span className="text-white/80 font-medium">Mission Completed</span>;
+                                                    
+                                                    // Effective start date is either today or the trip start date, whichever is later
+                                                    const effectiveStart = today > start ? today : start;
+                                                    
+                                                    // Calculate remaining days (minimum 1 to avoid division by zero)
+                                                    const daysLeft = Math.max(1, differenceInDays(end, effectiveStart));
+                                                    
+                                                    // Calculate daily allowance using remaining budget
+                                                    // If budget is already blown, show 0
+                                                    const safeToSpendDaily = remaining > 0 ? remaining / daysLeft : 0;
+                                                    
+                                                    return (
+                                                        <span className="text-white font-bold bg-white/10 px-2 py-0.5 rounded backdrop-blur-sm border border-white/10">
+                                                            Daily Safe to Spend: {formatCurrency(safeToSpendDaily, bucketCurrency)}/day
+                                                        </span>
+                                                    );
+                                                })()
+                                            ) : (
+                                                "All Time"
+                                            )}
+                                        </>
+                                    ) : (
+                                        (() => { 
+                                            const d = new Date().getDate(); 
+                                            const s = ['th', 'st', 'nd', 'rd']; 
+                                            const v = d % 100; 
+                                            return d + (s[(v - 20) % 10] || s[v] || s[0]) + " of Month"; 
+                                        })()
+                                    )}
+                                </span>
                             </div>
                         </div>
                     </div>
+                </div>
+
+                {/* Separate Add Funds Action */}
+                <div className="flex justify-center mt-4 mb-6 relative group">
+                    <button 
+                        onClick={() => setIsAddFundsOpen(true)}
+                        className="flex items-center justify-center w-full gap-2 py-4 rounded-3xl bg-primary/20 backdrop-blur-xl border border-primary/30 text-white font-bold transition-all shadow-[0_4px_30px_rgba(138,43,226,0.15)] active:scale-95 hover:bg-primary/30 hover:border-primary/50"
+                    >
+                        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                            <Plus className="w-4 h-4 text-white" />
+                        </div>
+                        Add Funds
+                    </button>
                 </div>
 
                 {/* Balance Summary Card */}
@@ -1030,6 +1173,22 @@ export function DashboardView() {
                                         ))}
                                     </div>
                                 </div>
+                                {/* Exclude from Allowance Toggle */}
+                                <div className="space-y-4 pt-2">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Wallet className="w-4 h-4 text-amber-500" />
+                                            <div>
+                                                <p className="text-sm font-medium">Exclude from Allowance</p>
+                                            </div>
+                                        </div>
+                                        <Switch
+                                            checked={!!editingTransaction.exclude_from_allowance}
+                                            onCheckedChange={(val: boolean) => setEditingTransaction({ ...editingTransaction, exclude_from_allowance: val })}
+                                            className="data-[state=checked]:bg-amber-500"
+                                        />
+                                    </div>
+                                </div>
                                 <DialogFooter className="pt-4 gap-2 sm:gap-0">
                                     <DialogClose asChild>
                                         <Button type="button" variant="outline" className="rounded-xl">Cancel</Button>
@@ -1065,6 +1224,18 @@ export function DashboardView() {
                     showAnnouncement={activeModal === 'announcement'}
                     userId={userId}
                     onClose={() => setActiveModal(null)}
+                />
+
+                <AddFundsDialog
+                    isOpen={isAddFundsOpen}
+                    onClose={() => setIsAddFundsOpen(false)}
+                    userId={userId}
+                    defaultBucketId={isBucketFocused ? dashboardFocus : undefined}
+                />
+                
+                <HowToUseDialog
+                    isOpen={isHowToUseOpen}
+                    onClose={() => setIsHowToUseOpen(false)}
                 />
             </div>
         </div>

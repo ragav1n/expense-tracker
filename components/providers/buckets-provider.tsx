@@ -17,6 +17,7 @@ export interface Bucket {
     created_at: string;
     start_date?: string;
     end_date?: string;
+    currency?: string;
 }
 
 interface BucketsContextType {
@@ -38,7 +39,7 @@ export function BucketsProvider({ children }: { children: React.ReactNode }) {
     const [bucketSpending, setBucketSpending] = useState<Record<string, number>>({});
     const [loading, setLoading] = useState(true);
 
-    const fetchBucketSpending = useCallback(async () => {
+    const fetchBucketSpending = useCallback(async (bucketList: Bucket[]) => {
         if (!userId) return;
         try {
             const { data, error } = await supabase
@@ -53,14 +54,19 @@ export function BucketsProvider({ children }: { children: React.ReactNode }) {
                 const bId = tx.bucket_id;
                 if (!bId) return;
 
-                let amountInUserCurrency = 0;
-                if (tx.exchange_rate && tx.base_currency === currency) {
-                    amountInUserCurrency = Number(tx.amount) * Number(tx.exchange_rate);
+                const bucketConfig = bucketList.find(b => b.id === bId);
+                const bucketCurrency = (bucketConfig?.currency || currency).toUpperCase();
+
+                let amountInBucketCurrency = 0;
+                if (tx.currency === bucketCurrency) {
+                    amountInBucketCurrency = Number(tx.amount);
+                } else if (tx.exchange_rate && tx.base_currency === bucketCurrency) {
+                    amountInBucketCurrency = Number(tx.amount) * Number(tx.exchange_rate);
                 } else {
-                    amountInUserCurrency = convertAmount(Number(tx.amount), tx.currency || 'USD');
+                    amountInBucketCurrency = convertAmount(Number(tx.amount), tx.currency || 'USD', bucketCurrency);
                 }
 
-                spending[bId] = (spending[bId] || 0) + amountInUserCurrency;
+                spending[bId] = (spending[bId] || 0) + amountInBucketCurrency;
             });
             setBucketSpending(spending);
         } catch (error) {
@@ -77,8 +83,9 @@ export function BucketsProvider({ children }: { children: React.ReactNode }) {
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
-            setBuckets(data || []);
-            await fetchBucketSpending();
+            const fetchedBuckets = data || [];
+            setBuckets(fetchedBuckets);
+            await fetchBucketSpending(fetchedBuckets);
         } catch (error) {
             console.error('Error fetching buckets:', error);
         } finally {
@@ -99,6 +106,7 @@ export function BucketsProvider({ children }: { children: React.ReactNode }) {
                     table: 'buckets',
                     filter: `user_id=eq.${userId}`
                 }, () => {
+                    // Refetch with current state buckets, but since it's real-time, maybe we can just call fetchBuckets which fetches both
                     fetchBuckets();
                 })
                 .subscribe();

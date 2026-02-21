@@ -1,17 +1,27 @@
 export const LATEST_FEATURE_ANNOUNCEMENT = {
-    id: 'latest-recurring-expenses-&-payment-analytics', // New ID to trigger the modal again
-    title: 'New Updates!',
+    id: 'monthly-allowance-multi-currency-v2', // New ID to trigger the modal again
+    title: 'Major New Updates!',
     features: [
         {
-            title: 'Recurring Expenses',
-            description: 'Automate your finances! Set up recurring transactions and manage them easily from your settings. We even check for duplicates automatically.',
-            icon: 'recurring'
+            title: 'Mission Focus & Allowances',
+            description: 'Swap between your standard Monthly Allowance and specific Travel/Project missions directly on your Dashboard! Use the new Exclude toggle for big ticket items.',
+            icon: 'star'
         },
         {
-            title: 'Payment Analytics',
-            description: 'See exactly where your money goes. New interactive pie charts show your spending breakdown by payment method (Cash, UPI, Card, and more).',
-            icon: 'chart'
+            title: 'Multi-Currency Support',
+            description: 'Spend globally. Automatically track expenses in foreign currencies with real-time exchange rate conversions.',
+            icon: 'globe'
         },
+        {
+            title: 'Add Funds & Income',
+            description: 'Manually add funds or log income directly from the Dashboard to accurately boost your remaining allowance.',
+            icon: 'wallet'
+        },
+        {
+            title: 'Advanced PDF Exports',
+            description: 'Exported PDFs now include dedicated Monthly Recaps for long-term reports and explicitly flag excluded expenses.',
+            icon: 'export'
+        }
     ],
     buttonText: 'Awesome!',
 };

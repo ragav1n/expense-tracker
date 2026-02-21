@@ -16,6 +16,7 @@ interface ExportTransaction {
     bucket_id?: string;
     group_id?: string;
     is_recurring?: boolean;
+    exclude_from_allowance?: boolean;
 }
 
 const CATEGORY_COLORS: Record<string, [number, number, number]> = {
@@ -100,8 +101,18 @@ const drawPieChart = (doc: jsPDF, data: { label: string, value: number, color: [
 const drawBarChart = (doc: jsPDF, data: { label: string, value: number }[], x: number, y: number, width: number, height: number, color: [number, number, number]) => {
     if (data.length === 0) return;
     const maxValue = Math.max(...data.map(d => d.value), 1);
-    const barWidth = (width / data.length) * 0.7;
-    const spacing = (width / data.length) * 0.3;
+    
+    // Calculate reasonable bar width
+    const maxBarWidth = 15;
+    const calculatedBarWidth = (width / data.length) * 0.7;
+    const barWidth = Math.min(calculatedBarWidth, maxBarWidth);
+    
+    // Generate flexible spacing based on exactly how many items we have
+    const spacing = data.length > 1 ? (width - (barWidth * data.length)) / (data.length - 1) : 0;
+    
+    // Calculate the start offset to center the graph elements inside the requested container block
+    const totalContentWidth = (barWidth * data.length) + (spacing * (data.length - 1));
+    const startX = x + (width - totalContentWidth) / 2;
 
     doc.setDrawColor(200, 200, 200);
     doc.line(x, y + height, x + width, y + height); // X-axis
@@ -109,11 +120,11 @@ const drawBarChart = (doc: jsPDF, data: { label: string, value: number }[], x: n
     data.forEach((item, i) => {
         const barHeight = (item.value / maxValue) * height;
         doc.setFillColor(color[0], color[1], color[2]);
-        doc.rect(x + (i * (barWidth + spacing)), y + height - barHeight, barWidth, barHeight, 'F');
+        doc.rect(startX + (i * (barWidth + spacing)), y + height - barHeight, barWidth, barHeight, 'F');
 
         doc.setFontSize(6);
         doc.setTextColor(100, 100, 100);
-        doc.text(item.label, x + (i * (barWidth + spacing)) + barWidth / 2, y + height + 5, { align: 'center' });
+        doc.text(item.label, startX + (i * (barWidth + spacing)) + barWidth / 2, y + height + 5, { align: 'center' });
     });
 };
 
@@ -138,7 +149,7 @@ export const generateCSV = (
     const bucketMap = Object.fromEntries(buckets.map(b => [b.id, b]));
     const groupMap = Object.fromEntries(groups.map(g => [g.id, g]));
 
-    const headers = ['Date', 'Description', 'Category', 'Bucket', 'Group', 'Payment Method', 'Amount', 'Currency', 'Converted Amount', 'Recurring'];
+    const headers = ['Date', 'Description', 'Category', 'Bucket', 'Group', 'Payment Method', 'Amount', 'Currency', 'Converted Amount', 'Recurring', 'Excluded from Allowance'];
     const rows = transactions.map(tx => {
         const converted = tx.converted_amount || convertAmount(Number(tx.amount), tx.currency || 'USD');
         const bucket = tx.bucket_id ? bucketMap[tx.bucket_id] : null;
@@ -154,7 +165,8 @@ export const generateCSV = (
             tx.amount,
             tx.currency || 'USD',
             converted.toFixed(2),
-            tx.is_recurring ? 'Yes' : 'No'
+            tx.is_recurring ? 'Yes' : 'No',
+            tx.exclude_from_allowance ? 'Yes' : 'No'
         ].join(',');
     });
 
@@ -203,6 +215,7 @@ export const generatePDF = async (
     const methodTotals: Record<string, number> = {};
     const bucketTotals: Record<string, { spent: number, budget: number }> = {};
     const dailyTotals: Record<string, number> = {};
+    const monthlyTotals: Record<string, number> = {};
 
     transactions.forEach(tx => {
         const amount = tx.converted_amount || convertAmount(Number(tx.amount), tx.currency || 'USD');
@@ -248,6 +261,9 @@ export const generatePDF = async (
 
         const dateKey = format(new Date(tx.date), 'MMM d');
         dailyTotals[dateKey] = (dailyTotals[dateKey] || 0) + amount;
+
+        const monthKey = format(new Date(tx.date), 'MMM yyyy');
+        monthlyTotals[monthKey] = (monthlyTotals[monthKey] || 0) + amount;
     });
 
     const topExpenses = [...transactions]
@@ -422,12 +438,32 @@ export const generatePDF = async (
         });
     }
 
+    if (Object.keys(monthlyTotals).length > 1) {
+        doc.setFontSize(14);
+        doc.setTextColor(50, 50, 50);
+        doc.text('Monthly Recap', 14, bucketY + 10);
+        
+        const monthRows = Object.entries(monthlyTotals)
+            .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
+            .map(([month, amount]) => [month, formatForPDF(amount, currency)]);
+
+        autoTable(doc as any, {
+            head: [['Month', 'Total Spent']],
+            body: monthRows,
+            startY: bucketY + 15,
+            theme: 'striped',
+            headStyles: { fillColor: [138, 43, 226], textColor: [255, 255, 255] },
+        });
+        
+        bucketY = (doc as any).lastAutoTable.finalY + 10;
+    }
+
     // Detailed Table
     doc.setFontSize(14);
     doc.setTextColor(50, 50, 50);
     doc.text('Transaction Details', 14, bucketY + 10);
 
-    const tableColumn = ["Date", "Description", "Category", "Payment", "Group", "Rec", "Amount"];
+    const tableColumn = ["Date", "Description", "Category", "Payment", "Group", "Rec", "Exc", "Amount"];
     const tableRows = sortedTx.map(tx => {
         const group = tx.group_id ? groupMap[tx.group_id] : null;
 
@@ -438,6 +474,7 @@ export const generatePDF = async (
             tx.payment_method || '-',
             group?.name || '-',
             tx.is_recurring ? 'Yes' : 'No',
+            tx.exclude_from_allowance ? 'Yes' : 'No',
             formatForPDF(tx.converted_amount || convertAmount(Number(tx.amount), tx.currency || 'USD'), currency)
         ]
     });

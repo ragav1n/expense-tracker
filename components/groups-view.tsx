@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useGroups } from './providers/groups-provider';
-import { useUserPreferences } from './providers/user-preferences-provider';
+import { useUserPreferences, CURRENCY_DETAILS, type Currency } from './providers/user-preferences-provider';
 import { useBuckets, Bucket } from './providers/buckets-provider';
 import {
     Dialog,
@@ -36,6 +36,13 @@ import { format, differenceInDays } from 'date-fns';
 import { NoviraQrCode } from '@/components/ui/qr-code';
 import { QrScanner } from '@/components/ui/qr-scanner';
 import { getBucketIcon } from '@/utils/icon-utils';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 
 export function GroupsView() {
     const router = useRouter();
@@ -61,6 +68,7 @@ export function GroupsView() {
     const [newBucketTarget, setNewBucketTarget] = useState('');
     const [newBucketIcon, setNewBucketIcon] = useState('Tag');
     const [bucketDateRange, setBucketDateRange] = useState<DateRange | undefined>();
+    const [newBucketCurrency, setNewBucketCurrency] = useState<Currency | string>(currency || 'USD');
 
     // Member management state
     const [isManageMembersOpen, setIsManageMembersOpen] = useState(false);
@@ -123,7 +131,8 @@ export function GroupsView() {
                 icon: newBucketIcon,
                 type: 'trip',
                 start_date: bucketDateRange?.from?.toISOString(),
-                end_date: bucketDateRange?.to?.toISOString()
+                end_date: bucketDateRange?.to?.toISOString(),
+                currency: newBucketCurrency
             });
             setIsAddBucketOpen(false);
             setNewBucketName('');
@@ -147,7 +156,8 @@ export function GroupsView() {
                 budget: parseFloat(newBucketTarget) || 0,
                 icon: newBucketIcon,
                 start_date: bucketDateRange?.from?.toISOString(),
-                end_date: bucketDateRange?.to?.toISOString()
+                end_date: bucketDateRange?.to?.toISOString(),
+                currency: newBucketCurrency
             });
             setIsEditBucketOpen(false);
             setEditingBucket(null);
@@ -333,6 +343,7 @@ export function GroupsView() {
                                 setNewBucketTarget('');
                                 setNewBucketIcon('Tag');
                                 setBucketDateRange(undefined);
+                                setNewBucketCurrency(currency || 'USD');
                             }
                         }}
                     >
@@ -345,37 +356,44 @@ export function GroupsView() {
                                 <div className="space-y-4 py-4">
                                     <div className="space-y-3 w-full overflow-hidden">
                                         <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-1">Select Icon</label>
-                                        <div className="flex gap-2 overflow-x-auto pb-4 px-1 w-full -mb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                                        <div className="flex gap-2 overflow-x-auto pb-4 px-1 w-full scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
                                             {[
-                                                { name: 'Tag', icon: Tag },
-                                                { name: 'Plane', icon: Plane },
-                                                { name: 'Home', icon: Home },
-                                                { name: 'Gift', icon: Gift },
-                                                { name: 'Car', icon: Car },
-                                                { name: 'Utensils', icon: Utensils },
-                                                { name: 'ShoppingCart', icon: ShoppingCart },
-                                                { name: 'Heart', icon: Heart },
-                                                { name: 'Gamepad2', icon: Gamepad2 },
-                                                { name: 'Music', icon: Music },
-                                                { name: 'Laptop', icon: Laptop },
-                                                { name: 'School', icon: School },
+                                                { name: 'Tag', label: 'Tag', icon: Tag },
+                                                { name: 'Plane', label: 'Trip', icon: Plane },
+                                                { name: 'Home', label: 'Home', icon: Home },
+                                                { name: 'Gift', label: 'Gift', icon: Gift },
+                                                { name: 'Car', label: 'Car', icon: Car },
+                                                { name: 'Utensils', label: 'Food', icon: Utensils },
+                                                { name: 'ShoppingCart', label: 'Shop', icon: ShoppingCart },
+                                                { name: 'Heart', label: 'Health', icon: Heart },
+                                                { name: 'Gamepad2', label: 'Game', icon: Gamepad2 },
+                                                { name: 'Music', label: 'Music', icon: Music },
+                                                { name: 'Laptop', label: 'Tech', icon: Laptop },
+                                                { name: 'School', label: 'School', icon: School },
                                             ].map(item => (
-                                                <button
-                                                    key={item.name}
-                                                    type="button"
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        setNewBucketIcon(item.name);
-                                                    }}
-                                                    className={cn(
-                                                        "w-12 h-12 rounded-2xl border flex items-center justify-center shrink-0 transition-all",
-                                                        newBucketIcon === item.name
-                                                            ? "bg-amber-500/20 border-amber-500 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
-                                                            : "bg-secondary/10 border-white/5 text-muted-foreground hover:border-white/10"
-                                                    )}
-                                                >
-                                                    <item.icon className="w-5 h-5 pointer-events-none" />
-                                                </button>
+                                                <div key={item.name} className="flex flex-col items-center gap-1.5 shrink-0">
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            setNewBucketIcon(item.name);
+                                                        }}
+                                                        className={cn(
+                                                            "w-12 h-12 rounded-2xl border flex items-center justify-center transition-all",
+                                                            newBucketIcon === item.name
+                                                                ? "bg-amber-500/20 border-amber-500 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+                                                                : "bg-secondary/10 border-white/5 text-muted-foreground hover:border-white/10"
+                                                        )}
+                                                    >
+                                                        <item.icon className="w-5 h-5 pointer-events-none" />
+                                                    </button>
+                                                    <span className={cn(
+                                                        "text-[9px] font-bold uppercase tracking-wider",
+                                                        newBucketIcon === item.name ? "text-amber-500" : "text-muted-foreground"
+                                                    )}>
+                                                        {item.label}
+                                                    </span>
+                                                </div>
                                             ))}
                                         </div>
                                     </div>
@@ -389,20 +407,44 @@ export function GroupsView() {
                                         />
                                     </div>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div className="space-y-2 text-left w-full">
-                                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-1">Total Budget</label>
-                                            <div className="relative w-full">
-                                                <Input
-                                                    type="number"
-                                                    placeholder="0.00"
-                                                    value={newBucketTarget}
-                                                    onChange={(e) => setNewBucketTarget(e.target.value)}
-                                                    className="bg-secondary/20 border-white/5 h-12 rounded-2xl pl-8 focus-visible:ring-amber-500/50 w-full"
-                                                />
-                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-bold">
-                                                    {currency === 'EUR' ? '€' : currency === 'INR' ? '₹' : '$'}
-                                                </span>
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div className="space-y-2 text-left w-full">
+                                                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-1">Currency</label>
+                                                <Select value={newBucketCurrency} onValueChange={setNewBucketCurrency}>
+                                                    <SelectTrigger className="bg-secondary/20 border-white/5 h-12 rounded-2xl w-full">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-primary font-bold w-6">{CURRENCY_DETAILS[newBucketCurrency as keyof typeof CURRENCY_DETAILS]?.symbol}</span>
+                                                            <span className="text-sm font-semibold">{newBucketCurrency}</span>
+                                                        </div>
+                                                    </SelectTrigger>
+                                                    <SelectContent position="popper" className="bg-card border-white/10 rounded-xl overflow-y-auto max-h-[200px]">
+                                                        {Object.entries(CURRENCY_DETAILS).map(([code, detail]) => (
+                                                            <SelectItem key={code} value={code} className="py-2.5 px-3 focus:bg-primary/20 rounded-lg">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-primary font-bold w-6 text-left">{detail.symbol}</span>
+                                                                    <span className="text-sm font-semibold">{code}</span>
+                                                                </div>
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            <div className="space-y-2 text-left w-full">
+                                                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-1">Total Budget</label>
+                                                <div className="relative w-full">
+                                                    <Input
+                                                        type="number"
+                                                        placeholder="0.00"
+                                                        value={newBucketTarget}
+                                                        onChange={(e) => setNewBucketTarget(e.target.value)}
+                                                        className="bg-secondary/20 border-white/5 h-12 rounded-2xl pl-8 focus-visible:ring-amber-500/50 w-full"
+                                                    />
+                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-bold">
+                                                        {CURRENCY_DETAILS[newBucketCurrency as keyof typeof CURRENCY_DETAILS]?.symbol || '$'}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
 
@@ -609,6 +651,7 @@ export function GroupsView() {
                                                                 from: bucket.start_date ? new Date(bucket.start_date) : undefined,
                                                                 to: bucket.end_date ? new Date(bucket.end_date) : undefined
                                                             });
+                                                            setNewBucketCurrency(bucket.currency || currency || 'USD');
                                                             setIsEditBucketOpen(true);
                                                         }}
                                                         className="p-2 rounded-full hover:bg-secondary/30 transition-colors"
@@ -645,16 +688,16 @@ export function GroupsView() {
                                                 <div className="space-y-2">
                                                     <div className="flex justify-between text-[10px] font-bold uppercase tracking-tighter">
                                                         <div className="flex flex-col">
-                                                            <span className="text-muted-foreground">Spent: {formatCurrency(spent)} / {formatCurrency(budget)}</span>
+                                                            <span className="text-muted-foreground">Spent: {formatCurrency(spent, bucket.currency)} / {formatCurrency(budget, bucket.currency)}</span>
                                                             {bucket.start_date && bucket.end_date && (
                                                                 <span className="text-primary/60 lowercase italic font-normal">
-                                                                    ~{formatCurrency(budget / Math.max(1, differenceInDays(new Date(bucket.end_date), new Date(bucket.start_date)) / 30))} / mo
+                                                                    ~{formatCurrency(budget / Math.max(1, differenceInDays(new Date(bucket.end_date), new Date(bucket.start_date)) / 30), bucket.currency)} / mo
                                                                 </span>
                                                             )}
                                                         </div>
                                                         <span className={cn("flex flex-col items-end", remaining < 0 ? "text-rose-500" : "text-amber-500")}>
                                                             <span>{remaining < 0 ? "Over budget by " : "Remaining: "}</span>
-                                                            <span>{formatCurrency(Math.abs(remaining))}</span>
+                                                            <span>{formatCurrency(Math.abs(remaining), bucket.currency)}</span>
                                                         </span>
                                                     </div>
                                                     <div className="h-1.5 w-full bg-secondary/20 rounded-full overflow-hidden">

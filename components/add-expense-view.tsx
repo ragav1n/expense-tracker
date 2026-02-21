@@ -72,6 +72,9 @@ export function AddExpenseView() {
     const [isRecurring, setIsRecurring] = useState(false);
     const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
 
+    // Exclusion State
+    const [excludeFromAllowance, setExcludeFromAllowance] = useState(false);
+
     const getBucketIcon = (iconName?: string) => {
         const icons: Record<string, any> = {
             Tag, Plane, Home, Gift, Car, Utensils, ShoppingCart,
@@ -162,7 +165,8 @@ export function AddExpenseView() {
                 exchange_rate: exchangeRate,
                 base_currency: currency,
                 converted_amount: convertedAmount,
-                is_recurring: isRecurring
+                is_recurring: isRecurring,
+                exclude_from_allowance: excludeFromAllowance
             }).select().single();
 
             if (txError) throw txError;
@@ -243,6 +247,7 @@ export function AddExpenseView() {
                     payment_method: paymentMethod,
                     frequency,
                     next_occurrence: format(nextDate, 'yyyy-MM-dd'),
+                    exclude_from_allowance: excludeFromAllowance,
                     metadata: {
                         is_split: isSplitEnabled,
                         friend_ids: selectedFriendIds,
@@ -456,6 +461,26 @@ export function AddExpenseView() {
                             </div>
                         ))}
                     </div>
+                </div>
+            </div>
+
+            {/* Exclude from Allowance Toggle */}
+            <div className="space-y-4 p-4 rounded-2xl bg-secondary/10 border border-white/5">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
+                            <Wallet className="w-4 h-4 text-amber-500" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium">Exclude from Allowance</p>
+                            <p className="text-[10px] text-muted-foreground">Don't count this against your monthly limit</p>
+                        </div>
+                    </div>
+                    <Switch
+                        checked={excludeFromAllowance}
+                        onCheckedChange={setExcludeFromAllowance}
+                        className="data-[state=checked]:bg-amber-500"
+                    />
                 </div>
             </div>
 

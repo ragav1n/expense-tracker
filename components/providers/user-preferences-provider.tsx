@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { toast } from '@/utils/haptics';
 import { User, Session } from '@supabase/supabase-js';
 
-type Currency = 'USD' | 'EUR' | 'INR' | 'GBP' | 'SGD' | 'VND' | 'TWD' | 'JPY' | 'KRW' | 'HKD' | 'MYR' | 'PHP' | 'THB' | 'CAD' | 'AUD' | 'MXN' | 'BRL' | 'IDR';
+export type Currency = 'USD' | 'EUR' | 'INR' | 'GBP' | 'SGD' | 'VND' | 'TWD' | 'JPY' | 'KRW' | 'HKD' | 'MYR' | 'PHP' | 'THB' | 'CAD' | 'AUD' | 'MXN' | 'BRL' | 'IDR';
 
 const DEFAULT_BUDGETS: Record<Currency, number> = {
     USD: 1500,
@@ -40,7 +40,7 @@ interface UserPreferencesContextType {
     setCurrency: (currency: Currency) => Promise<void>;
     formatCurrency: (amount: number, currencyOverride?: string) => string;
     refreshPreferences: () => Promise<void>;
-    convertAmount: (amount: number, fromCurrency: string) => number;
+    convertAmount: (amount: number, fromCurrency: string, toCurrency?: string) => number;
     budgetAlertsEnabled: boolean;
     setBudgetAlertsEnabled: (enabled: boolean) => Promise<void>;
     monthlyBudget: number;
@@ -323,20 +323,27 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
         return `${symbol}${formattedNumber}`;
     }, [currency]);
 
-    const convertAmount = useCallback((amount: number, fromCurrency: string): number => {
+    const convertAmount = useCallback((amount: number, fromCurrency: string, toCurrency?: string): number => {
         if (!fromCurrency) return amount;
         const from = fromCurrency.toUpperCase();
-        const to = currency.toUpperCase();
+        const to = (toCurrency || currency).toUpperCase();
         
         if (from === to) return amount;
         
-        const rate = exchangeRates[from];
-        if (rate) return amount / rate;
+        const fromRate = exchangeRates[from] || 1;
+        const toRate = exchangeRates[to] || 1;
         
-        // If rate is missing, try a cross-rate if available or just return amount
-        // but log it for debugging
-        console.warn(`Conversion rate for ${from} to ${to} not found in current rates`);
-        return amount;
+        // Convert to base currency (USD internal representation inside exchangeRates usually)
+        // Actually, exchangeRates holds how much of `currency` equals 1 `base` or vice versa.
+        // Wait, from previous code: `const rate = exchangeRates[from]; if (rate) return amount / rate;`
+        // Meaning 1 base_currency = rate * fromCurrency. So baseAmount = amount / fromRate.
+        const amountInBase = amount / fromRate;
+
+        if (to === currency.toUpperCase()) {
+            return amountInBase;
+        }
+
+        return amountInBase * toRate;
     }, [currency, exchangeRates]);
 
     const setCurrency = useCallback(async (newCurrency: Currency) => {

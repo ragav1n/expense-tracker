@@ -400,7 +400,7 @@ export function SettingsView() {
                                 />
                             </div>
                             <div className="space-y-1">
-                                <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Monthly Budget</label>
+                                <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Monthly Allowance</label>
                                 <Input
                                     ref={budgetInputRef}
                                     value={localBudget}
