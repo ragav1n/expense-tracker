@@ -256,7 +256,24 @@ export const generatePDF = async (
         .slice(0, 5);
 
     const formatForPDF = (amount: number, cur?: string) => {
-        return formatCurrency(amount, cur).replace('₹', 'Rs. ');
+        let text = formatCurrency(amount, cur);
+        // Standard jsPDF fonts have limited Unicode support. Replace symbols with text codes.
+        return text
+            .replace('₹', 'Rs. ')
+            .replace('₫', ' VND ')
+            .replace('₩', ' KRW ')
+            .replace('¥', ' JPY ')
+            .replace('฿', ' THB ')
+            .replace('₱', ' PHP ')
+            .replace('NT$', ' TWD ')
+            .replace('S$', ' SGD ')
+            .replace('HK$', ' HKD ')
+            .replace('Mex$', ' MXN ')
+            .replace('C$', ' CAD ')
+            .replace('A$', ' AUD ')
+            .replace('RM', ' MYR ')
+            .replace('R$', ' BRL ')
+            .replace('Rp', ' IDR ');
     };
 
     // --- PAGE 1: RECAP & ANALYTICS ---

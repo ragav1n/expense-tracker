@@ -5,12 +5,27 @@ import { supabase } from '@/lib/supabase';
 import { toast } from '@/utils/haptics';
 import { User, Session } from '@supabase/supabase-js';
 
-type Currency = 'USD' | 'EUR' | 'INR';
+type Currency = 'USD' | 'EUR' | 'INR' | 'GBP' | 'SGD' | 'VND' | 'TWD' | 'JPY' | 'KRW' | 'HKD' | 'MYR' | 'PHP' | 'THB' | 'CAD' | 'AUD' | 'MXN' | 'BRL' | 'IDR';
 
 const DEFAULT_BUDGETS: Record<Currency, number> = {
     USD: 1500,
-    EUR: 1000,
-    INR: 100000
+    EUR: 1200,
+    INR: 100000,
+    GBP: 1000,
+    SGD: 2000,
+    VND: 35000000,
+    TWD: 50000,
+    JPY: 200000,
+    KRW: 2000000,
+    HKD: 12000,
+    MYR: 6000,
+    PHP: 80000,
+    THB: 50000,
+    CAD: 2000,
+    AUD: 2000,
+    MXN: 25000,
+    BRL: 7000,
+    IDR: 25000000
 };
 
 interface UserPreferencesContextType {
@@ -34,7 +49,37 @@ interface UserPreferencesContextType {
     setAvatarUrl: (url: string | null) => void;
     isNavigating: boolean;
     setIsNavigating: (isNavigating: boolean) => void;
+    isRatesLoading: boolean;
+    CURRENCY_SYMBOLS: Record<Currency, string>;
+    CURRENCY_DETAILS: Record<Currency, { name: string; symbol: string }>;
 }
+
+export const CURRENCY_SYMBOLS: Record<Currency, string> = {
+    USD: '$', EUR: '€', INR: '₹', GBP: '£', SGD: 'S$', VND: '₫',
+    TWD: 'NT$', JPY: '¥', KRW: '₩', HKD: 'HK$', MYR: 'RM',
+    PHP: '₱', THB: '฿', CAD: 'C$', AUD: 'A$', MXN: 'Mex$', BRL: 'R$', IDR: 'Rp'
+};
+
+export const CURRENCY_DETAILS: Record<Currency, { name: string; symbol: string }> = {
+    INR: { name: 'Indian Rupee', symbol: '₹' },
+    USD: { name: 'US Dollar', symbol: '$' },
+    EUR: { name: 'Euro', symbol: '€' },
+    GBP: { name: 'British Pound', symbol: '£' },
+    SGD: { name: 'Singapore Dollar', symbol: 'S$' },
+    VND: { name: 'Vietnamese Dong', symbol: '₫' },
+    TWD: { name: 'Taiwan Dollar', symbol: 'NT$' },
+    JPY: { name: 'Japanese Yen', symbol: '¥' },
+    KRW: { name: 'South Korean Won', symbol: '₩' },
+    HKD: { name: 'Hong Kong Dollar', symbol: 'HK$' },
+    MYR: { name: 'Malaysian Ringgit', symbol: 'RM' },
+    PHP: { name: 'Philippine Peso', symbol: '₱' },
+    THB: { name: 'Thai Baht', symbol: '฿' },
+    CAD: { name: 'Canadian Dollar', symbol: 'C$' },
+    AUD: { name: 'Australian Dollar', symbol: 'A$' },
+    MXN: { name: 'Mexican Peso', symbol: 'Mex$' },
+    BRL: { name: 'Brazilian Real', symbol: 'R$' },
+    IDR: { name: 'Indonesian Rupiah', symbol: 'Rp' }
+};
 
 const UserPreferencesContext = createContext<UserPreferencesContextType | undefined>(undefined);
 
@@ -45,9 +90,9 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
     const [isLoading, setIsLoading] = useState(true);
 
     // Preferences State
-    const [currency, setCurrencyState] = useState<Currency>('USD');
+    const [currency, setCurrencyState] = useState<Currency>('INR');
     const [budgetAlertsEnabled, setBudgetAlertsEnabledState] = useState(false);
-    const [monthlyBudget, setMonthlyBudgetState] = useState(DEFAULT_BUDGETS.USD);
+    const [monthlyBudget, setMonthlyBudgetState] = useState(DEFAULT_BUDGETS.INR);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [budgets, setBudgets] = useState<Record<string, number>>({});
     const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({});
@@ -101,9 +146,9 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
             ]);
         } else {
             // Reset preferences on logout
-            setCurrencyState('USD');
+            setCurrencyState('INR');
             setBudgetAlertsEnabledState(false);
-            setMonthlyBudgetState(DEFAULT_BUDGETS.USD);
+            setMonthlyBudgetState(DEFAULT_BUDGETS.INR);
             setBudgets({});
             setExchangeRates({});
             setAvatarUrl(null);
@@ -162,6 +207,13 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
     useEffect(() => {
         const CACHE_TTL = 60 * 60 * 1000; // 1 hour
         const cacheKey = `novira_rates_${currency}`;
+        const API_KEY = process.env.NEXT_PUBLIC_EXCHANGERATE_API_KEY;
+
+        const FRANKFURTER_SUPPORTED = [
+            'AUD', 'BRL', 'CAD', 'CHF', 'CNY', 'CZK', 'DKK', 'EUR', 'GBP', 'HKD',
+            'HUF', 'IDR', 'ILS', 'INR', 'ISK', 'JPY', 'KRW', 'MXN', 'MYR', 'NOK',
+            'NZD', 'PHP', 'PLN', 'RON', 'SEK', 'SGD', 'THB', 'TRY', 'USD', 'ZAR'
+        ];
 
         const fetchRates = async () => {
             // Check cache first
@@ -171,40 +223,60 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
                     const { rates, timestamp } = JSON.parse(cached);
                     if (Date.now() - timestamp < CACHE_TTL) {
                         setExchangeRates(rates);
-                        return; // Cache is fresh, skip network request
+                        return;
                     }
                 }
-            } catch {
-                // Cache read failed, proceed with fetch
+            } catch {}
+
+            let ratesRes: Record<string, number> | null = null;
+
+            // Step 1: Try Frankfurter if currency is supported
+            if (FRANKFURTER_SUPPORTED.includes(currency)) {
+                try {
+                    const response = await fetch(`https://api.frankfurter.dev/v1/latest?base=${currency}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        ratesRes = data.rates;
+                        // Frankfurter doesn't include the base currency in the rates object, add it
+                        if (ratesRes) ratesRes[currency] = 1;
+                    }
+                } catch (e) {
+                    console.warn('Frankfurter fetch failed, trying fallback...');
+                }
             }
 
-            try {
-                const response = await fetch(`https://api.frankfurter.dev/v1/latest?base=${currency}`);
-                if (!response.ok) throw new Error('Failed to fetch rates');
-                const data = await response.json();
-                setExchangeRates(data.rates);
+            // Step 2: Try ExchangeRate-API if Frankfurter failed or doesn't support the currency (TWD/VND)
+            if (!ratesRes && API_KEY) {
+                try {
+                    const response = await fetch(`https://v6.exchangerate-api.com/v6/${API_KEY}/latest/${currency}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.result === 'success') {
+                            ratesRes = data.conversion_rates;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('ExchangeRate-API fetch failed');
+                }
+            }
 
-                // Update cache
+            if (ratesRes) {
+                setExchangeRates(ratesRes);
                 try {
                     localStorage.setItem(cacheKey, JSON.stringify({
-                        rates: data.rates,
+                        rates: ratesRes,
                         timestamp: Date.now()
                     }));
-                } catch {
-                    // localStorage full or unavailable
-                }
-            } catch (error) {
-                console.warn('Exchange rate fetch failed, using cached rates if available:', error);
-                // Try to use stale cache as fallback
+                } catch {}
+            } else {
+                // Try to use stale cache as absolute last resort
                 try {
                     const cached = localStorage.getItem(cacheKey);
                     if (cached) {
                         const { rates } = JSON.parse(cached);
                         setExchangeRates(rates);
                     }
-                } catch {
-                    // No fallback available
-                }
+                } catch {}
             }
         };
 
@@ -220,31 +292,51 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
     const formatCurrency = useCallback((amount: number, currencyOverride?: string) => {
         const targetCurrency = currencyOverride || currency;
 
-        if (targetCurrency === 'EUR') {
-            return new Intl.NumberFormat('en-IE', {
-                style: 'currency',
-                currency: 'EUR',
-            }).format(amount);
-        }
+        const locales: Record<string, string> = {
+            EUR: 'en-IE',
+            INR: 'en-IN',
+            GBP: 'en-GB',
+            SGD: 'en-SG',
+            VND: 'vi-VN',
+            TWD: 'zh-TW',
+            JPY: 'ja-JP',
+            KRW: 'ko-KR',
+            HKD: 'en-HK',
+            MYR: 'ms-MY',
+            PHP: 'en-PH',
+            THB: 'th-TH',
+            CAD: 'en-CA',
+            AUD: 'en-AU',
+            MXN: 'es-MX',
+            BRL: 'pt-BR',
+            IDR: 'id-ID'
+        };
 
-        if (targetCurrency === 'INR') {
-            return new Intl.NumberFormat('en-IN', {
-                style: 'currency',
-                currency: 'INR',
-                maximumFractionDigits: 0
-            }).format(amount);
-        }
+        const zeroDecimalCurrencies = ['VND', 'IDR', 'JPY', 'KRW', 'INR', 'TWD', 'THB', 'PHP'];
+        const symbol = CURRENCY_SYMBOLS[targetCurrency as Currency] || '$';
 
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: targetCurrency,
+        const formattedNumber = new Intl.NumberFormat(locales[targetCurrency] || 'en-US', {
+            minimumFractionDigits: zeroDecimalCurrencies.includes(targetCurrency) ? 0 : 2,
+            maximumFractionDigits: zeroDecimalCurrencies.includes(targetCurrency) ? 0 : 2
         }).format(amount);
+
+        return `${symbol}${formattedNumber}`;
     }, [currency]);
 
     const convertAmount = useCallback((amount: number, fromCurrency: string): number => {
-        if (!fromCurrency || fromCurrency === currency) return amount;
-        const rate = exchangeRates[fromCurrency];
-        return rate ? amount / rate : amount;
+        if (!fromCurrency) return amount;
+        const from = fromCurrency.toUpperCase();
+        const to = currency.toUpperCase();
+        
+        if (from === to) return amount;
+        
+        const rate = exchangeRates[from];
+        if (rate) return amount / rate;
+        
+        // If rate is missing, try a cross-rate if available or just return amount
+        // but log it for debugging
+        console.warn(`Conversion rate for ${from} to ${to} not found in current rates`);
+        return amount;
     }, [currency, exchangeRates]);
 
     const setCurrency = useCallback(async (newCurrency: Currency) => {
@@ -335,6 +427,9 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
         setAvatarUrl,
         isNavigating,
         setIsNavigating,
+        isRatesLoading: Object.keys(exchangeRates).length === 0,
+        CURRENCY_SYMBOLS,
+        CURRENCY_DETAILS
     }), [
         user,
         userId,
@@ -350,6 +445,7 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
         setMonthlyBudget,
         avatarUrl,
         isNavigating,
+        exchangeRates,
     ]);
 
     return (

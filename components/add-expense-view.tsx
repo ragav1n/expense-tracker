@@ -22,6 +22,13 @@ import { useGroups } from '@/components/providers/groups-provider';
 import { useBuckets } from '@/components/providers/buckets-provider';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 const dropdownCategories: Category[] = [
     { id: 'food', label: 'Food & Dining', icon: Utensils, color: '#FF6B6B' },
@@ -44,7 +51,7 @@ export function AddExpenseView() {
     const [date, setDate] = useState<Date | undefined>(new Date());
     const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Debit Card' | 'Credit Card' | 'UPI'>('Cash');
     const [loading, setLoading] = useState(false);
-    const { currency, userId, formatCurrency, convertAmount } = useUserPreferences();
+    const { currency, userId, formatCurrency, convertAmount, CURRENCY_SYMBOLS, CURRENCY_DETAILS } = useUserPreferences();
     const [txCurrency, setTxCurrency] = useState(currency);
     const { groups, friends } = useGroups();
     const { buckets } = useBuckets();
@@ -96,18 +103,44 @@ export function AddExpenseView() {
             let convertedAmount = parseFloat(amount);
 
             if (txCurrency !== currency) {
+                const FRANKFURTER_SUPPORTED = [
+                    'AUD', 'BRL', 'CAD', 'CHF', 'CNY', 'CZK', 'DKK', 'EUR', 'GBP', 'HKD',
+                    'HUF', 'IDR', 'ILS', 'INR', 'ISK', 'JPY', 'KRW', 'MXN', 'MYR', 'NOK',
+                    'NZD', 'PHP', 'PLN', 'RON', 'SEK', 'SGD', 'THB', 'TRY', 'USD', 'ZAR'
+                ];
+
                 try {
                     const dateStr = format(date, 'yyyy-MM-dd');
-                    let response = await fetch(`https://api.frankfurter.dev/v1/${dateStr}?from=${txCurrency}&to=${currency}`);
+                    let rate: number | null = null;
 
-                    if (!response.ok) {
-                        console.warn('Failed to fetch specific date rate, falling back to latest');
-                        response = await fetch(`https://api.frankfurter.dev/v1/latest?from=${txCurrency}&to=${currency}`);
+                    // Step 1: Try Frankfurter for historical records (if supported)
+                    if (FRANKFURTER_SUPPORTED.includes(txCurrency) && FRANKFURTER_SUPPORTED.includes(currency)) {
+                        const response = await fetch(`https://api.frankfurter.dev/v1/${dateStr}?from=${txCurrency}&to=${currency}`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            rate = data.rates[currency];
+                        }
                     }
 
-                    if (response.ok) {
-                        const data = await response.json();
-                        exchangeRate = data.rates[currency];
+                    // Step 2: Fallback to ExchangeRate-API (for TWD, VND or if Frankfurter fails)
+                    if (!rate) {
+                        const API_KEY = process.env.NEXT_PUBLIC_EXCHANGERATE_API_KEY;
+                        if (API_KEY) {
+                            const isToday = format(new Date(), 'yyyy-MM-dd') === dateStr;
+                            const url = isToday 
+                                ? `https://v6.exchangerate-api.com/v6/${API_KEY}/latest/${txCurrency}`
+                                : `https://v6.exchangerate-api.com/v6/${API_KEY}/history/${txCurrency}/${format(date, 'yyyy/MM/dd')}`;
+                            
+                            const response = await fetch(url);
+                            if (response.ok) {
+                                const data = await response.json();
+                                rate = isToday ? data.conversion_rates[currency] : data.conversion_rate;
+                            }
+                        }
+                    }
+
+                    if (rate) {
+                        exchangeRate = rate;
                         convertedAmount = parseFloat(amount) * exchangeRate;
                     }
                 } catch (e) {
@@ -278,24 +311,30 @@ export function AddExpenseView() {
                         className="h-16 text-3xl font-bold pl-12 bg-secondary/10 border-primary/50 focus-visible:ring-primary/50"
                     />
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-primary">
-                        {txCurrency === 'EUR' ? '€' : txCurrency === 'INR' ? '₹' : '$'}
+                        {CURRENCY_SYMBOLS[txCurrency as keyof typeof CURRENCY_SYMBOLS] || '$'}
                     </span>
                 </div>
-                <div className="flex gap-2 mt-2">
-                    {['USD', 'EUR', 'INR'].map((curr) => (
-                        <button
-                            key={curr}
-                            onClick={() => setTxCurrency(curr as any)}
-                            className={cn(
-                                "flex-1 py-1 text-xs rounded-md border transition-all",
-                                txCurrency === curr
-                                    ? "bg-primary/20 border-primary text-primary font-medium"
-                                    : "bg-secondary/10 border-white/5 hover:bg-secondary/20 text-muted-foreground"
-                            )}
-                        >
-                            {curr}
-                        </button>
-                    ))}
+                <div className="mt-2">
+                    <Select value={txCurrency} onValueChange={(val) => setTxCurrency(val as any)}>
+                        <SelectTrigger className="h-11 w-full bg-secondary/10 border-white/5 rounded-xl px-4">
+                            <div className="flex items-center gap-2">
+                                <span className="text-primary font-bold w-12 text-left">{CURRENCY_DETAILS[txCurrency as keyof typeof CURRENCY_DETAILS].symbol}</span>
+                                <span className="text-sm font-semibold w-12 text-left">{txCurrency}</span>
+                                <span className="text-xs text-muted-foreground ml-2 truncate">{CURRENCY_DETAILS[txCurrency as keyof typeof CURRENCY_DETAILS].name}</span>
+                            </div>
+                        </SelectTrigger>
+                        <SelectContent className="bg-card border-white/10 rounded-xl max-h-[300px]">
+                            {Object.entries(CURRENCY_DETAILS).map(([code, detail]) => (
+                                <SelectItem key={code} value={code} className="py-2.5 px-3 focus:bg-primary/20 rounded-lg">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-primary font-bold w-12 text-left">{detail.symbol}</span>
+                                        <span className="text-sm font-semibold w-12">{code}</span>
+                                        <span className="text-xs text-muted-foreground ml-2">{detail.name}</span>
+                                    </div>
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
 
@@ -580,7 +619,7 @@ export function AddExpenseView() {
                                                         className="h-9 text-sm pl-8 bg-secondary/10 border-white/10 rounded-lg"
                                                     />
                                                     <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                                                        {currency === 'EUR' ? '€' : currency === 'INR' ? '₹' : '$'}
+                                                        {CURRENCY_SYMBOLS[currency] || '$'}
                                                     </span>
                                                 </div>
                                             </div>
@@ -597,14 +636,14 @@ export function AddExpenseView() {
                                         <div className="space-y-1.5 pt-2 border-t border-white/5">
                                             <div className="flex justify-between text-[11px]">
                                                 <span className="text-muted-foreground">Others owe:</span>
-                                                <span className="font-medium text-primary">
-                                                    {currency === 'EUR' ? '€' : currency === 'INR' ? '₹' : '$'}{totalAllocated.toFixed(2)}
+                                                <span className="font-medium text-emerald-500">
+                                                    {CURRENCY_SYMBOLS[currency] || '$'}{totalAllocated.toFixed(2)}
                                                 </span>
                                             </div>
                                             <div className="flex justify-between text-[11px]">
                                                 <span className="text-muted-foreground">Your share:</span>
                                                 <span className={cn("font-medium", yourShare < 0 ? "text-red-400" : "text-white")}>
-                                                    {currency === 'EUR' ? '€' : currency === 'INR' ? '₹' : '$'}{yourShare.toFixed(2)}
+                                                    {CURRENCY_SYMBOLS[currency] || '$'}{yourShare.toFixed(2)}
                                                 </span>
                                             </div>
                                             {yourShare < 0 && (
@@ -621,7 +660,7 @@ export function AddExpenseView() {
                             <div className="pt-2 border-t border-white/5">
                                 <p className="text-[11px] text-muted-foreground text-center">
                                     Each person pays <span className="font-medium text-primary">
-                                        {currency === 'EUR' ? '€' : currency === 'INR' ? '₹' : '$'}
+                                        {CURRENCY_SYMBOLS[currency] || '$'}
                                         {(parseFloat(amount) / ((selectedGroupId ? 2 : selectedFriendIds.length) + 1)).toFixed(2)}
                                     </span>
                                 </p>

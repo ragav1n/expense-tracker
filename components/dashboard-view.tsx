@@ -115,7 +115,7 @@ export function DashboardView() {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
 
     const [loading, setLoading] = useState(true);
-    const { formatCurrency, currency, convertAmount, monthlyBudget, userId } = useUserPreferences();
+    const { formatCurrency, currency, convertAmount, monthlyBudget, userId, isRatesLoading, CURRENCY_SYMBOLS } = useUserPreferences();
     const { balances, groups, friends } = useGroups();
     const { buckets } = useBuckets();
 
@@ -368,11 +368,16 @@ export function DashboardView() {
         const myShare = calculateUserShare(tx, userId);
 
         // Conversion Logic:
-        if (tx.exchange_rate && tx.base_currency === currency) {
+        // Prioritize stored rate ONLY if it's not 1 (which usually means a conversion failure during save)
+        // or if the currencies are actually the same.
+        const txCurr = tx.currency || 'USD';
+        const isSameCurrency = txCurr === currency;
+        
+        if (!isSameCurrency && tx.exchange_rate && tx.exchange_rate !== 1 && tx.base_currency === currency) {
             return acc + (myShare * Number(tx.exchange_rate));
         }
 
-        return acc + convertAmount(myShare, tx.currency || 'USD');
+        return acc + convertAmount(myShare, txCurr);
     }, 0);
 
     const remaining = monthlyBudget - totalSpent;
@@ -394,10 +399,13 @@ export function DashboardView() {
         if (myShare > 0) {
             if (!acc[cat]) acc[cat] = 0;
 
-            if (tx.exchange_rate && tx.base_currency === currency) {
+            const txCurr = tx.currency || 'USD';
+            const isSameCurrency = txCurr === currency;
+
+            if (!isSameCurrency && tx.exchange_rate && tx.exchange_rate !== 1 && tx.base_currency === currency) {
                 acc[cat] += (myShare * Number(tx.exchange_rate));
             } else {
-                acc[cat] += convertAmount(myShare, tx.currency || 'USD');
+                acc[cat] += convertAmount(myShare, txCurr);
             }
         }
         return acc;
@@ -527,22 +535,28 @@ export function DashboardView() {
                 {/* Total Spent Card */}
                 <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#8A2BE2] to-[#4B0082] p-6 shadow-xl shadow-primary/20">
                     <div className="absolute top-0 right-0 p-6 opacity-10">
-                        <span className="text-9xl font-bold text-white">{currency === 'EUR' ? '€' : currency === 'INR' ? '₹' : '$'}</span>
+                        <span className="text-9xl font-bold text-white leading-none translate-x-4 -translate-y-4">
+                            {CURRENCY_SYMBOLS[currency as keyof typeof CURRENCY_SYMBOLS] || '$'}
+                        </span>
                     </div>
                     <div className="relative z-10 space-y-6">
                         <div className="flex justify-between items-start">
                             <div>
                                 <p className="text-white/80 text-sm font-medium">Personal Share Spent</p>
-                                <h2 className="text-4xl font-bold text-white mt-1">{formatCurrency(totalSpent)}</h2>
+                                <h2 className="text-4xl font-bold text-white mt-1">
+                                    {isRatesLoading ? "..." : formatCurrency(totalSpent)}
+                                </h2>
                             </div>
                             <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                                <span className="text-xl font-bold text-white">{currency === 'EUR' ? '€' : currency === 'INR' ? '₹' : '$'}</span>
+                                <span className="text-xl font-bold text-white">
+                                    {CURRENCY_SYMBOLS[currency as keyof typeof CURRENCY_SYMBOLS] || '$'}
+                                </span>
                             </div>
                         </div>
                         <div className="space-y-2">
                             <div className="flex justify-between text-xs font-medium text-white/80">
                                 <span>Budget: {formatCurrency(monthlyBudget)}</span>
-                                <span>Remaining: {formatCurrency(remaining)}</span>
+                                <span>Remaining: {isRatesLoading ? "..." : formatCurrency(remaining)}</span>
                             </div>
                             <Progress value={progress} className="h-2 bg-black/30" indicatorClassName="bg-white" />
                             <div className="flex justify-between text-[10px] text-white/60">
