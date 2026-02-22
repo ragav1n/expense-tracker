@@ -269,12 +269,10 @@ export function AddExpenseView() {
     };
 
     return (
-        <div className={cn(
-            "p-5 space-y-6 max-w-md mx-auto pt-4 relative min-h-full transition-all duration-700 ease-in-out",
-            selectedBucketId 
-                ? "bg-gradient-to-br from-cyan-950/40 via-background to-teal-950/40" 
-                : "bg-gradient-to-br from-purple-950/20 via-background to-background"
-        )}>
+        <div className="relative">
+            <div className={cn(
+                "p-5 space-y-6 max-w-md mx-auto pt-4 relative min-h-screen transition-all duration-700 ease-in-out"
+            )}>
             {/* Header */}
             <div className="flex items-center justify-between relative min-h-[40px]">
                 <button
@@ -748,5 +746,6 @@ export function AddExpenseView() {
                 {loading ? 'Adding Expense...' : 'Add Expense'}
             </Button>
         </div>
-    );
+    </div>
+);
 }

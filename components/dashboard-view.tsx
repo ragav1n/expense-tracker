@@ -2,7 +2,7 @@
 
 import { useUserPreferences, CURRENCY_SYMBOLS, type Currency } from '@/components/providers/user-preferences-provider';
 import { BudgetAlertManager } from '@/components/budget-alert-manager';
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useRouter } from 'next/navigation';
 import { Plus, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, CircleDollarSign, ArrowUpRight, ArrowDownLeft, Users, MoreVertical, Pencil, Trash2, X, History, Clock, HelpCircle, Tag, Plane, Home, Gift, ShoppingCart, Stethoscope, Gamepad2, School, Laptop, Music, Heart, RefreshCcw, Wallet, ChevronRight, Check } from 'lucide-react';
@@ -17,6 +17,16 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useGroups } from './providers/groups-provider';
 import { useBuckets } from './providers/buckets-provider';
 import {
+    Drawer,
+    DrawerContent,
+    DrawerHeader,
+    DrawerTitle,
+    DrawerDescription,
+    DrawerTrigger,
+    DrawerFooter,
+    DrawerClose,
+} from '@/components/ui/drawer';
+import {
     Dialog,
     DialogContent,
     DialogDescription,
@@ -24,7 +34,7 @@ import {
     DialogTitle,
     DialogTrigger,
     DialogFooter,
-    DialogClose
+    DialogClose,
 } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {
@@ -312,7 +322,8 @@ export function DashboardView() {
     const [loadingAudit, setLoadingAudit] = useState(false);
 
     // Dashboard Focus State
-    const [dashboardFocus, setDashboardFocus] = useState<string>('allowance');
+    const [dashboardFocus, setDashboardFocus] = useState<string>('');
+    const [isFocusRestored, setIsFocusRestored] = useState(false);
     const [isAddFundsOpen, setIsAddFundsOpen] = useState(false);
     const [isHowToUseOpen, setIsHowToUseOpen] = useState(false);
 
@@ -366,6 +377,13 @@ export function DashboardView() {
     // Handle modal sequencing and initial data load
     useEffect(() => {
         if (userId) {
+            // 1. Sync Restoration (Critical to do before any async calls to avoid race conditions)
+            if (!isFocusRestored) {
+                const savedFocus = localStorage.getItem(`dashboard_focus_${userId}`);
+                setDashboardFocus(savedFocus || 'allowance');
+                setIsFocusRestored(true);
+            }
+
             // Modal Sequencing Logic (Per-User)
             const hasSeenWelcome = localStorage.getItem(`welcome_seen_${userId}`);
             const lastSeenFeatureId = localStorage.getItem(`last_seen_feature_id_${userId}`) || localStorage.getItem('last_seen_feature_id');
@@ -390,6 +408,7 @@ export function DashboardView() {
                         setUserName(profile.full_name || 'User');
                         setAvatarUrl(profile.avatar_url);
                     }
+
                     await loadTransactions(userId);
                 } catch (error) {
                     console.error("Error fetching data:", error);
@@ -401,7 +420,15 @@ export function DashboardView() {
         } else if (!loading) {
             setLoading(false);
         }
-    }, [userId, loading]);
+    }, [userId, loading, isFocusRestored]);
+
+    // Save Focus Mode Persistence
+    useEffect(() => {
+        // Only save if we have successfully restored AND have a valid value
+        if (userId && dashboardFocus && isFocusRestored && dashboardFocus !== '') {
+            localStorage.setItem(`dashboard_focus_${userId}`, dashboardFocus);
+        }
+    }, [userId, dashboardFocus, isFocusRestored]);
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -533,15 +560,15 @@ export function DashboardView() {
         }
     };
 
-    const isRecentUserTransaction = (tx: Transaction) => {
+    const isRecentUserTransaction = useCallback((tx: Transaction) => {
         if (tx.user_id !== userId) return false;
         // Get all transactions by this user, assuming 'transactions' is already sorted by date desc
         const userTxs = transactions.filter(t => t.user_id === userId);
         // Check if this tx is in the top 3
         return userTxs.slice(0, 3).some(t => t.id === tx.id);
-    };
+    }, [userId, transactions]);
 
-    const calculateUserShare = (tx: Transaction, currentUserId: string | null) => {
+    const calculateUserShare = useCallback((tx: Transaction, currentUserId: string | null) => {
         if (!currentUserId) return 0;
 
         // CASH BASIS LOGIC:
@@ -556,20 +583,21 @@ export function DashboardView() {
         //    - My expense will be recorded when I SETTLE (via 'Settlement Sent' transaction).
         //    - So for the ORIGINAL split transaction, my share is 0.
         return 0;
-    };
+    }, []);
 
-    const focusedBucket = dashboardFocus !== 'allowance' ? buckets.find(b => b.id === dashboardFocus) : null;
+    const effectiveFocus = dashboardFocus || 'allowance';
+    const focusedBucket = effectiveFocus !== 'allowance' ? buckets.find(b => b.id === effectiveFocus) : null;
     const isBucketFocused = !!focusedBucket;
     const bucketCurrency = (focusedBucket?.currency || currency).toUpperCase() as Currency;
     const displayBudget = isBucketFocused ? Number(focusedBucket.budget) : monthlyBudget;
 
     // Calculate personal share for budget tracking
-    const totalSpent = transactions.reduce((acc, tx) => {
+    const totalSpent = useMemo(() => transactions.reduce((acc, tx) => {
         if (!userId) return acc;
 
         if (isBucketFocused) {
             // Project Focus: show all expenses for this project bucket (all time)
-            if (tx.bucket_id !== dashboardFocus) return acc;
+            if (tx.bucket_id !== effectiveFocus) return acc;
         } else {
             // Allowance Focus: exclude project elements that are marked explicitly
             if (tx.exclude_from_allowance) return acc;
@@ -592,13 +620,13 @@ export function DashboardView() {
         }
 
         return acc + convertAmount(myShare, txCurr, targetCurr);
-    }, 0);
+    }, 0), [transactions, userId, isBucketFocused, dashboardFocus, calculateUserShare, bucketCurrency, convertAmount]);
 
     const remaining = displayBudget - totalSpent;
     const progress = displayBudget > 0 ? Math.min((totalSpent / displayBudget) * 100, 100) : 0;
 
     // Calculate Spending by Category (converted personal share)
-    const spendingByCategory = transactions.reduce((acc, tx) => {
+    const spendingByCategory = useMemo(() => transactions.reduce((acc, tx) => {
         if (!userId) return acc;
 
         // Include all categories (settlements now inherit category)
@@ -623,14 +651,14 @@ export function DashboardView() {
             }
         }
         return acc;
-    }, {} as Record<string, number>);
+    }, {} as Record<string, number>), [transactions, userId, calculateUserShare, currency, convertAmount]);
 
-    const spendingData: SpendingCategory[] = Object.entries(spendingByCategory).map(([cat, value]) => ({
+    const spendingData: SpendingCategory[] = useMemo(() => Object.entries(spendingByCategory).map(([cat, value]) => ({
         name: cat.charAt(0).toUpperCase() + cat.slice(1),
         value,
         color: CATEGORY_COLORS[cat] || CATEGORY_COLORS.others,
         fill: CATEGORY_COLORS[cat] || CATEGORY_COLORS.others,
-    }));
+    })), [spendingByCategory]);
 
     const getBucketIcon = (iconName?: string) => {
         const icons: Record<string, any> = {
@@ -657,14 +685,30 @@ export function DashboardView() {
 
 
     // Filter transactions to only show relevant ones (where user has a share, paid, or it's a settlement for them)
-    const displayTransactions = transactions.filter(tx => {
+    const displayTransactions = useMemo(() => transactions.filter(tx => {
         if (tx.user_id === userId) return true; // I paid or created the settlement
         if (tx.splits && tx.splits.some(s => s.user_id === userId)) return true; // I'm in splits
         return false;
-    });
+    }), [transactions, userId]);
 
     return (
         <div className="relative min-h-screen">
+            {/* Focus-based Background Overlay */}
+            <AnimatePresence>
+                {isBucketFocused && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
+                    >
+                        <div className="absolute -top-[10%] -left-[10%] w-[70%] h-[70%] rounded-full blur-[120px] bg-cyan-500 opacity-20" />
+                        <div className="absolute -bottom-[10%] -right-[10%] w-[60%] h-[60%] rounded-full blur-[100px] bg-teal-500 opacity-10" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-cyan-950/20 via-transparent to-teal-950/20" />
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             <AnimatePresence>
                 {loading && (
                     <motion.div
@@ -679,7 +723,7 @@ export function DashboardView() {
             </AnimatePresence>
 
             <div className={cn(
-                "p-5 space-y-6 max-w-md mx-auto relative transition-all duration-300",
+                "p-5 space-y-6 max-w-md mx-auto relative transition-all duration-300 z-10",
                 loading ? "opacity-40 blur-[1px] pointer-events-none" : "opacity-100 blur-0"
             )}>
                 {/* Header */}
@@ -1066,37 +1110,40 @@ export function DashboardView() {
                 <div className="space-y-4">
                     <div className="flex justify-between items-center">
                         <h3 className="text-lg font-bold">Recent Transactions</h3>
-                        <Dialog>
-                            <DialogTrigger asChild>
-                                <button className="text-xs text-primary hover:text-primary/80">View All</button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-md max-h-[90vh] sm:max-h-[80vh] flex flex-col max-sm:fixed max-sm:bottom-0 max-sm:top-auto max-sm:translate-y-0 max-sm:rounded-b-none max-sm:rounded-t-[2.5rem] max-sm:border-x-0 max-sm:border-b-0 max-sm:pb-10 [&>button]:max-sm:hidden">
-                                <div className="hidden max-sm:block w-12 h-1.5 bg-white/10 rounded-full mx-auto mt-2 mb-4" />
-                                <DialogHeader className="max-sm:text-center">
-                                    <DialogTitle>All Transactions</DialogTitle>
-                                    <DialogDescription>History of all your expenses.</DialogDescription>
-                                </DialogHeader>
-                                <VirtualizedTransactionList 
-                                    transactions={displayTransactions}
-                                    userId={userId}
-                                    currency={currency}
-                                    buckets={buckets}
-                                    calculateUserShare={calculateUserShare}
-                                    getIconForCategory={getIconForCategory}
-                                    formatCurrency={formatCurrency}
-                                    convertAmount={convertAmount}
-                                    isRecentUserTransaction={isRecentUserTransaction}
-                                    setEditingTransaction={setEditingTransaction}
-                                    setIsEditOpen={setIsEditOpen}
-                                    handleDeleteTransaction={handleDeleteTransaction}
-                                    getBucketIcon={getBucketIcon}
-                                />
-                            </DialogContent>
-                        </Dialog>
+                <Drawer>
+                    <DrawerTrigger asChild>
+                        <button className="text-xs text-primary hover:text-primary/80">View All</button>
+                    </DrawerTrigger>
+                    <DrawerContent className="max-h-[90vh] flex flex-col pt-0">
+                        <DrawerHeader className="pb-2">
+                            <DrawerTitle>All Transactions</DrawerTitle>
+                            <DrawerDescription>History of all your expenses.</DrawerDescription>
+                        </DrawerHeader>
+                        
+                        <div className="flex-1 px-4 min-h-0">
+                            <VirtualizedTransactionList
+                                transactions={displayTransactions}
+                                userId={userId}
+                                currency={currency}
+                                buckets={buckets}
+                                calculateUserShare={calculateUserShare}
+                                getIconForCategory={getIconForCategory}
+                                formatCurrency={formatCurrency}
+                                convertAmount={convertAmount}
+                                isRecentUserTransaction={isRecentUserTransaction}
+                                setEditingTransaction={setEditingTransaction}
+                                setIsEditOpen={setIsEditOpen}
+                                handleDeleteTransaction={handleDeleteTransaction}
+                                getBucketIcon={getBucketIcon}
+                            />
+                        </div>
+                        <div className="h-6 shrink-0" />
+                    </DrawerContent>
+                </Drawer>
                     </div>
 
                     <div className="space-y-3">
-                        {displayTransactions.slice(0, 5).map((tx) => {
+                        {displayTransactions.slice(0, 5).map((tx: Transaction) => {
                             const myShare = calculateUserShare(tx, userId);
                             return (
                                 <div key={tx.id} className="flex items-center justify-between p-3 rounded-2xl bg-card/30 border border-white/5 hover:bg-card/50 transition-colors group">

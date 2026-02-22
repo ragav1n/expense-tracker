@@ -133,6 +133,13 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
             "min-h-screen w-full bg-background text-foreground relative overflow-hidden font-sans select-none flex flex-col",
             isNative && "pt-[env(safe-area-inset-top)]"
         )}>
+            {/* Global Background Glows */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+                <div className="absolute -top-[10%] -left-[10%] w-[70%] h-[70%] rounded-full blur-[120px] bg-purple-600 opacity-[0.15]" />
+                <div className="absolute -bottom-[10%] -right-[10%] w-[60%] h-[60%] rounded-full blur-[100px] bg-purple-900 opacity-10" />
+            </div>
+
+            <div className="fixed inset-0 pointer-events-none bg-gradient-to-br from-purple-950/5 via-transparent to-transparent z-0" />
 
             {/* Main Content Area */}
             <main className={cn(
