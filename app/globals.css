@@ -94,4 +94,18 @@
     -moz-appearance: textfield;
     appearance: textfield;
   }
+
+  .gpu {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+    will-change: transform;
+  }
+
+  /* Optimize large blurs by reducing their paint cost */
+  .blur-optimized {
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    will-change: backdrop-filter;
+  }
 }

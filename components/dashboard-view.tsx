@@ -199,7 +199,7 @@ const VirtualizedTransactionList = ({
                                 height: `${virtualItem.size}px`,
                                 transform: `translateY(${virtualItem.start}px)`,
                             }}
-                            className="pb-3"
+                            className="pb-3 gpu"
                         >
                             <div className="flex items-center justify-between p-3 rounded-2xl bg-card/20 border border-white/5 hover:bg-card/40 transition-colors group h-full">
                                 <div className="flex items-center gap-3">
@@ -339,6 +339,10 @@ export function DashboardView() {
     
     // Virtualization parent ref for "View All" modal
     const parentRef = useRef<HTMLDivElement>(null);
+
+    // Modal Interaction State
+    const [isViewAllOpen, setIsViewAllOpen] = useState(false);
+    const isAnyModalOpen = isViewAllOpen || activeModal !== null || isAddFundsOpen || isHowToUseOpen || isEditOpen;
 
     // Debounced realtime refresh for transaction changes
     const txDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -708,10 +712,10 @@ export function DashboardView() {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.8 }}
-                        className="fixed inset-0 pointer-events-none z-0 overflow-hidden will-change-transform"
+                        className="fixed inset-0 pointer-events-none z-0 overflow-hidden gpu"
                     >
-                        <div className="absolute -top-[10%] -left-[10%] w-[70%] h-[70%] rounded-full blur-[120px] bg-cyan-500 opacity-[0.25] will-change-transform" />
-                        <div className="absolute -bottom-[10%] -right-[10%] w-[60%] h-[60%] rounded-full blur-[100px] bg-teal-500 opacity-15 will-change-transform" />
+                        <div className="absolute -top-[10%] -left-[10%] w-[70%] h-[70%] rounded-full blur-[80px] bg-cyan-500 opacity-[0.2] gpu" />
+                        <div className="absolute -bottom-[10%] -right-[10%] w-[60%] h-[60%] rounded-full blur-[70px] bg-teal-500 opacity-10 gpu" />
                         <div className="absolute inset-0 bg-gradient-to-br from-cyan-950/20 via-transparent to-teal-950/20" />
                     </motion.div>
                 ) : (
@@ -721,10 +725,10 @@ export function DashboardView() {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.8 }}
-                        className="fixed inset-0 pointer-events-none z-0 overflow-hidden will-change-transform"
+                        className="fixed inset-0 pointer-events-none z-0 overflow-hidden gpu"
                     >
-                        <div className="absolute top-[20%] -right-[10%] w-[60%] h-[60%] rounded-full blur-[110px] bg-primary opacity-20 will-change-transform" />
-                        <div className="absolute bottom-[20%] -left-[10%] w-[50%] h-[50%] rounded-full blur-[90px] bg-primary/40 opacity-10 will-change-transform" />
+                        <div className="absolute top-[20%] -right-[10%] w-[60%] h-[60%] rounded-full blur-[80px] bg-primary opacity-15 gpu" />
+                        <div className="absolute bottom-[20%] -left-[10%] w-[50%] h-[50%] rounded-full blur-[70px] bg-primary/40 opacity-10 gpu" />
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -743,8 +747,9 @@ export function DashboardView() {
             </AnimatePresence>
 
             <div className={cn(
-                "p-5 space-y-6 max-w-md mx-auto relative transition-all duration-300 z-10",
-                loading ? "opacity-40 blur-[1px] pointer-events-none" : "opacity-100 blur-0"
+                "p-5 space-y-6 max-w-md mx-auto relative transition-opacity duration-300 z-10",
+                loading ? "opacity-40 blur-[1px] pointer-events-none" : "opacity-100 blur-0",
+                isAnyModalOpen ? "pointer-events-none overflow-hidden" : "overflow-x-hidden"
             )}>
                 {/* Header */}
                 <div className="flex justify-between items-center pt-2 gap-2">
@@ -1133,7 +1138,7 @@ export function DashboardView() {
                 <div className="space-y-4">
                     <div className="flex justify-between items-center">
                         <h3 className="text-lg font-bold">Recent Transactions</h3>
-                <Drawer>
+                <Drawer open={isViewAllOpen} onOpenChange={setIsViewAllOpen}>
                     <DrawerTrigger asChild>
                         <button className="text-xs text-primary font-bold hover:text-primary/80 transition-colors uppercase tracking-wider px-2 py-1">View All</button>
                     </DrawerTrigger>
@@ -1172,7 +1177,7 @@ export function DashboardView() {
                         {displayTransactions.slice(0, 5).map((tx: Transaction) => {
                             const myShare = calculateUserShare(tx, userId);
                             return (
-                                <div key={tx.id} className="flex items-center justify-between p-3 rounded-2xl bg-card/30 border border-white/5 hover:bg-card/50 transition-colors group">
+                                <div key={tx.id} className="flex items-center justify-between p-3 rounded-2xl bg-card/30 border border-white/5 hover:bg-card/50 transition-colors group gpu">
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center border border-white/5 relative">
                                             {getIconForCategory(tx.category)}

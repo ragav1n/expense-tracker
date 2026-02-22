@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, Users, Tag, PieChart, FileDown, Plus, Wallet, Globe, X, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,12 @@ type HowToUseDialogProps = {
 };
 
 export function HowToUseDialog({ isOpen, onClose }: HowToUseDialogProps) {
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     const steps = [
         {
             icon: <Plus className="w-6 h-6 text-emerald-400" />,
@@ -74,10 +81,12 @@ export function HowToUseDialog({ isOpen, onClose }: HowToUseDialogProps) {
         }
     ];
 
-    return (
+    if (!mounted) return null;
+
+    return createPortal(
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-6">
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -91,7 +100,7 @@ export function HowToUseDialog({ isOpen, onClose }: HowToUseDialogProps) {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ type: "spring", duration: 0.6, bounce: 0.3 }}
-                        className="relative w-full max-w-2xl bg-[#0A0A0B]/98 backdrop-blur-xl border border-white/10 rounded-[2.5rem] shadow-[0_0_50px_-12px_rgba(138,43,226,0.3)] overflow-hidden z-[110]"
+                        className="relative w-full max-w-2xl bg-[#0A0A0B]/98 backdrop-blur-xl border border-white/10 rounded-[2.5rem] shadow-[0_0_50px_-12px_rgba(138,43,226,0.3)] overflow-hidden z-[1100]"
                     >
                         {/* Decorative Background Elements */}
                         <div className="absolute -top-32 -left-32 w-80 h-80 bg-primary/20 rounded-full blur-[100px] opacity-40 animate-pulse pointer-events-none" />
@@ -194,6 +203,7 @@ export function HowToUseDialog({ isOpen, onClose }: HowToUseDialogProps) {
                     </motion.div>
                 </div>
             )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 }
