@@ -29,9 +29,10 @@ type AddFundsDialogProps = {
     onClose: () => void;
     userId: string | null;
     defaultBucketId?: string; // Optional: If we want to pre-fill the bucket based on the dashboard focus
+    onSuccess?: () => void;
 };
 
-export function AddFundsDialog({ isOpen, onClose, userId, defaultBucketId }: AddFundsDialogProps) {
+export function AddFundsDialog({ isOpen, onClose, userId, defaultBucketId, onSuccess }: AddFundsDialogProps) {
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [loading, setLoading] = useState(false);
@@ -46,7 +47,12 @@ export function AddFundsDialog({ isOpen, onClose, userId, defaultBucketId }: Add
         e.preventDefault();
         
         if (!amount || parseFloat(amount) <= 0) {
-            toast.error('Amount must be greater than 0');
+            toast.error('Amount is required and must be greater than 0');
+            return;
+        }
+
+        if (!description || description.trim() === '') {
+            toast.error('Description is required');
             return;
         }
         
@@ -114,7 +120,7 @@ export function AddFundsDialog({ isOpen, onClose, userId, defaultBucketId }: Add
                 base_currency: currency,
                 converted_amount: convertedAmount,
                 bucket_id: defaultBucketId || null,
-                exclude_from_allowance: false // Always include in allowance math so it increases remaining allowance!
+                exclude_from_allowance: !!defaultBucketId // Exclude from allowance if adding to a specific bucket!
             });
 
             if (error) throw error;
@@ -122,6 +128,7 @@ export function AddFundsDialog({ isOpen, onClose, userId, defaultBucketId }: Add
             toast.success('Funds added successfully!');
             setAmount('');
             setDescription('');
+            onSuccess?.();
             onClose();
         } catch (error: any) {
             toast.error('Failed to add funds: ' + error.message);
@@ -180,7 +187,7 @@ export function AddFundsDialog({ isOpen, onClose, userId, defaultBucketId }: Add
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="fund-description">Description</Label>
+                        <Label htmlFor="fund-description">Description <span className="text-destructive">*</span></Label>
                         <Input
                             id="fund-description"
                             value={description}

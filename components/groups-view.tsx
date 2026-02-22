@@ -381,7 +381,7 @@ export function GroupsView() {
                                                         className={cn(
                                                             "w-12 h-12 rounded-2xl border flex items-center justify-center transition-all",
                                                             newBucketIcon === item.name
-                                                                ? "bg-amber-500/20 border-amber-500 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+                                                                ? "bg-cyan-500/20 border-cyan-500 text-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.2)]"
                                                                 : "bg-secondary/10 border-white/5 text-muted-foreground hover:border-white/10"
                                                         )}
                                                     >
@@ -389,7 +389,7 @@ export function GroupsView() {
                                                     </button>
                                                     <span className={cn(
                                                         "text-[9px] font-bold uppercase tracking-wider",
-                                                        newBucketIcon === item.name ? "text-amber-500" : "text-muted-foreground"
+                                                        newBucketIcon === item.name ? "text-cyan-500" : "text-muted-foreground"
                                                     )}>
                                                         {item.label}
                                                     </span>
@@ -403,7 +403,7 @@ export function GroupsView() {
                                             placeholder="e.g. Trip, New iPhone, Gift..."
                                             value={newBucketName}
                                             onChange={(e) => setNewBucketName(e.target.value)}
-                                            className="bg-secondary/20 border-white/5 h-12 rounded-2xl focus-visible:ring-amber-500/50 w-full"
+                                            className="bg-secondary/20 border-white/5 h-12 rounded-2xl focus-visible:ring-cyan-500/50 w-full"
                                         />
                                     </div>
 
@@ -439,7 +439,7 @@ export function GroupsView() {
                                                         placeholder="0.00"
                                                         value={newBucketTarget}
                                                         onChange={(e) => setNewBucketTarget(e.target.value)}
-                                                        className="bg-secondary/20 border-white/5 h-12 rounded-2xl pl-8 focus-visible:ring-amber-500/50 w-full"
+                                                        className="bg-secondary/20 border-white/5 h-12 rounded-2xl pl-8 focus-visible:ring-cyan-500/50 w-full"
                                                     />
                                                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-bold">
                                                         {CURRENCY_DETAILS[newBucketCurrency as keyof typeof CURRENCY_DETAILS]?.symbol || '$'}
@@ -463,7 +463,7 @@ export function GroupsView() {
                                     <Button
                                         onClick={isEditBucketOpen ? handleUpdateBucket : handleCreateBucket}
                                         disabled={isProcessing}
-                                        className="w-full h-12 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-lg shadow-amber-500/20 mt-4 text-sm"
+                                        className="w-full h-12 rounded-2xl bg-cyan-500 hover:bg-cyan-600 text-white font-bold shadow-lg shadow-cyan-500/20 mt-4 text-sm"
                                     >
                                         {isProcessing ? 'Processing...' : isEditBucketOpen ? 'Save Changes' : 'Create Bucket'}
                                     </Button>
@@ -596,7 +596,7 @@ export function GroupsView() {
             <Tabs defaultValue="groups" className="w-full">
                 <TabsList className="w-full grid grid-cols-4 bg-secondary/20 p-1 rounded-2xl h-12">
                     <TabsTrigger value="groups" className="rounded-xl data-[state=active]:bg-card data-[state=active]:text-primary transition-all font-semibold">Groups</TabsTrigger>
-                    <TabsTrigger value="personal" className="rounded-xl data-[state=active]:bg-card data-[state=amber-500]:text-amber-500 transition-all font-semibold data-[state=active]:text-amber-500">Personal</TabsTrigger>
+                    <TabsTrigger value="personal" className="rounded-xl data-[state=active]:bg-card transition-all font-semibold data-[state=active]:text-cyan-500">Personal</TabsTrigger>
                     <TabsTrigger value="friends" className="rounded-xl data-[state=active]:bg-card data-[state=active]:text-primary transition-all font-semibold">Friends</TabsTrigger>
                     <TabsTrigger value="settlements" className="rounded-xl data-[state=active]:bg-card data-[state=active]:text-primary transition-all font-semibold">Settlements</TabsTrigger>
                 </TabsList>
@@ -610,7 +610,7 @@ export function GroupsView() {
                                 onClick={() => setIsAddBucketOpen(true)}
                                 size="sm"
                                 variant="ghost"
-                                className="h-8 rounded-xl bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 gap-1.5 px-3 border border-amber-500/20"
+                                className="h-8 rounded-xl bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500/20 gap-1.5 px-3 border border-cyan-500/20"
                             >
                                 <Plus className="w-3.5 h-3.5" />
                                 <span className="text-[10px] font-bold">New Bucket</span>
@@ -628,7 +628,7 @@ export function GroupsView() {
                                         <CardContent className="p-4 space-y-4">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center border bg-amber-500/10 border-amber-500/20 text-amber-500 p-2.5">
+                                                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center border bg-cyan-500/10 border-cyan-500/20 text-cyan-500 p-2.5">
                                                         {getBucketIcon(bucket.icon)}
                                                     </div>
                                                     <div>
@@ -695,7 +695,7 @@ export function GroupsView() {
                                                                 </span>
                                                             )}
                                                         </div>
-                                                        <span className={cn("flex flex-col items-end", remaining < 0 ? "text-rose-500" : "text-amber-500")}>
+                                                        <span className={cn("flex flex-col items-end", remaining < 0 ? "text-rose-500" : "text-cyan-500")}>
                                                             <span>{remaining < 0 ? "Over budget by " : "Remaining: "}</span>
                                                             <span>{formatCurrency(Math.abs(remaining), bucket.currency)}</span>
                                                         </span>
@@ -704,7 +704,7 @@ export function GroupsView() {
                                                         <div
                                                             className={cn(
                                                                 "h-full transition-all duration-500",
-                                                                progress >= 100 ? "bg-rose-500" : progress >= 80 ? "bg-orange-500" : "bg-amber-500"
+                                                                progress >= 100 ? "bg-rose-500" : progress >= 80 ? "bg-teal-500" : "bg-cyan-500"
                                                             )}
                                                             style={{ width: `${progress}%` }}
                                                         />
@@ -718,7 +718,7 @@ export function GroupsView() {
                         ) : buckets.filter(b => b.is_archived).length === 0 && (
                             <div className="text-center py-12 space-y-3 bg-secondary/5 rounded-3xl border border-dashed border-white/5">
                                 <div className="w-16 h-16 rounded-full bg-secondary/20 flex items-center justify-center mx-auto">
-                                    <Tag className="w-8 h-8 text-amber-500/30" />
+                                    <Tag className="w-8 h-8 text-cyan-500/30" />
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-sm font-bold">No active buckets</p>
@@ -727,7 +727,7 @@ export function GroupsView() {
                                 <Button
                                     onClick={() => setIsAddBucketOpen(true)}
                                     size="sm"
-                                    className="rounded-xl h-9 bg-amber-500 hover:bg-amber-600 text-white gap-2"
+                                    className="rounded-xl h-9 bg-cyan-500 hover:bg-cyan-600 text-white gap-2"
                                 >
                                     <Plus className="w-4 h-4" />
                                     Create First Bucket

@@ -159,11 +159,11 @@ export function ExportDateRangeModal({
                                         className={cn(
                                             "flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all min-w-[70px] cursor-pointer",
                                             selectedBucketId === bucket.id
-                                                ? "bg-primary/20 border-primary"
+                                                ? "bg-cyan-500/20 border-cyan-500"
                                                 : "bg-secondary/10 border-white/5 hover:border-white/10"
                                         )}
                                     >
-                                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-lg bg-secondary/20 border border-white/5 p-1.5 text-amber-500">
+                                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-lg bg-secondary/20 border border-white/5 p-1.5 text-cyan-500">
                                             {getBucketIcon(bucket.icon || 'Tag')}
                                         </div>
                                         <span className="text-[10px] font-medium truncate w-14 text-center">{bucket.name}</span>

@@ -33,7 +33,7 @@ export function HowToUseDialog({ isOpen, onClose }: HowToUseDialogProps) {
             ]
         },
         {
-            icon: <Tag className="w-6 h-6 text-amber-500" />,
+            icon: <Tag className="w-6 h-6 text-cyan-500" />,
             title: "Missions, Buckets & Focus",
             desc: "Stop mixing your 'Life' money with your 'Goal' money. Create a Mission Bucket for a specific trip (e.g. 'Germany 2024') or a big purchase. Use the Dashboard Focus pill to swap your entire screen to view ONLY that mission's localized budget and pacing. This helps you stay perfectly on track for big goals without cluttering your daily habit tracking.",
             subPoints: [

@@ -353,12 +353,12 @@ export function SearchView() {
                                                 className={cn(
                                                     "flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all min-w-[70px] cursor-pointer",
                                                     selectedBucketId === bucket.id
-                                                        ? "bg-amber-500/20 border-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.1)]"
+                                                        ? "bg-cyan-500/20 border-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.1)]"
                                                         : "bg-secondary/10 border-white/5 hover:border-white/10"
                                                 )}
                                             >
                                                 <div className="w-8 h-8 rounded-full flex items-center justify-center bg-secondary/20 border border-white/5">
-                                                    <div className="w-4 h-4 text-amber-500">
+                                                    <div className="w-4 h-4 text-cyan-500">
                                                         {getBucketIcon(bucket.icon)}
                                                     </div>
                                                 </div>
@@ -465,7 +465,7 @@ export function SearchView() {
                         </div>
                     ))}
                     {selectedBucketId && buckets.find(b => b.id === selectedBucketId) && (
-                        <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 border border-amber-500/20 rounded-full text-[10px] text-amber-500 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-cyan-500/20 border border-cyan-500/20 rounded-full text-[10px] text-cyan-500 whitespace-nowrap">
                             <div className="w-3 h-3">
                                 {getBucketIcon(buckets.find(b => b.id === selectedBucketId)?.icon)}
                             </div>
@@ -540,7 +540,7 @@ export function SearchView() {
                                             {(tx.bucket_id || tx.is_recurring) && (
                                                 <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                                                     {tx.bucket_id && buckets.find(b => b.id === tx.bucket_id) && (
-                                                        <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-[10px] text-amber-500 border border-amber-500/10 font-bold flex items-center gap-1 shrink-0">
+                                                        <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-[10px] text-cyan-500 border border-cyan-500/10 font-bold flex items-center gap-1 shrink-0">
                                                             <div className="w-2.5 h-2.5">
                                                                 {getBucketIcon(buckets.find(b => b.id === tx.bucket_id)?.icon)}
                                                             </div>

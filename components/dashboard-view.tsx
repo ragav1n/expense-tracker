@@ -563,7 +563,7 @@ export function DashboardView() {
                             <button className={cn(
                                 "flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-all shadow-lg active:scale-95",
                                 isBucketFocused 
-                                    ? "bg-amber-500 text-white shadow-amber-500/30" 
+                                    ? "bg-cyan-500 text-white shadow-cyan-500/30" 
                                     : "bg-secondary/50 backdrop-blur-md text-foreground shadow-black/5 border border-white/5"
                             )}>
                                 {isBucketFocused ? (
@@ -595,20 +595,20 @@ export function DashboardView() {
                                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Active Missions</p>
                                 </div>
                             )}
-
+ 
                             {buckets.filter(b => !b.is_archived).map(bucket => (
                                 <DropdownMenuItem 
                                     key={bucket.id}
                                     onClick={() => setDashboardFocus(bucket.id)}
-                                    className={cn("rounded-xl py-3 cursor-pointer", dashboardFocus === bucket.id && "bg-amber-500/20 text-amber-500 focus:bg-amber-500/20")}
+                                    className={cn("rounded-xl py-3 cursor-pointer", dashboardFocus === bucket.id && "bg-cyan-500/20 text-cyan-500 focus:bg-cyan-500/20")}
                                 >
-                                    <div className="w-7 h-7 rounded-full bg-amber-500/20 flex items-center justify-center mr-3 text-amber-500">
+                                    <div className="w-7 h-7 rounded-full bg-cyan-500/20 flex items-center justify-center mr-3 text-cyan-500">
                                         <div className="w-4 h-4">
                                             {getBucketIcon(bucket.icon)}
                                         </div>
                                     </div>
-                                    <span className={cn("font-bold flex-1", dashboardFocus === bucket.id && "text-amber-500")}>{bucket.name}</span>
-                                    {dashboardFocus === bucket.id && <Check className="w-4 h-4 text-amber-500 ml-2" />}
+                                    <span className={cn("font-bold flex-1", dashboardFocus === bucket.id && "text-cyan-500")}>{bucket.name}</span>
+                                    {dashboardFocus === bucket.id && <Check className="w-4 h-4 text-cyan-500 ml-2" />}
                                 </DropdownMenuItem>
                             ))}
                         </DropdownMenuContent>
@@ -619,7 +619,7 @@ export function DashboardView() {
                 <div className={cn(
                     "relative overflow-hidden rounded-3xl p-6 shadow-xl transition-all duration-500",
                     isBucketFocused 
-                        ? "bg-gradient-to-br from-amber-500 to-orange-600 shadow-amber-500/20"
+                        ? "bg-gradient-to-br from-cyan-500 to-teal-600 shadow-cyan-500/20"
                         : "bg-gradient-to-br from-[#8A2BE2] to-[#4B0082] shadow-primary/20"
                 )}>
                     <div className="absolute top-0 right-0 p-6 opacity-10 transition-colors">
@@ -826,7 +826,7 @@ export function DashboardView() {
                                                                 <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                                                                     {(() => {
                                                                         const txBucket = buckets.find(b => b.id === tx.bucket_id); return tx.bucket_id && txBucket ? (
-                                                                            <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-[10px] text-amber-500 border border-amber-500/10 font-bold flex items-center gap-1 shrink-0">
+                                                                            <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-[10px] text-cyan-500 border border-cyan-500/10 font-bold flex items-center gap-1 shrink-0">
                                                                                 <div className="w-2.5 h-2.5">
                                                                                     {getBucketIcon(txBucket.icon)}
                                                                                 </div>
@@ -934,7 +934,7 @@ export function DashboardView() {
                                                 <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                                                     {(() => {
                                                         const txBucket = buckets.find(b => b.id === tx.bucket_id); return tx.bucket_id && txBucket ? (
-                                                            <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-[10px] text-amber-500 border border-amber-500/10 font-bold flex items-center gap-1 shrink-0">
+                                                            <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-[10px] text-cyan-500 border border-cyan-500/10 font-bold flex items-center gap-1 shrink-0">
                                                                 <div className="w-2.5 h-2.5">
                                                                     {getBucketIcon(txBucket.icon)}
                                                                 </div>
@@ -1177,7 +1177,7 @@ export function DashboardView() {
                                 <div className="space-y-4 pt-2">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                            <Wallet className="w-4 h-4 text-amber-500" />
+                                            <Wallet className="w-4 h-4 text-cyan-500" />
                                             <div>
                                                 <p className="text-sm font-medium">Exclude from Allowance</p>
                                             </div>
@@ -1185,7 +1185,7 @@ export function DashboardView() {
                                         <Switch
                                             checked={!!editingTransaction.exclude_from_allowance}
                                             onCheckedChange={(val: boolean) => setEditingTransaction({ ...editingTransaction, exclude_from_allowance: val })}
-                                            className="data-[state=checked]:bg-amber-500"
+                                            className="data-[state=checked]:bg-cyan-500"
                                         />
                                     </div>
                                 </div>
@@ -1231,6 +1231,7 @@ export function DashboardView() {
                     onClose={() => setIsAddFundsOpen(false)}
                     userId={userId}
                     defaultBucketId={isBucketFocused ? dashboardFocus : undefined}
+                    onSuccess={() => userId && loadTransactions(userId)}
                 />
                 
                 <HowToUseDialog

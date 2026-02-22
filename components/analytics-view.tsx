@@ -435,7 +435,7 @@ export function AnalyticsView() {
                 {/* Filters Row */}
                 <div className="flex items-center justify-center gap-2 px-1">
                     <Select value={selectedBucketId} onValueChange={(val) => setSelectedBucketId(val)}>
-                        <SelectTrigger className="flex-1 min-w-0 max-w-[160px] px-3 h-9 text-[12px] bg-amber-500/10 border-amber-500/20 text-amber-500 rounded-xl font-medium">
+                        <SelectTrigger className="flex-1 min-w-0 max-w-[160px] px-3 h-9 text-[12px] bg-cyan-500/10 border-cyan-500/20 text-cyan-500 rounded-xl font-medium">
                             <SelectValue placeholder="All Spending" />
                         </SelectTrigger>
                         <SelectContent align="center">
@@ -469,20 +469,20 @@ export function AnalyticsView() {
 
                 {/* Bucket Progress Highlight */}
                 {selectedBucketId !== 'all' && buckets.find(b => b.id === selectedBucketId) && (
-                    <Card className="bg-amber-500/10 border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.05)]">
+                    <Card className="bg-cyan-500/10 border-cyan-500/20 shadow-[0_0_20px_rgba(6,182,212,0.05)]">
                         <CardContent className="p-4 flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-500 border border-amber-500/20">
+                                <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 flex items-center justify-center text-cyan-500 border border-cyan-500/20">
                                     {getBucketIcon(buckets.find(b => b.id === selectedBucketId)?.icon)}
                                 </div>
                                 <div>
-                                    <h4 className="text-sm font-bold text-amber-500">{buckets.find(b => b.id === selectedBucketId)?.name}</h4>
-                                    <p className="text-[10px] text-amber-500/60 font-bold uppercase tracking-widest">Targeted View</p>
+                                    <h4 className="text-sm font-bold text-cyan-500">{buckets.find(b => b.id === selectedBucketId)?.name}</h4>
+                                    <p className="text-[10px] text-cyan-500/60 font-bold uppercase tracking-widest">Targeted View</p>
                                 </div>
                             </div>
                             <div className="text-right">
-                                <p className="text-[10px] text-amber-500/60 font-bold uppercase tracking-widest">Budget Remaining</p>
-                                <p className="text-sm font-bold text-amber-500">
+                                <p className="text-[10px] text-cyan-500/60 font-bold uppercase tracking-widest">Budget Remaining</p>
+                                <p className="text-sm font-bold text-cyan-500">
                                     {formatCurrency(Number(buckets.find(b => b.id === selectedBucketId)?.budget || 0) - totalSpentInRange)}
                                 </p>
                             </div>

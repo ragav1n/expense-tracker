@@ -468,8 +468,8 @@ export function AddExpenseView() {
             <div className="space-y-4 p-4 rounded-2xl bg-secondary/10 border border-white/5">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
-                            <Wallet className="w-4 h-4 text-amber-500" />
+                        <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center shrink-0">
+                            <Wallet className="w-4 h-4 text-cyan-500" />
                         </div>
                         <div>
                             <p className="text-sm font-medium">Exclude from Allowance</p>
@@ -479,7 +479,7 @@ export function AddExpenseView() {
                     <Switch
                         checked={excludeFromAllowance}
                         onCheckedChange={setExcludeFromAllowance}
-                        className="data-[state=checked]:bg-amber-500"
+                        className="data-[state=checked]:bg-cyan-500"
                     />
                 </div>
             </div>
