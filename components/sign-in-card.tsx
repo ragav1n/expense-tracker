@@ -179,7 +179,7 @@ export function Component({ isSignUp = false }: { isSignUp?: boolean }) {
   // Force hydration sync
   return (
     <div className="w-full min-h-[100dvh] bg-background relative overflow-hidden flex items-center justify-center">
-      <FallingPattern color="#6237A0" className="absolute inset-0 z-0" />
+      <FallingPattern color="var(--primary)" className="absolute inset-0 z-0" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}

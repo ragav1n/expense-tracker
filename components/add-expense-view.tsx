@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, CreditCard, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, Wallet, Banknote, HelpCircle, RefreshCcw, Calendar as CalendarIcon, Users, User, CheckCircle2, X, Tag, Plane, Home, Gift, ShoppingCart, Gamepad2, School, Laptop, Music, Heart, Smartphone } from 'lucide-react';
+import { ChevronLeft, CreditCard, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, Wallet, Banknote, HelpCircle, RefreshCcw, Calendar as CalendarIcon, Users, User, CheckCircle2, X, Tag, Plane, Home, Gift, ShoppingCart, Gamepad2, School, Laptop, Music, Heart, Smartphone, Shirt } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useIsNative } from '@/hooks/use-native';
@@ -26,12 +27,14 @@ import { CurrencyDropdown } from '@/components/ui/currency-dropdown';
 
 const dropdownCategories: Category[] = [
     { id: 'food', label: 'Food & Dining', icon: Utensils, color: '#FF6B6B' },
+    { id: 'groceries', label: 'Groceries', icon: ShoppingCart, color: '#10B981' },
+    { id: 'fashion', label: 'Fashion', icon: Shirt, color: '#F472B6' },
     { id: 'transport', label: 'Transportation', icon: Car, color: '#4ECDC4' },
     { id: 'bills', label: 'Bills & Utilities', icon: Zap, color: '#F9C74F' },
     { id: 'shopping', label: 'Shopping', icon: ShoppingBag, color: '#A06CD5' },
     { id: 'healthcare', label: 'Healthcare', icon: HeartPulse, color: '#FF9F1C' },
     { id: 'entertainment', label: 'Entertainment', icon: Clapperboard, color: '#FF1493' },
-    { id: 'others', label: 'Others', icon: HelpCircle, color: '#C7F464' },
+    { id: 'others', label: 'Others', icon: HelpCircle, color: '#2DD4BF' },
     { id: 'uncategorized', label: 'Uncategorized', icon: HelpCircle, color: '#94A3B8' },
 ];
 
@@ -271,8 +274,37 @@ export function AddExpenseView() {
     return (
         <div className="relative">
             <div className={cn(
-                "p-5 space-y-6 max-w-md mx-auto pt-4 relative min-h-screen transition-all duration-700 ease-in-out"
+                "p-5 space-y-6 max-w-md mx-auto pt-4 relative min-h-screen transition-all duration-700 ease-in-out z-10"
             )}>
+                {/* Unified Background Glows */}
+                <AnimatePresence>
+                    {selectedBucketId ? (
+                        <motion.div 
+                            key="bucket-focus"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.8 }}
+                            className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
+                        >
+                            <div className="absolute -top-[10%] -left-[10%] w-[70%] h-[70%] rounded-full blur-[120px] bg-cyan-500 opacity-[0.25]" />
+                            <div className="absolute -bottom-[10%] -right-[10%] w-[60%] h-[60%] rounded-full blur-[100px] bg-teal-500 opacity-15" />
+                            <div className="absolute inset-0 bg-gradient-to-br from-cyan-950/20 via-transparent to-teal-950/20" />
+                        </motion.div>
+                    ) : (
+                        <motion.div 
+                            key="default-focus"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.8 }}
+                            className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
+                        >
+                            <div className="absolute top-[20%] -right-[10%] w-[60%] h-[60%] rounded-full blur-[110px] bg-primary opacity-20" />
+                            <div className="absolute bottom-[20%] -left-[10%] w-[50%] h-[50%] rounded-full blur-[90px] bg-primary/40 opacity-10" />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             {/* Header */}
             <div className="flex items-center justify-between relative min-h-[40px]">
                 <button

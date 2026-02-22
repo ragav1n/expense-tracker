@@ -58,7 +58,7 @@ export default async function RootLayout({
   const nonce = (await headers()).get('x-nonce') || '';
 
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <body suppressHydrationWarning className={`${geist.variable} ${geistMono.variable} font-sans antialiased`}>
         <UserPreferencesProvider>
           <MobileLayout>

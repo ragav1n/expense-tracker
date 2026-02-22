@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Search, SlidersHorizontal, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, Wallet, Banknote, CreditCard, CircleDollarSign, HelpCircle, Tag, Plane, Home, Gift, ShoppingCart, Stethoscope, Gamepad2, School, Laptop, Music, Heart, RefreshCcw } from 'lucide-react';
+import { ChevronLeft, Search, SlidersHorizontal, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, Wallet, Banknote, CreditCard, CircleDollarSign, HelpCircle, Tag, Plane, Home, Gift, ShoppingCart, Stethoscope, Gamepad2, School, Laptop, Music, Heart, RefreshCcw, Shirt } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
@@ -51,6 +51,8 @@ type Transaction = {
 
 const categories = [
     { id: 'food', label: 'Food', icon: Utensils },
+    { id: 'groceries', label: 'Groceries', icon: ShoppingCart },
+    { id: 'fashion', label: 'Fashion', icon: Shirt },
     { id: 'transport', label: 'Transport', icon: Car },
     { id: 'bills', label: 'Bills', icon: Zap },
     { id: 'shopping', label: 'Shopping', icon: ShoppingBag },

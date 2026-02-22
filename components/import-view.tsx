@@ -85,7 +85,7 @@ export function ImportView() {
 
     // Categories for mapping/fallback
     const CATEGORIES = [
-        'Food', 'Transport', 'Bills', 'Shopping', 'Healthcare', 'Entertainment', 'Others', 'Uncategorized'
+        'Food', 'Groceries', 'Fashion', 'Transport', 'Bills', 'Shopping', 'Healthcare', 'Entertainment', 'Others', 'Uncategorized'
     ];
 
     const findHeaderRow = (data: any[][]): { index: number, headers: string[] } => {
@@ -339,10 +339,12 @@ export function ImportView() {
                 const lowerDesc = String(descStr).toLowerCase();
                 if (lowerDesc.includes('uber') || lowerDesc.includes('taxi') || lowerDesc.includes('fuel')) category = 'Transport';
                 else if (lowerDesc.includes('zomato') || lowerDesc.includes('swiggy') || lowerDesc.includes('restaurant') || lowerDesc.includes('cafe')) category = 'Food';
-                else if (lowerDesc.includes('supermarket') || lowerDesc.includes('grocery') || lowerDesc.includes('mart')) category = 'Shopping';
+                else if (lowerDesc.includes('milk') || lowerDesc.includes('curd') || lowerDesc.includes('tofu') || lowerDesc.includes('grocer') || lowerDesc.includes('supermarket') || lowerDesc.includes('mart')) category = 'Groceries';
+                else if (lowerDesc.includes('shirt') || lowerDesc.includes('clothes') || lowerDesc.includes('fashion') || lowerDesc.includes('zara') || lowerDesc.includes('h&m') || lowerDesc.includes('apparel')) category = 'Fashion';
                 else if (lowerDesc.includes('netflix') || lowerDesc.includes('spotify') || lowerDesc.includes('movie') || lowerDesc.includes('cinema')) category = 'Entertainment';
                 else if (lowerDesc.includes('pharmacy') || lowerDesc.includes('doctor') || lowerDesc.includes('hospital')) category = 'Healthcare';
                 else if (lowerDesc.includes('bill') || lowerDesc.includes('rent') || lowerDesc.includes('electricity') || lowerDesc.includes('recharge')) category = 'Bills';
+                else if (lowerDesc.includes('shop') || lowerDesc.includes('amazon') || lowerDesc.includes('flipkart') || lowerDesc.includes('myntra')) category = 'Shopping';
             }
 
             // PAYMENT METHOD LOGIC

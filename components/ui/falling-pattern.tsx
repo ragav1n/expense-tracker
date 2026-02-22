@@ -156,7 +156,7 @@ export function FallingPattern({
                 />
             </motion.div>
             <div
-                className="absolute inset-0 z-1 dark:brightness-600"
+                className="absolute inset-0 z-1"
                 style={{
                     backdropFilter: `blur(${blurIntensity})`,
                     backgroundImage: `radial-gradient(circle at 50% 50%, transparent 0, transparent 2px, ${backgroundColor} 2px)`,

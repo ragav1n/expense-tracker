@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { ChevronLeft, MoreHorizontal, Filter } from 'lucide-react';
+import { ChevronLeft, MoreHorizontal, Filter, Shirt } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
@@ -28,17 +28,21 @@ import {
 // Constants for consistent coloring
 const CATEGORY_COLORS: Record<string, string> = {
     food: '#8B5CF6',      // Violet
+    groceries: '#10B981', // Emerald
+    fashion: '#F472B6',   // Hot Pink
     transport: '#3B82F6', // Blue
     bills: '#06B6D4',     // Cyan
     shopping: '#F59E0B',  // Amber
     healthcare: '#EF4444', // Red
     entertainment: '#EC4899', // Pink
-    others: '#10B981',    // Emerald
+    others: '#2DD4BF',    // Mint
     uncategorized: '#6366F1', // Indigo
 };
 
 const chartConfig: ChartConfig = {
     food: { label: "Food", color: CATEGORY_COLORS.food },
+    groceries: { label: "Groceries", color: CATEGORY_COLORS.groceries },
+    fashion: { label: "Fashion", color: CATEGORY_COLORS.fashion },
     transport: { label: "Transport", color: CATEGORY_COLORS.transport },
     bills: { label: "Bills", color: CATEGORY_COLORS.bills },
     shopping: { label: "Shopping", color: CATEGORY_COLORS.shopping },
@@ -118,7 +122,7 @@ export function AnalyticsView() {
     const getBucketIcon = (iconName?: string) => {
         const icons: Record<string, any> = {
             Tag, Plane, Home, Gift, Car, Utensils, ShoppingCart,
-            Heart, Gamepad2, School, Laptop, Music
+            Heart, Gamepad2, School, Laptop, Music, Shirt
         };
         const Icon = icons[iconName || 'Tag'] || Tag;
         return <Icon className="w-full h-full" />;

@@ -5,7 +5,7 @@ import { BudgetAlertManager } from '@/components/budget-alert-manager';
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useRouter } from 'next/navigation';
-import { Plus, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, CircleDollarSign, ArrowUpRight, ArrowDownLeft, Users, MoreVertical, Pencil, Trash2, X, History, Clock, HelpCircle, Tag, Plane, Home, Gift, ShoppingCart, Stethoscope, Gamepad2, School, Laptop, Music, Heart, RefreshCcw, Wallet, ChevronRight, Check } from 'lucide-react';
+import { Plus, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, CircleDollarSign, ArrowUpRight, ArrowDownLeft, Users, MoreVertical, Pencil, Trash2, X, History, Clock, HelpCircle, Tag, Plane, Home, Gift, ShoppingCart, Stethoscope, Gamepad2, School, Laptop, Music, Heart, RefreshCcw, Wallet, ChevronRight, Check, Shirt } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Pie, PieChart, Cell } from 'recharts';
@@ -59,12 +59,14 @@ import { HowToUseDialog } from '@/components/how-to-use-dialog';
 // Constants
 const CATEGORY_COLORS: Record<string, string> = {
     food: '#8A2BE2',      // Electric Purple
+    groceries: '#10B981', // Emerald
+    fashion: '#F472B6',   // Hot Pink
     transport: '#FF6B6B', // Coral
     bills: '#4ECDC4',     // Teal
     shopping: '#F9C74F',  // Yellow
     healthcare: '#FF9F1C', // Orange
     entertainment: '#FF1493', // Deep Pink
-    others: '#C7F464',    // Lime
+    others: '#2DD4BF',    // Mint
     settlement: '#10B981', // Emerald for settlement
     uncategorized: '#6366F1', // Indigo-500 for Uncategorized
 };
@@ -95,6 +97,8 @@ const itemVariants = {
 
 const chartConfig: ChartConfig = {
     food: { label: "Food & Dining", color: CATEGORY_COLORS.food },
+    groceries: { label: "Groceries", color: CATEGORY_COLORS.groceries },
+    fashion: { label: "Fashion", color: CATEGORY_COLORS.fashion },
     transport: { label: "Transportation", color: CATEGORY_COLORS.transport },
     bills: { label: "Bills & Utilities", color: CATEGORY_COLORS.bills },
     shopping: { label: "Shopping", color: CATEGORY_COLORS.shopping },
@@ -587,9 +591,9 @@ export function DashboardView() {
 
     const effectiveFocus = dashboardFocus || 'allowance';
     const focusedBucket = effectiveFocus !== 'allowance' ? buckets.find(b => b.id === effectiveFocus) : null;
-    const isBucketFocused = !!focusedBucket;
+    const isBucketFocused = effectiveFocus !== 'allowance';
     const bucketCurrency = (focusedBucket?.currency || currency).toUpperCase() as Currency;
-    const displayBudget = isBucketFocused ? Number(focusedBucket.budget) : monthlyBudget;
+    const displayBudget = isBucketFocused && focusedBucket ? Number(focusedBucket.budget) : monthlyBudget;
 
     // Calculate personal share for budget tracking
     const totalSpent = useMemo(() => transactions.reduce((acc, tx) => {
@@ -672,6 +676,8 @@ export function DashboardView() {
     const getIconForCategory = (category: string) => {
         switch (category.toLowerCase()) {
             case 'food': return <Utensils className="w-5 h-5 text-white" />;
+            case 'groceries': return <ShoppingCart className="w-5 h-5 text-white" />;
+            case 'fashion': return <Shirt className="w-5 h-5 text-white" />;
             case 'transport': return <Car className="w-5 h-5 text-white" />;
             case 'bills': return <Zap className="w-5 h-5 text-white" />;
             case 'shopping': return <ShoppingBag className="w-5 h-5 text-white" />;
@@ -695,16 +701,30 @@ export function DashboardView() {
         <div className="relative min-h-screen">
             {/* Focus-based Background Overlay */}
             <AnimatePresence>
-                {isBucketFocused && (
+                {isBucketFocused ? (
                     <motion.div 
+                        key="bucket-focus"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
+                        transition={{ duration: 0.8 }}
                         className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
                     >
-                        <div className="absolute -top-[10%] -left-[10%] w-[70%] h-[70%] rounded-full blur-[120px] bg-cyan-500 opacity-20" />
-                        <div className="absolute -bottom-[10%] -right-[10%] w-[60%] h-[60%] rounded-full blur-[100px] bg-teal-500 opacity-10" />
+                        <div className="absolute -top-[10%] -left-[10%] w-[70%] h-[70%] rounded-full blur-[120px] bg-cyan-500 opacity-[0.25]" />
+                        <div className="absolute -bottom-[10%] -right-[10%] w-[60%] h-[60%] rounded-full blur-[100px] bg-teal-500 opacity-15" />
                         <div className="absolute inset-0 bg-gradient-to-br from-cyan-950/20 via-transparent to-teal-950/20" />
+                    </motion.div>
+                ) : (
+                    <motion.div 
+                        key="default-focus"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.8 }}
+                        className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
+                    >
+                        <div className="absolute top-[20%] -right-[10%] w-[60%] h-[60%] rounded-full blur-[110px] bg-primary opacity-20" />
+                        <div className="absolute bottom-[20%] -left-[10%] w-[50%] h-[50%] rounded-full blur-[90px] bg-primary/40 opacity-10" />
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -732,11 +752,14 @@ export function DashboardView() {
                         <div className="w-10 h-10 relative shrink-0">
                             <img src="/Novira.png" alt="Novira" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(138,43,226,0.5)]" />
                         </div>
-                        <div>
-                            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/80">
-                                Hello, {userName.split(' ')[0]}! 👋
+                        <div className="min-w-0">
+                            <h1 className="text-xl font-bold flex items-center gap-2">
+                                <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-white/80 whitespace-nowrap truncate">
+                                    Hello, {userName.split(' ')[0]}!
+                                </span>
+                                <span className="shrink-0">👋</span>
                             </h1>
-                            <p className="text-[11px] text-muted-foreground font-medium">Track your expenses with Novira</p>
+                            <p className="text-[11px] text-muted-foreground font-medium truncate">Track your expenses with Novira</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -810,7 +833,7 @@ export function DashboardView() {
                     >
                         {isBucketFocused ? (
                             <>
-                                {focusedBucket.name} Focus
+                                {focusedBucket?.name || 'Loading'} Focus
                             </>
                         ) : (
                             <>
@@ -1034,7 +1057,7 @@ export function DashboardView() {
 
                 {/* Balance Summary Card */}
                 <div className="grid grid-cols-2 gap-4">
-                    <Card className="bg-emerald-500/10 border-emerald-500/20">
+                    <Card className="bg-emerald-500/15 border-emerald-500/20 backdrop-blur-md">
                         <CardContent className="p-4 flex flex-col items-center justify-center text-center">
                             <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center mb-2">
                                 <ArrowDownLeft className="w-4 h-4 text-emerald-500" />
@@ -1043,7 +1066,7 @@ export function DashboardView() {
                             <h4 className="text-lg font-bold text-emerald-500">{formatCurrency(balances.totalOwedToMe)}</h4>
                         </CardContent>
                     </Card>
-                    <Card className="bg-rose-500/10 border-rose-500/20">
+                    <Card className="bg-rose-500/15 border-rose-500/20 backdrop-blur-md">
                         <CardContent className="p-4 flex flex-col items-center justify-center text-center">
                             <div className="w-8 h-8 rounded-full bg-rose-500/20 flex items-center justify-center mb-2">
                                 <ArrowUpRight className="w-4 h-4 text-rose-500" />
@@ -1058,7 +1081,7 @@ export function DashboardView() {
                 <div className="space-y-4">
                     <div className="flex justify-between items-center">
                         <h3 className="text-lg font-bold">Spending by Category</h3>
-                        <span className="text-xs bg-secondary/30 px-3 py-1 rounded-full text-primary border border-primary/20">Current Month</span>
+                        <span className="text-xs bg-secondary/50 backdrop-blur-md px-3 py-1 rounded-full text-primary border border-primary/20 font-bold uppercase tracking-wider">Current Month</span>
                     </div>
                     <Card className="border-none bg-card/40 backdrop-blur-md shadow-none">
                         <CardContent className="p-4 flex items-center justify-between gap-4">
@@ -1114,13 +1137,13 @@ export function DashboardView() {
                     <DrawerTrigger asChild>
                         <button className="text-xs text-primary hover:text-primary/80">View All</button>
                     </DrawerTrigger>
-                    <DrawerContent className="max-h-[90vh] flex flex-col pt-0">
+                    <DrawerContent className="h-[85vh] flex flex-col pt-0">
                         <DrawerHeader className="pb-2">
                             <DrawerTitle>All Transactions</DrawerTitle>
                             <DrawerDescription>History of all your expenses.</DrawerDescription>
                         </DrawerHeader>
                         
-                        <div className="flex-1 px-4 min-h-0">
+                        <div className="flex-1 pb-6 px-4 min-h-0 overflow-hidden">
                             <VirtualizedTransactionList
                                 transactions={displayTransactions}
                                 userId={userId}

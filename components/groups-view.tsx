@@ -594,11 +594,11 @@ export function GroupsView() {
             </div>
 
             <Tabs defaultValue="groups" className="w-full">
-                <TabsList className="w-full grid grid-cols-4 bg-secondary/20 p-1 rounded-2xl h-12">
-                    <TabsTrigger value="groups" className="rounded-xl data-[state=active]:bg-card data-[state=active]:text-primary transition-all font-semibold">Groups</TabsTrigger>
-                    <TabsTrigger value="personal" className="rounded-xl data-[state=active]:bg-card transition-all font-semibold data-[state=active]:text-cyan-500">Personal</TabsTrigger>
-                    <TabsTrigger value="friends" className="rounded-xl data-[state=active]:bg-card data-[state=active]:text-primary transition-all font-semibold">Friends</TabsTrigger>
-                    <TabsTrigger value="settlements" className="rounded-xl data-[state=active]:bg-card data-[state=active]:text-primary transition-all font-semibold">Settlements</TabsTrigger>
+                <TabsList className="w-full grid grid-cols-4 bg-secondary/40 p-1 rounded-2xl h-12 backdrop-blur-md">
+                    <TabsTrigger value="groups" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=inactive]:text-white/40 border border-transparent data-[state=active]:border-white/20 transition-all font-bold">Groups</TabsTrigger>
+                    <TabsTrigger value="personal" className="rounded-xl data-[state=active]:bg-cyan-500 data-[state=active]:text-white data-[state=inactive]:text-white/40 border border-transparent data-[state=active]:border-white/20 transition-all font-bold">Personal</TabsTrigger>
+                    <TabsTrigger value="friends" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=inactive]:text-white/40 border border-transparent data-[state=active]:border-white/20 transition-all font-bold">Friends</TabsTrigger>
+                    <TabsTrigger value="settlements" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=inactive]:text-white/40 border border-transparent data-[state=active]:border-white/20 transition-all font-bold">Settlements</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="personal" className="mt-6 space-y-6">

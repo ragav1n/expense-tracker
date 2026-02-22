@@ -1,5 +1,5 @@
-@import 'tailwindcss';
-@import 'tw-animate-css';
+@import "tailwindcss";
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -7,32 +7,36 @@
   /* Deep Purple/Black Theme based on screenshots */
   --background: oklch(0.1 0.05 280); /* Deep Purple/Black */
   --foreground: oklch(0.98 0.01 280);
-  
-  --card: oklch(0.13 0.06 280); /* Slightly lighter purple for cards */
+
+  --card: oklch(
+    0.18 0.06 280
+  ); /* Lighter for better contrast against background */
   --card-foreground: oklch(0.98 0.01 280);
-  
-  --popover: oklch(0.13 0.06 280);
+
+  --popover: oklch(0.18 0.06 280);
   --popover-foreground: oklch(0.98 0.01 280);
-  
+
   --primary: oklch(0.55 0.25 280); /* Electric Purple */
   --primary-foreground: oklch(0.98 0.01 280);
-  
-  --secondary: oklch(0.25 0.1 280); /* Darker Purple Accent */
+
+  --secondary: oklch(
+    0.3 0.08 280
+  ); /* Significantly lighter for tracks/backdrops */
   --secondary-foreground: oklch(0.98 0.01 280);
-  
-  --muted: oklch(0.2 0.04 280);
+
+  --muted: oklch(0.25 0.04 280);
   --muted-foreground: oklch(0.7 0.05 280);
-  
-  --accent: oklch(0.25 0.1 280);
+
+  --accent: oklch(0.3 0.08 280);
   --accent-foreground: oklch(0.98 0.01 280);
-  
+
   --destructive: oklch(0.6 0.25 25);
   --destructive-foreground: oklch(0.98 0.01 280);
-  
-  --border: oklch(0.2 0.05 280);
-  --input: oklch(0.2 0.05 280);
+
+  --border: oklch(0.25 0.05 280);
+  --input: oklch(0.3 0.05 280); /* Lighter track for switches and inputs */
   --ring: oklch(0.55 0.25 280);
-  
+
   --radius: 0.75rem;
 
   /* Sonner theme variables */
@@ -42,9 +46,9 @@
 }
 
 @theme inline {
-  --font-sans: 'Geist', 'Geist Fallback';
-  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
-  
+  --font-sans: "Geist", "Geist Fallback";
+  --font-mono: "Geist Mono", "Geist Mono Fallback";
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -64,7 +68,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -86,7 +90,7 @@
     margin: 0;
   }
 
-  input[type=number] {
+  input[type="number"] {
     -moz-appearance: textfield;
     appearance: textfield;
   }
