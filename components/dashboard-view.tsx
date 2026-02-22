@@ -17,16 +17,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useGroups } from './providers/groups-provider';
 import { useBuckets } from './providers/buckets-provider';
 import {
-    Drawer,
-    DrawerContent,
-    DrawerHeader,
-    DrawerTitle,
-    DrawerDescription,
-    DrawerTrigger,
-    DrawerFooter,
-    DrawerClose,
-} from '@/components/ui/drawer';
-import {
     Dialog,
     DialogContent,
     DialogDescription,
@@ -55,6 +45,7 @@ import { WelcomeModal } from '@/components/welcome-modal';
 import { LATEST_FEATURE_ANNOUNCEMENT } from '@/lib/feature-flags';
 import { AddFundsDialog } from '@/components/add-funds-dialog';
 import { HowToUseDialog } from '@/components/how-to-use-dialog';
+import { TransactionRow } from '@/components/transaction-row';
 
 // Constants
 const CATEGORY_COLORS: Record<string, string> = {
@@ -151,174 +142,81 @@ type AuditLog = {
     };
 };
 
-const VirtualizedTransactionList = ({ 
-    transactions, 
-    userId, 
-    currency, 
-    buckets,
-    calculateUserShare,
-    getIconForCategory,
-    formatCurrency,
-    convertAmount,
-    isRecentUserTransaction,
-    setEditingTransaction,
-    setIsEditOpen,
-    handleDeleteTransaction,
-    getBucketIcon,
-    loadAuditLogs,
-    canEditTransaction
+const VirtualizedTransactionList = ({
+  transactions, userId, currency, buckets,
+  calculateUserShare, getIconForCategory, formatCurrency,
+  convertAmount, setEditingTransaction, setIsEditOpen,
+  handleDeleteTransaction, getBucketChip, loadAuditLogs,
+  canEditTransaction, toast
 }: any) => {
-    const parentRef = useRef<HTMLDivElement>(null);
+  const parentRef = useRef<HTMLDivElement>(null);
 
-    const rowVirtualizer = useVirtualizer({
-        count: transactions.length,
-        getScrollElement: () => parentRef.current,
-        estimateSize: () => 92,
-        overscan: 5,
-    });
+  const rowVirtualizer = useVirtualizer({
+    count: transactions.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 130, // Tall enough for badge row
+    overscan: 10,
+  });
 
-    return (
-        <div className="flex-1 overflow-y-auto sm:-mr-4 sm:pr-4 min-h-0 px-1 sm:px-0 h-full touch-pan-y" ref={parentRef} vaul-scrollable-content="">
-            <div 
-                style={{
-                    height: `${rowVirtualizer.getTotalSize()}px`,
-                    width: '100%',
-                    position: 'relative',
-                }}
-                className="pt-4"
+  return (
+    <div ref={parentRef} className="overflow-auto h-[65vh]">
+      <div
+        style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}
+      >
+        {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+          const tx = transactions[virtualItem.index];
+          const myShare = calculateUserShare(tx, userId);
+          const showConverted = tx.currency && tx.currency !== currency;
+
+          return (
+            <div
+              key={tx.id}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                transform: `translateY(${virtualItem.start}px)`,
+              }}
+              className="px-2"
             >
-                {rowVirtualizer.getVirtualItems().map((virtualItem) => {
-                    const tx = transactions[virtualItem.index];
-                    const myShare = calculateUserShare(tx, userId);
-                    return (
-                        <div 
-                            key={tx.id} 
-                            style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                width: '100%',
-                                height: `${virtualItem.size}px`,
-                                transform: `translateY(${virtualItem.start}px)`,
-                            }}
-                            className="pb-3 gpu"
-                        >
-                            <div className="flex items-center justify-between p-3 rounded-2xl bg-card/20 border border-white/5 hover:bg-card/40 transition-colors group h-full">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center border border-white/5 relative">
-                                        {getIconForCategory(tx.category)}
-                                        {tx.splits && tx.splits.length > 0 && (
-                                            <div className="absolute -bottom-1 -right-1 bg-primary rounded-full p-0.5 border border-background">
-                                                <Users className="w-2.5 h-2.5 text-white" />
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <p className="font-medium text-sm truncate" title={tx.description}>{tx.description}</p>
-                                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5 whitespace-nowrap overflow-hidden">
-                                            <span className="px-1.5 py-0.5 rounded bg-primary/10 text-[11px] text-primary border border-primary/10 capitalize shrink-0">{tx.category}</span>
-                                            <span className="font-medium text-[11px] text-primary/80 shrink-0">
-                                                {tx.user_id === userId ? 'You paid' : `Paid by ${tx.profile?.full_name?.split(' ')[0] || 'Unknown'}`}
-                                            </span>
-                                            <span className="shrink-0 text-[11px] select-none text-muted-foreground/50">•</span>
-                                            <span className="shrink-0 text-[11px]">{format(new Date(tx.date), 'MMM d, yyyy')}</span>
-                                        </div>
-
-                                        {(tx.bucket_id || tx.is_recurring) && (
-                                            <div className="flex items-center gap-1.5 mt-1.5 overflow-hidden">
-                                                {(() => {
-                                                    const txBucket = buckets.find((b: any) => b.id === tx.bucket_id); return tx.bucket_id && txBucket ? (
-                                                        <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-[11px] text-cyan-500 border border-cyan-500/10 font-bold flex items-center gap-1 shrink-0 truncate max-w-[120px]">
-                                                            <div className="w-2.5 h-2.5 shrink-0">
-                                                                {getBucketIcon(txBucket.icon)}
-                                                            </div>
-                                                            <span className="truncate">{txBucket.name}</span>
-                                                        </span>
-                                                    ) : null;
-                                                })()}
-                                                {tx.is_recurring && (
-                                                    <span className="px-1.5 py-0.5 rounded bg-sky-500/10 text-[11px] text-sky-500 border border-sky-500/10 font-bold flex items-center gap-1 shrink-0">
-                                                        <RefreshCcw className="w-2.5 h-2.5 shrink-0" />
-                                                        Recurring
-                                                    </span>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2 shrink-0 ml-2">
-                                    <div className="flex flex-col items-end shrink-0">
-                                        <span className={cn(
-                                            "font-bold text-sm whitespace-nowrap",
-                                            myShare < 0 ? "text-emerald-500" : ""
-                                        )}>
-                                            {myShare < 0 ? '+' : '-'}{formatCurrency(Math.abs(myShare), tx.currency)}
-                                        </span>
-                                        {(tx.currency !== currency) && (
-                                            <div className="text-[11px] text-muted-foreground flex flex-col items-end mt-0.5">
-                                                <span className="font-medium text-emerald-500">
-                                                    ≈ {formatCurrency(convertAmount(Math.abs(myShare), tx.currency || 'USD'), currency)}
-                                                </span>
-                                            </div>
-                                        )}
-                                        {tx.splits && tx.splits.length > 0 && (
-                                            <span className="text-[9px] text-muted-foreground mt-0.5">
-                                                My Share
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="w-[56px] flex items-center justify-start gap-1.5 transition-opacity">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                loadAuditLogs(tx);
-                                            }}
-                                            className="p-1.5 rounded-full hover:bg-white/10 transition-colors text-muted-foreground hover:text-primary"
-                                            title="View History"
-                                        >
-                                            <History className="w-3.5 h-3.5" />
-                                        </button>
-                                        {canEditTransaction(tx) && !tx.is_settlement && (!tx.splits || tx.splits.length === 0) && (
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <button className="p-1 rounded-full hover:bg-white/10 transition-opacity">
-                                                        <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                                                    </button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onClick={() => {
-                                                        setEditingTransaction(tx);
-                                                        setIsEditOpen(true);
-                                                    }}>
-                                                        <Pencil className="w-4 h-4 mr-2" />
-                                                        Edit
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => {
-                                                        toast('Delete transaction?', {
-                                                            action: {
-                                                                label: 'Delete',
-                                                                onClick: () => handleDeleteTransaction(tx)
-                                                            }
-                                                        });
-                                                    }}>
-                                                        <Trash2 className="w-4 h-4 mr-2" />
-                                                        Delete
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    );
-                })}
-                {transactions.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">No transactions found.</div>
-                )}
+              <TransactionRow
+                tx={tx}
+                userId={userId}
+                myShare={myShare}
+                formattedAmount={formatCurrency(Math.abs(myShare), tx.currency)}
+                formattedConverted={
+                  showConverted
+                    ? formatCurrency(convertAmount(Math.abs(myShare), tx.currency || 'USD'), currency)
+                    : undefined
+                }
+                showConverted={showConverted}
+                canEdit={canEditTransaction(tx)}
+                icon={getIconForCategory(tx.category, 'w-4 h-4 text-white/90')}
+                bucketChip={getBucketChip(tx)}
+                onHistory={() => loadAuditLogs(tx)}
+                onEdit={() => {
+                  setEditingTransaction(tx);
+                  setIsEditOpen(true);
+                }}
+                onDelete={() => {
+                  toast('Delete transaction?', {
+                    action: { label: 'Delete', onClick: () => handleDeleteTransaction(tx) }
+                  });
+                }}
+              />
             </div>
-        </div>
-    );
+          );
+        })}
+
+        {transactions.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground/40 text-sm">
+            No transactions found.
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export function DashboardView() {
@@ -604,6 +502,29 @@ export function DashboardView() {
         return 0;
     }, []);
 
+    const getBucketIcon = useCallback((iconName?: string) => {
+        const icons: Record<string, any> = {
+            Tag, Plane, Home, Gift, Car, Utensils, ShoppingCart,
+            Heart, Gamepad2, School, Laptop, Music
+        };
+        const Icon = icons[iconName || 'Tag'] || Tag;
+        return <Icon className="w-full h-full" />;
+    }, []);
+
+    const getBucketChip = useCallback((tx: Transaction) => {
+        if (!tx.bucket_id) return null;
+        const txBucket = buckets.find(b => b.id === tx.bucket_id);
+        if (!txBucket) return null;
+        return (
+            <span className="flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 shadow-sm">
+                <div className="w-2.5 h-2.5 shrink-0 opacity-90">
+                    {getBucketIcon(txBucket.icon)}
+                </div>
+                {txBucket.name}
+            </span>
+        );
+    }, [buckets, getBucketIcon]);
+
     const effectiveFocus = dashboardFocus || 'allowance';
     const focusedBucket = effectiveFocus !== 'allowance' ? buckets.find(b => b.id === effectiveFocus) : null;
     const isBucketFocused = effectiveFocus !== 'allowance';
@@ -679,30 +600,22 @@ export function DashboardView() {
         fill: CATEGORY_COLORS[cat] || CATEGORY_COLORS.others,
     })), [spendingByCategory]);
 
-    const getBucketIcon = (iconName?: string) => {
-        const icons: Record<string, any> = {
-            Tag, Plane, Home, Gift, Car, Utensils, ShoppingCart,
-            Heart, Gamepad2, School, Laptop, Music
-        };
-        const Icon = icons[iconName || 'Tag'] || Tag;
-        return <Icon className="w-full h-full" />;
-    };
 
-    const getIconForCategory = (category: string) => {
-        switch (category.toLowerCase()) {
-            case 'food': return <Utensils className="w-5 h-5 text-white" />;
-            case 'groceries': return <ShoppingCart className="w-5 h-5 text-white" />;
-            case 'fashion': return <Shirt className="w-5 h-5 text-white" />;
-            case 'transport': return <Car className="w-5 h-5 text-white" />;
-            case 'bills': return <Zap className="w-5 h-5 text-white" />;
-            case 'shopping': return <ShoppingBag className="w-5 h-5 text-white" />;
-            case 'healthcare': return <HeartPulse className="w-5 h-5 text-white" />;
-            case 'entertainment': return <Clapperboard className="w-5 h-5 text-white" />;
-            case 'settlement': return <ArrowUpRight className="w-5 h-5 text-white" />;
-            case 'uncategorized': return <HelpCircle className="w-5 h-5 text-white" />;
-            default: return <CircleDollarSign className="w-5 h-5 text-white" />;
-        }
-    };
+    const getIconForCategory = (category: string, className: string = "w-5 h-5 text-white") => {
+    switch (category.toLowerCase()) {
+        case 'food': return <Utensils className={className} />;
+        case 'groceries': return <ShoppingCart className={className} />;
+        case 'fashion': return <Shirt className={className} />;
+        case 'transport': return <Car className={className} />;
+        case 'bills': return <Zap className={className} />;
+        case 'shopping': return <ShoppingBag className={className} />;
+        case 'healthcare': return <HeartPulse className={className} />;
+        case 'entertainment': return <Clapperboard className={className} />;
+        case 'settlement': return <ArrowUpRight className={className} />;
+        case 'uncategorized': return <HelpCircle className={className} />;
+        default: return <CircleDollarSign className={className} />;
+    }
+};
 
 
     // Filter transactions to only show relevant ones (where user has a share, paid, or it's a settlement for them)
@@ -1152,17 +1065,16 @@ export function DashboardView() {
                 <div className="space-y-4">
                     <div className="flex justify-between items-center">
                         <h3 className="text-lg font-bold">Recent Transactions</h3>
-                <Drawer open={isViewAllOpen} onOpenChange={setIsViewAllOpen}>
-                    <DrawerTrigger asChild>
+                <Dialog open={isViewAllOpen} onOpenChange={setIsViewAllOpen}>
+                    <DialogTrigger asChild>
                         <button className="text-xs text-primary font-bold hover:text-primary/80 transition-colors uppercase tracking-wider px-2 py-1">View All</button>
-                    </DrawerTrigger>
-                    <DrawerContent className="h-[88vh] flex flex-col bg-background/98 backdrop-blur-xl border-white/10 rounded-t-[40px]">
-                        <DrawerHeader className="pb-4 shrink-0">
-                            <DrawerTitle className="text-2xl font-bold text-center">All Transactions</DrawerTitle>
-                            <DrawerDescription className="text-center">History of all your expenses.</DrawerDescription>
-                        </DrawerHeader>
-                        <div className="flex-1 px-4 min-h-0 relative flex flex-col">
-                            <div className="absolute inset-x-0 top-0 h-4 bg-gradient-to-b from-background/95 to-transparent z-10 pointer-events-none" />
+                    </DialogTrigger>
+                    <DialogContent className="max-w-xl p-0 gap-0 rounded-3xl overflow-hidden bg-background/98 backdrop-blur-2xl border-white/10 shadow-2xl h-[85vh] flex flex-col">
+                        <DialogHeader className="px-5 pt-5 pb-3 shrink-0">
+                            <DialogTitle className="text-2xl font-bold">All Transactions</DialogTitle>
+                            <DialogDescription>History of all your expenses.</DialogDescription>
+                        </DialogHeader>
+                        <div className="flex-1 px-2 pb-2 min-h-0 relative flex flex-col">
                             <VirtualizedTransactionList
                                 transactions={displayTransactions}
                                 userId={userId}
@@ -1175,134 +1087,50 @@ export function DashboardView() {
                                 setEditingTransaction={setEditingTransaction}
                                 setIsEditOpen={setIsEditOpen}
                                 handleDeleteTransaction={handleDeleteTransaction}
-                                getBucketIcon={getBucketIcon}
+                                getBucketChip={getBucketChip}
                                 loadAuditLogs={loadAuditLogs}
                                 canEditTransaction={canEditTransaction}
+                                toast={toast}
                             />
-                            <div className="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-background/95 to-transparent z-10 pointer-events-none" />
                         </div>
-                        <DrawerFooter className="pt-2">
-                            <DrawerClose asChild>
-                                <Button variant="outline" className="w-full rounded-2xl border-white/10" autoFocus>Close</Button>
-                            </DrawerClose>
-                        </DrawerFooter>
-                    </DrawerContent>
-                </Drawer>
+                    </DialogContent>
+                </Dialog>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-1">
                         {displayTransactions.slice(0, 5).map((tx: Transaction) => {
                             const myShare = calculateUserShare(tx, userId);
+                            const showConverted = tx.currency && tx.currency !== currency;
                             return (
-                                <div key={tx.id} className="flex items-center justify-between p-3 rounded-2xl bg-card/30 border border-white/5 hover:bg-card/50 transition-colors group gpu">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center border border-white/5 relative">
-                                            {getIconForCategory(tx.category)}
-                                            {tx.splits && tx.splits.length > 0 && (
-                                                <div className="absolute -bottom-1 -right-1 bg-primary rounded-full p-0.5 border border-background">
-                                                    <Users className="w-2.5 h-2.5 text-white" />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <p className="font-medium text-sm truncate" title={tx.description}>{tx.description}</p>
-                                            <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
-                                                <span className="px-1.5 py-0.5 rounded bg-primary/10 text-[11px] text-primary capitalize shrink-0">{tx.category}</span>
-                                                <span className="font-medium text-[11px] text-primary/80 shrink-0">
-                                                    {tx.user_id === userId ? 'You paid' : `Paid by ${tx.profile?.full_name?.split(' ')[0] || 'Unknown'}`}
-                                                </span>
-                                                <span className="shrink-0 text-[11px]">• {format(new Date(tx.date), 'MMM d')}</span>
-                                            </div>
-                                            {(tx.bucket_id || tx.is_recurring) && (
-                                                <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                                                    {(() => {
-                                                        const txBucket = buckets.find(b => b.id === tx.bucket_id); return tx.bucket_id && txBucket ? (
-                                                            <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-[11px] text-cyan-500 border border-cyan-500/10 font-bold flex items-center gap-1 shrink-0">
-                                                                <div className="w-2.5 h-2.5">
-                                                                    {getBucketIcon(txBucket.icon)}
-                                                                </div>
-                                                                {txBucket.name}
-                                                            </span>
-                                                        ) : null;
-                                                    })()}
-                                                    {tx.is_recurring && (
-                                                        <span className="px-1.5 py-0.5 rounded bg-sky-500/10 text-[11px] text-sky-500 border border-sky-500/10 font-bold flex items-center gap-1 shrink-0">
-                                                            <RefreshCcw className="w-2.5 h-2.5" />
-                                                            Recurring
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 shrink-0 ml-2">
-                                        <div className="flex flex-col items-end shrink-0">
-                                            <span className={cn(
-                                                "font-semibold text-sm whitespace-nowrap",
-                                                myShare < 0 ? "text-emerald-500" : ""
-                                            )}>
-                                                {myShare < 0 ? '+' : '-'}{formatCurrency(Math.abs(myShare), tx.currency)}
-                                            </span>
-                                            {(tx.currency !== currency) && (
-                                                <div className="text-[11px] text-muted-foreground flex flex-col items-end mt-0.5">
-                                                    <span className="font-medium text-emerald-500">
-                                                        ≈ {formatCurrency(convertAmount(Math.abs(myShare), tx.currency || 'USD'), currency)}
-                                                    </span>
-                                                </div>
-                                            )}
-                                            {tx.splits && tx.splits.length > 0 && (
-                                                <span className="text-[9px] text-muted-foreground mt-0.5">
-                                                    My Share
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="w-[56px] flex items-center justify-start gap-1.5 transition-opacity">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    loadAuditLogs(tx);
-                                                }}
-                                                className="p-1.5 rounded-full hover:bg-white/10 transition-colors text-muted-foreground hover:text-primary"
-                                                title="View History"
-                                            >
-                                                <History className="w-3.5 h-3.5" />
-                                            </button>
-                                            {canEditTransaction(tx) && !tx.is_settlement && (!tx.splits || tx.splits.length === 0) && (
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <button className="p-1 rounded-full hover:bg-white/10 transition-opacity">
-                                                            <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                                                        </button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem onClick={() => {
-                                                            setEditingTransaction(tx);
-                                                            setIsEditOpen(true);
-                                                        }}>
-                                                            <Pencil className="w-4 h-4 mr-2" />
-                                                            Edit
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => {
-                                                            toast('Delete transaction?', {
-                                                                action: {
-                                                                    label: 'Delete',
-                                                                    onClick: () => handleDeleteTransaction(tx)
-                                                                }
-                                                            });
-                                                        }}>
-                                                            <Trash2 className="w-4 h-4 mr-2" />
-                                                            Delete
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
+                                <TransactionRow
+                                    key={tx.id}
+                                    tx={tx}
+                                    userId={userId}
+                                    myShare={myShare}
+                                    formattedAmount={formatCurrency(Math.abs(myShare), tx.currency)}
+                                    formattedConverted={
+                                        showConverted
+                                            ? formatCurrency(convertAmount(Math.abs(myShare), tx.currency || 'USD'), currency)
+                                            : undefined
+                                    }
+                                    showConverted={!!showConverted}
+                                    canEdit={canEditTransaction(tx)}
+                                    icon={getIconForCategory(tx.category, 'w-4 h-4 text-white/90')}
+                                    bucketChip={getBucketChip(tx)}
+                                    onHistory={() => loadAuditLogs(tx)}
+                                    onEdit={() => { setEditingTransaction(tx); setIsEditOpen(true); }}
+                                    onDelete={() => {
+                                        toast('Delete transaction?', {
+                                            action: { label: 'Delete', onClick: () => handleDeleteTransaction(tx) }
+                                        });
+                                    }}
+                                />
                             );
                         })}
                         {displayTransactions.length === 0 && (
-                            <div className="text-center text-xs text-muted-foreground py-4">No recent transactions found.</div>
+                            <div className="text-center text-sm text-muted-foreground/40 py-8">
+                                No recent transactions found.
+                            </div>
                         )}
                     </div>
 
