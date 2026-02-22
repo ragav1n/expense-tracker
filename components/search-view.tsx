@@ -243,7 +243,7 @@ export function SearchView() {
                         <Button variant="outline" size="icon" className="h-10 w-10 shrink-0 rounded-xl bg-secondary/10 border-white/10 relative">
                             <SlidersHorizontal className="w-4 h-4" />
                             {getActiveFilterCount() > 0 && (
-                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-white text-[11px] rounded-full flex items-center justify-center font-bold">
                                     {getActiveFilterCount()}
                                 </span>
                             )}
@@ -346,7 +346,7 @@ export function SearchView() {
                                             <div className="w-8 h-8 rounded-full flex items-center justify-center bg-secondary/20 border border-white/5">
                                                 <X className="w-3.5 h-3.5 text-muted-foreground" />
                                             </div>
-                                            <span className="text-[10px] font-medium truncate w-14 text-center">All</span>
+                                            <span className="text-[11px] font-medium truncate w-14 text-center">All</span>
                                         </div>
                                         {buckets.map((bucket) => (
                                             <div
@@ -364,7 +364,7 @@ export function SearchView() {
                                                         {getBucketIcon(bucket.icon)}
                                                     </div>
                                                 </div>
-                                                <span className="text-[10px] font-medium truncate w-14 text-center">{bucket.name}</span>
+                                                <span className="text-[11px] font-medium truncate w-14 text-center">{bucket.name}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -447,27 +447,27 @@ export function SearchView() {
             {getActiveFilterCount() > 0 && (
                 <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide shrink-0">
                     {dateRange.from && (
-                        <div className="flex items-center gap-1.5 px-3 py-1 bg-primary/20 border border-primary/20 rounded-full text-[10px] text-primary whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-primary/20 border border-primary/20 rounded-full text-[11px] text-primary whitespace-nowrap">
                             Date Range <X className="w-3 h-3 cursor-pointer" onClick={() => setDateRange({ from: undefined, to: undefined })} />
                         </div>
                     )}
                     {(priceRange[0] > 0 || priceRange[1] < maxPossiblePrice) && (
-                        <div className="flex items-center gap-1.5 px-3 py-1 bg-primary/20 border border-primary/20 rounded-full text-[10px] text-primary whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-primary/20 border border-primary/20 rounded-full text-[11px] text-primary whitespace-nowrap">
                             Price: {formatCurrency(priceRange[0])}-{formatCurrency(priceRange[1])} <X className="w-3 h-3 cursor-pointer" onClick={() => setPriceRange([0, maxPossiblePrice])} />
                         </div>
                     )}
                     {selectedCategories.map(cat => (
-                        <div key={cat} className="flex items-center gap-1.5 px-3 py-1 bg-primary/20 border border-primary/20 rounded-full text-[10px] text-primary whitespace-nowrap capitalize">
+                        <div key={cat} className="flex items-center gap-1.5 px-3 py-1 bg-primary/20 border border-primary/20 rounded-full text-[11px] text-primary whitespace-nowrap capitalize">
                             {cat} <X className="w-3 h-3 cursor-pointer" onClick={() => setSelectedCategories(prev => prev.filter(c => c !== cat))} />
                         </div>
                     ))}
                     {selectedPayments.map(p => (
-                        <div key={p} className="flex items-center gap-1.5 px-3 py-1 bg-primary/20 border border-primary/20 rounded-full text-[10px] text-primary whitespace-nowrap">
+                        <div key={p} className="flex items-center gap-1.5 px-3 py-1 bg-primary/20 border border-primary/20 rounded-full text-[11px] text-primary whitespace-nowrap">
                             {p} <X className="w-3 h-3 cursor-pointer" onClick={() => setSelectedPayments(prev => prev.filter(m => m !== p))} />
                         </div>
                     ))}
                     {selectedBucketId && buckets.find(b => b.id === selectedBucketId) && (
-                        <div className="flex items-center gap-1.5 px-3 py-1 bg-cyan-500/20 border border-cyan-500/20 rounded-full text-[10px] text-cyan-500 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-cyan-500/20 border border-cyan-500/20 rounded-full text-[11px] text-cyan-500 whitespace-nowrap">
                             <div className="w-3 h-3">
                                 {getBucketIcon(buckets.find(b => b.id === selectedBucketId)?.icon)}
                             </div>
@@ -480,7 +480,7 @@ export function SearchView() {
             {/* Total Summary Mini-Card (Visible when filtered) */}
             {getActiveFilterCount() > 0 && (
                 <div className="bg-gradient-to-r from-primary/20 to-secondary/20 border border-primary/10 p-3 rounded-2xl flex justify-between items-center shrink-0">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total Filtered</span>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Total Filtered</span>
                     <span className="text-lg font-bold text-primary">{formatCurrency(totalFilteredAmount)}</span>
                 </div>
             )}
@@ -534,7 +534,7 @@ export function SearchView() {
                                         <div className="min-w-0">
                                             <p className="font-medium text-sm truncate">{tx.description}</p>
                                             <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
-                                                <span className="px-1.5 py-0.5 rounded bg-primary/10 text-[10px] text-primary border border-primary/10 capitalize shrink-0">{tx.category}</span>
+                                                <span className="px-1.5 py-0.5 rounded bg-primary/10 text-[11px] text-primary border border-primary/10 capitalize shrink-0">{tx.category}</span>
                                                 <span className="shrink-0">• {tx.payment_method}</span>
                                                 <span className="shrink-0">• {format(parseISO(tx.date), 'MMM d')}</span>
                                             </div>
@@ -542,7 +542,7 @@ export function SearchView() {
                                             {(tx.bucket_id || tx.is_recurring) && (
                                                 <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                                                     {tx.bucket_id && buckets.find(b => b.id === tx.bucket_id) && (
-                                                        <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-[10px] text-cyan-500 border border-cyan-500/10 font-bold flex items-center gap-1 shrink-0">
+                                                        <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-[11px] text-cyan-500 border border-cyan-500/10 font-bold flex items-center gap-1 shrink-0">
                                                             <div className="w-2.5 h-2.5">
                                                                 {getBucketIcon(buckets.find(b => b.id === tx.bucket_id)?.icon)}
                                                             </div>
@@ -550,7 +550,7 @@ export function SearchView() {
                                                         </span>
                                                     )}
                                                     {tx.is_recurring && (
-                                                        <span className="px-1.5 py-0.5 rounded bg-sky-500/10 text-[10px] text-sky-500 border border-sky-500/10 font-bold flex items-center gap-1 shrink-0">
+                                                        <span className="px-1.5 py-0.5 rounded bg-sky-500/10 text-[11px] text-sky-500 border border-sky-500/10 font-bold flex items-center gap-1 shrink-0">
                                                             <RefreshCcw className="w-2.5 h-2.5" />
                                                             Recurring
                                                         </span>
@@ -580,8 +580,8 @@ export function SearchView() {
             {/* Total Footer (Always Visible but simplified) */}
             <div className="pt-4 border-t border-white/5 flex-shrink-0">
                 <div className="flex justify-between items-center px-2">
-                    <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">{filteredTransactions.length} transactions match</p>
-                    <button onClick={resetFilters} className="text-[10px] text-primary font-bold hover:underline">RESET</button>
+                    <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-widest">{filteredTransactions.length} transactions match</p>
+                    <button onClick={resetFilters} className="text-[11px] text-primary font-bold hover:underline">RESET</button>
                 </div>
             </div>
         </div>

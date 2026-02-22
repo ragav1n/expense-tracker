@@ -176,7 +176,7 @@ const VirtualizedTransactionList = ({
     });
 
     return (
-        <div className="flex-1 overflow-y-auto sm:-mr-4 sm:pr-4 min-h-0 px-1 sm:px-0" ref={parentRef}>
+        <div className="flex-1 overflow-y-auto sm:-mr-4 sm:pr-4 min-h-0 px-1 sm:px-0 h-full touch-pan-y" ref={parentRef} vaul-scrollable-content="">
             <div 
                 style={{
                     height: `${rowVirtualizer.getTotalSize()}px`,
@@ -214,19 +214,19 @@ const VirtualizedTransactionList = ({
                                     <div className="min-w-0 flex-1">
                                         <p className="font-medium text-sm truncate" title={tx.description}>{tx.description}</p>
                                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5 whitespace-nowrap overflow-hidden">
-                                            <span className="px-1.5 py-0.5 rounded bg-primary/10 text-[10px] text-primary border border-primary/10 capitalize shrink-0">{tx.category}</span>
-                                            <span className="font-medium text-[10px] text-primary/80 shrink-0">
+                                            <span className="px-1.5 py-0.5 rounded bg-primary/10 text-[11px] text-primary border border-primary/10 capitalize shrink-0">{tx.category}</span>
+                                            <span className="font-medium text-[11px] text-primary/80 shrink-0">
                                                 {tx.user_id === userId ? 'You paid' : `Paid by ${tx.profile?.full_name?.split(' ')[0] || 'Unknown'}`}
                                             </span>
-                                            <span className="shrink-0 text-[10px] select-none text-muted-foreground/50">•</span>
-                                            <span className="shrink-0 text-[10px]">{format(new Date(tx.date), 'MMM d, yyyy')}</span>
+                                            <span className="shrink-0 text-[11px] select-none text-muted-foreground/50">•</span>
+                                            <span className="shrink-0 text-[11px]">{format(new Date(tx.date), 'MMM d, yyyy')}</span>
                                         </div>
 
                                         {(tx.bucket_id || tx.is_recurring) && (
                                             <div className="flex items-center gap-1.5 mt-1.5 overflow-hidden">
                                                 {(() => {
                                                     const txBucket = buckets.find((b: any) => b.id === tx.bucket_id); return tx.bucket_id && txBucket ? (
-                                                        <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-[10px] text-cyan-500 border border-cyan-500/10 font-bold flex items-center gap-1 shrink-0 truncate max-w-[120px]">
+                                                        <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-[11px] text-cyan-500 border border-cyan-500/10 font-bold flex items-center gap-1 shrink-0 truncate max-w-[120px]">
                                                             <div className="w-2.5 h-2.5 shrink-0">
                                                                 {getBucketIcon(txBucket.icon)}
                                                             </div>
@@ -235,7 +235,7 @@ const VirtualizedTransactionList = ({
                                                     ) : null;
                                                 })()}
                                                 {tx.is_recurring && (
-                                                    <span className="px-1.5 py-0.5 rounded bg-sky-500/10 text-[10px] text-sky-500 border border-sky-500/10 font-bold flex items-center gap-1 shrink-0">
+                                                    <span className="px-1.5 py-0.5 rounded bg-sky-500/10 text-[11px] text-sky-500 border border-sky-500/10 font-bold flex items-center gap-1 shrink-0">
                                                         <RefreshCcw className="w-2.5 h-2.5 shrink-0" />
                                                         Recurring
                                                     </span>
@@ -253,7 +253,7 @@ const VirtualizedTransactionList = ({
                                             {myShare < 0 ? '+' : '-'}{formatCurrency(Math.abs(myShare), tx.currency)}
                                         </span>
                                         {(tx.currency !== currency) && (
-                                            <div className="text-[10px] text-muted-foreground flex flex-col items-end mt-0.5">
+                                            <div className="text-[11px] text-muted-foreground flex flex-col items-end mt-0.5">
                                                 <span className="font-medium text-emerald-500">
                                                     ≈ {formatCurrency(convertAmount(Math.abs(myShare), tx.currency || 'USD'), currency)}
                                                 </span>
@@ -747,8 +747,8 @@ export function DashboardView() {
                 loading ? "opacity-40 blur-[1px] pointer-events-none" : "opacity-100 blur-0"
             )}>
                 {/* Header */}
-                <div className="flex justify-between items-center pt-2">
-                    <div className="flex items-center gap-3">
+                <div className="flex justify-between items-center pt-2 gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                         <div className="w-10 h-10 relative shrink-0">
                             <img src="/Novira.png" alt="Novira" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(138,43,226,0.5)]" />
                         </div>
@@ -762,7 +762,7 @@ export function DashboardView() {
                             <p className="text-[11px] text-muted-foreground font-medium truncate">Track your expenses with Novira</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                         <div
                             onClick={() => router.push('/settings')}
                             className="w-10 h-10 rounded-full bg-secondary/20 border border-white/5 overflow-hidden flex items-center justify-center text-xs font-bold text-muted-foreground uppercase shrink-0 cursor-pointer hover:border-primary/50 transition-colors"
@@ -782,7 +782,7 @@ export function DashboardView() {
                         </button>
                         <button
                             onClick={() => router.push('/add')}
-                            className="w-10 h-10 rounded-full bg-primary/20 hover:bg-primary/30 flex items-center justify-center border border-primary/20 transition-colors"
+                            className="w-10 h-10 rounded-full bg-primary/20 hover:bg-primary/30 flex items-center justify-center border border-primary/20 transition-colors shrink-0"
                         >
                             <Plus className="w-5 h-5 text-primary" />
                         </button>
@@ -913,7 +913,7 @@ export function DashboardView() {
                                         
                                         {buckets.filter(b => !b.is_archived).length > 0 && (
                                             <motion.div variants={itemVariants} className="px-3 py-1.5 border-t border-white/5">
-                                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Active Missions</p>
+                                                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Active Missions</p>
                                             </motion.div>
                                         )}
             
@@ -974,29 +974,29 @@ export function DashboardView() {
                     </div>
                     <div className="relative z-10 space-y-6">
                         <div className="flex justify-between items-start">
-                            <div>
+                            <div className="min-w-0 flex-1">
                                 <p className="text-white/80 text-sm font-medium">
                                     {isBucketFocused ? "Total Mission Spent" : "Spent this Month"}
                                 </p>
-                                <h2 className="text-4xl font-bold text-white mt-1">
+                                <h2 className="text-4xl font-bold text-white mt-1 truncate">
                                     {isRatesLoading ? "..." : formatCurrency(totalSpent, bucketCurrency)}
                                 </h2>
                             </div>
-                            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm shadow-sm">
+                            <div className="w-10 h-10 shrink-0 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm shadow-sm">
                                 <span className="text-xl font-bold text-white">
                                     {CURRENCY_SYMBOLS[bucketCurrency] || '$'}
                                 </span>
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <div className="flex justify-between text-xs font-medium text-white/80">
-                                <span>{isBucketFocused ? "Target" : "Allowance"}: {formatCurrency(displayBudget, bucketCurrency)}</span>
-                                <span className={remaining < 0 ? "text-red-200" : ""}>{remaining < 0 ? "Over by " : "Remaining: "}{isRatesLoading ? "..." : formatCurrency(Math.abs(remaining), bucketCurrency)}</span>
+                            <div className="flex justify-between text-xs font-medium text-white/80 gap-2">
+                                <span className="truncate">{isBucketFocused ? "Target" : "Allowance"}: {formatCurrency(displayBudget, bucketCurrency)}</span>
+                                <span className={cn("shrink-0", remaining < 0 ? "text-red-200" : "")}>{remaining < 0 ? "Over by " : "Remaining: "}{isRatesLoading ? "..." : formatCurrency(Math.abs(remaining), bucketCurrency)}</span>
                             </div>
                             <Progress value={progress} className="h-2 bg-black/30" indicatorClassName={cn(remaining < 0 ? "bg-red-400" : "bg-white")} />
-                            <div className="flex justify-between text-[10px] text-white/60">
+                            <div className="flex justify-between text-[11px] text-white/60 gap-2">
                                 <span>{progress.toFixed(1)}% used</span>
-                                <span className={isBucketFocused ? "flex flex-col items-end gap-1" : ""}>
+                                <span className={isBucketFocused ? "flex flex-col items-end gap-1 text-right" : "text-right"}>
                                     {isBucketFocused ? (
                                         <>
                                             {focusedBucket?.start_date && focusedBucket?.end_date ? (
@@ -1006,7 +1006,7 @@ export function DashboardView() {
                                                     const end = new Date(focusedBucket.end_date!);
                                                     
                                                     // Only calculate pacing if the trip hasn't ended yet
-                                                    if (today > end) return <span className="text-white/80 font-medium">Mission Completed</span>;
+                                                    if (today > end) return <span className="text-white/80 font-medium whitespace-nowrap">Mission Completed</span>;
                                                     
                                                     // Effective start date is either today or the trip start date, whichever is later
                                                     const effectiveStart = today > start ? today : start;
@@ -1019,8 +1019,8 @@ export function DashboardView() {
                                                     const safeToSpendDaily = remaining > 0 ? remaining / daysLeft : 0;
                                                     
                                                     return (
-                                                        <span className="text-white font-bold bg-white/10 px-2 py-0.5 rounded backdrop-blur-sm border border-white/10">
-                                                            Daily Safe to Spend: {formatCurrency(safeToSpendDaily, bucketCurrency)}/day
+                                                        <span className="text-white font-bold bg-white/10 px-2 py-0.5 rounded backdrop-blur-sm border border-white/10 whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
+                                                            {formatCurrency(safeToSpendDaily, bucketCurrency)}/day
                                                         </span>
                                                     );
                                                 })()
@@ -1062,8 +1062,8 @@ export function DashboardView() {
                             <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center mb-2">
                                 <ArrowDownLeft className="w-4 h-4 text-emerald-500" />
                             </div>
-                            <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">You are owed</p>
-                            <h4 className="text-lg font-bold text-emerald-500">{formatCurrency(balances.totalOwedToMe)}</h4>
+                            <p className="text-[11px] text-emerald-500 font-bold uppercase tracking-wider">You are owed</p>
+                            <h4 className="text-lg font-bold text-emerald-500 whitespace-nowrap overflow-hidden text-ellipsis w-full">{formatCurrency(balances.totalOwedToMe)}</h4>
                         </CardContent>
                     </Card>
                     <Card className="bg-rose-500/15 border-rose-500/20 backdrop-blur-md">
@@ -1071,20 +1071,20 @@ export function DashboardView() {
                             <div className="w-8 h-8 rounded-full bg-rose-500/20 flex items-center justify-center mb-2">
                                 <ArrowUpRight className="w-4 h-4 text-rose-500" />
                             </div>
-                            <p className="text-[10px] text-rose-500 font-bold uppercase tracking-wider">You owe</p>
-                            <h4 className="text-lg font-bold text-rose-500">{formatCurrency(balances.totalOwed)}</h4>
+                            <p className="text-[11px] text-rose-500 font-bold uppercase tracking-wider">You owe</p>
+                            <h4 className="text-lg font-bold text-rose-500 whitespace-nowrap overflow-hidden text-ellipsis w-full">{formatCurrency(balances.totalOwed)}</h4>
                         </CardContent>
                     </Card>
                 </div>
 
                 {/* Spending by Category */}
                 <div className="space-y-4">
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-wrap justify-between items-center gap-2">
                         <h3 className="text-lg font-bold">Spending by Category</h3>
-                        <span className="text-xs bg-secondary/50 backdrop-blur-md px-3 py-1 rounded-full text-primary border border-primary/20 font-bold uppercase tracking-wider">Current Month</span>
+                        <span className="text-[11px] bg-secondary/50 backdrop-blur-md px-3 py-1 rounded-full text-primary border border-primary/20 font-bold uppercase tracking-wider whitespace-nowrap">Current Month</span>
                     </div>
                     <Card className="border-none bg-card/40 backdrop-blur-md shadow-none">
-                        <CardContent className="p-4 flex items-center justify-between gap-4">
+                        <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-6">
                             {spendingData.length > 0 ? (
                                 <>
                                     <div className="w-32 h-32 relative flex-shrink-0">
@@ -1108,14 +1108,14 @@ export function DashboardView() {
                                             </PieChart>
                                         </ChartContainer>
                                     </div>
-                                    <div className="flex-1 space-y-3">
+                                    <div className="w-full flex-1 space-y-3">
                                         {spendingData.map((item) => (
-                                            <div key={item.name} className="flex items-center justify-between text-xs">
+                                            <div key={item.name} className="flex items-center justify-between text-[11px]">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
-                                                    <span className="text-foreground/80">{item.name}</span>
+                                                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                                                    <span className="text-foreground/80 truncate">{item.name}</span>
                                                 </div>
-                                                <span className="font-semibold">{formatCurrency(item.value)}</span>
+                                                <span className="font-semibold shrink-0">{formatCurrency(item.value)}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -1135,15 +1135,17 @@ export function DashboardView() {
                         <h3 className="text-lg font-bold">Recent Transactions</h3>
                 <Drawer>
                     <DrawerTrigger asChild>
-                        <button className="text-xs text-primary hover:text-primary/80">View All</button>
+                        <button className="text-xs text-primary font-bold hover:text-primary/80 transition-colors uppercase tracking-wider px-2 py-1">View All</button>
                     </DrawerTrigger>
-                    <DrawerContent className="h-[85vh] flex flex-col pt-0">
-                        <DrawerHeader className="pb-2">
-                            <DrawerTitle>All Transactions</DrawerTitle>
-                            <DrawerDescription>History of all your expenses.</DrawerDescription>
+                    <DrawerContent className="h-[88vh] flex flex-col pt-0 bg-background/95 backdrop-blur-2xl border-white/10 rounded-t-[40px]">
+                        <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mt-4 mb-2 shrink-0" />
+                        <DrawerHeader className="pb-4 shrink-0">
+                            <DrawerTitle className="text-2xl font-bold text-center">All Transactions</DrawerTitle>
+                            <DrawerDescription className="text-center">History of all your expenses.</DrawerDescription>
                         </DrawerHeader>
                         
-                        <div className="flex-1 pb-6 px-4 min-h-0 overflow-hidden">
+                        <div className="flex-1 px-4 min-h-0 relative flex flex-col">
+                            <div className="absolute inset-x-0 top-0 h-4 bg-gradient-to-b from-background/95 to-transparent z-10 pointer-events-none" />
                             <VirtualizedTransactionList
                                 transactions={displayTransactions}
                                 userId={userId}
@@ -1159,8 +1161,9 @@ export function DashboardView() {
                                 handleDeleteTransaction={handleDeleteTransaction}
                                 getBucketIcon={getBucketIcon}
                             />
+                            <div className="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-background/95 to-transparent z-10 pointer-events-none" />
                         </div>
-                        <div className="h-6 shrink-0" />
+                        <div className="h-4 shrink-0" />
                     </DrawerContent>
                 </Drawer>
                     </div>
@@ -1182,17 +1185,17 @@ export function DashboardView() {
                                         <div className="min-w-0 flex-1">
                                             <p className="font-medium text-sm truncate" title={tx.description}>{tx.description}</p>
                                             <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
-                                                <span className="px-1.5 py-0.5 rounded bg-primary/10 text-[10px] text-primary capitalize shrink-0">{tx.category}</span>
-                                                <span className="font-medium text-[10px] text-primary/80 shrink-0">
+                                                <span className="px-1.5 py-0.5 rounded bg-primary/10 text-[11px] text-primary capitalize shrink-0">{tx.category}</span>
+                                                <span className="font-medium text-[11px] text-primary/80 shrink-0">
                                                     {tx.user_id === userId ? 'You paid' : `Paid by ${tx.profile?.full_name?.split(' ')[0] || 'Unknown'}`}
                                                 </span>
-                                                <span className="shrink-0">• {format(new Date(tx.date), 'MMM d')}</span>
+                                                <span className="shrink-0 text-[11px]">• {format(new Date(tx.date), 'MMM d')}</span>
                                             </div>
                                             {(tx.bucket_id || tx.is_recurring) && (
                                                 <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                                                     {(() => {
                                                         const txBucket = buckets.find(b => b.id === tx.bucket_id); return tx.bucket_id && txBucket ? (
-                                                            <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-[10px] text-cyan-500 border border-cyan-500/10 font-bold flex items-center gap-1 shrink-0">
+                                                            <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-[11px] text-cyan-500 border border-cyan-500/10 font-bold flex items-center gap-1 shrink-0">
                                                                 <div className="w-2.5 h-2.5">
                                                                     {getBucketIcon(txBucket.icon)}
                                                                 </div>
@@ -1201,7 +1204,7 @@ export function DashboardView() {
                                                         ) : null;
                                                     })()}
                                                     {tx.is_recurring && (
-                                                        <span className="px-1.5 py-0.5 rounded bg-sky-500/10 text-[10px] text-sky-500 border border-sky-500/10 font-bold flex items-center gap-1 shrink-0">
+                                                        <span className="px-1.5 py-0.5 rounded bg-sky-500/10 text-[11px] text-sky-500 border border-sky-500/10 font-bold flex items-center gap-1 shrink-0">
                                                             <RefreshCcw className="w-2.5 h-2.5" />
                                                             Recurring
                                                         </span>
@@ -1219,7 +1222,7 @@ export function DashboardView() {
                                                 {myShare < 0 ? '+' : '-'}{formatCurrency(Math.abs(myShare), tx.currency)}
                                             </span>
                                             {(tx.currency !== currency) && (
-                                                <div className="text-[10px] text-muted-foreground flex flex-col items-end mt-0.5">
+                                                <div className="text-[11px] text-muted-foreground flex flex-col items-end mt-0.5">
                                                     <span className="font-medium text-emerald-500">
                                                         ≈ {formatCurrency(convertAmount(Math.abs(myShare), tx.currency || 'USD'), currency)}
                                                     </span>
@@ -1306,13 +1309,13 @@ export function DashboardView() {
                                                 <div className="bg-secondary/10 rounded-2xl p-4 border border-white/5 space-y-2">
                                                     <div className="flex justify-between items-start">
                                                         <span className={cn(
-                                                            "text-[10px] font-bold uppercase py-0.5 px-2 rounded",
+                                                            "text-[11px] font-bold uppercase py-0.5 px-2 rounded",
                                                             log.action === 'INSERT' ? "bg-emerald-500/20 text-emerald-500" :
                                                                 log.action === 'UPDATE' ? "bg-blue-500/20 text-blue-500" : "bg-rose-500/20 text-rose-500"
                                                         )}>
                                                             {log.action}
                                                         </span>
-                                                        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                                        <span className="text-[11px] text-muted-foreground flex items-center gap-1">
                                                             <Clock className="w-3 h-3" />
                                                             {format(new Date(log.created_at), 'MMM d, h:mm a')}
                                                         </span>

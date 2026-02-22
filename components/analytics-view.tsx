@@ -481,11 +481,11 @@ export function AnalyticsView() {
                                 </div>
                                 <div>
                                     <h4 className="text-sm font-bold text-cyan-500">{buckets.find(b => b.id === selectedBucketId)?.name}</h4>
-                                    <p className="text-[10px] text-cyan-500/60 font-bold uppercase tracking-widest">Targeted View</p>
+                                    <p className="text-[11px] text-cyan-500/60 font-bold uppercase tracking-widest">Targeted View</p>
                                 </div>
                             </div>
                             <div className="text-right">
-                                <p className="text-[10px] text-cyan-500/60 font-bold uppercase tracking-widest">Budget Remaining</p>
+                                <p className="text-[11px] text-cyan-500/60 font-bold uppercase tracking-widest">Budget Remaining</p>
                                 <p className="text-sm font-bold text-cyan-500">
                                     {formatCurrency(Number(buckets.find(b => b.id === selectedBucketId)?.budget || 0) - totalSpentInRange)}
                                 </p>
@@ -499,7 +499,7 @@ export function AnalyticsView() {
                     <CardContent className="p-5 space-y-4">
                         <div className="flex justify-between items-center">
                             <h3 className="font-semibold text-sm">Spending Trend</h3>
-                            <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{dateRange === 'ALL' ? 'All Time' : dateRange}</span>
+                            <span className="text-[11px] text-muted-foreground uppercase tracking-wider">{dateRange === 'ALL' ? 'All Time' : dateRange}</span>
                         </div>
 
                         <div className="h-48 w-full">
@@ -509,7 +509,7 @@ export function AnalyticsView() {
                                         dataKey="month"
                                         axisLine={false}
                                         tickLine={false}
-                                        tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }}
+                                        tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 11 }}
                                         interval={dateRange === '1M' || dateRange === 'LM' ? 3 : (dateRange === '1Y' || dateRange === 'ALL' ? 'preserveStartEnd' : 0)}
                                         tickFormatter={(value) => {
                                             if (dateRange === '1M' || dateRange === 'LM') {
@@ -537,7 +537,7 @@ export function AnalyticsView() {
 
                         <div className="flex items-center justify-between">
                             <div className="flex flex-col">
-                                <span className="text-[10px] text-muted-foreground">Total in Period</span>
+                                <span className="text-[11px] text-muted-foreground">Total in Period</span>
                                 <span className="text-lg font-bold">{formatCurrency(totalSpentInRange)}</span>
                             </div>
                         </div>
@@ -601,7 +601,7 @@ export function AnalyticsView() {
                                     />
                                 </div>
 
-                                <div className="flex justify-end text-[10px] text-muted-foreground">
+                                <div className="flex justify-end text-[11px] text-muted-foreground">
                                     <span>{cat.value.toFixed(1)}%</span>
                                 </div>
                             </div>
@@ -657,7 +657,7 @@ export function AnalyticsView() {
                     )}>
                         {paymentBreakdown.map((pay) => (
                             <div key={pay.name} className="flex flex-col p-4 rounded-3xl bg-secondary/5 border border-white/5 hover:bg-secondary/10 transition-colors group">
-                                <span className="flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
+                                <span className="flex items-center gap-2 text-[11px] text-muted-foreground uppercase tracking-widest font-bold">
                                     <div className="w-2 h-2 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.2)]" style={{ backgroundColor: pay.fill }} />
                                     {pay.name}
                                 </span>
@@ -665,7 +665,7 @@ export function AnalyticsView() {
                                     <span className="text-base font-bold text-foreground">{formatCurrency(pay.amount)}</span>
                                 </div>
                                 <div className="flex items-center justify-between mt-1">
-                                    <span className="text-[10px] text-muted-foreground font-medium">{pay.value.toFixed(0)}%</span>
+                                    <span className="text-[11px] text-muted-foreground font-medium">{pay.value.toFixed(0)}%</span>
                                     <div className="h-1 flex-1 mx-2 bg-secondary/20 rounded-full overflow-hidden">
                                         <div
                                             className="h-full rounded-full transition-all duration-1000"

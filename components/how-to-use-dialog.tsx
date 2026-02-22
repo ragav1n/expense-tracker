@@ -148,7 +148,7 @@ export function HowToUseDialog({ isOpen, onClose }: HowToUseDialogProps) {
                                                     </p>
                                                     <div className="pt-3 grid grid-cols-1 gap-2">
                                                         {step.subPoints.map((point, idx) => (
-                                                            <div key={idx} className="flex items-start gap-2.5 text-[10px] sm:text-[11px] font-semibold text-white/30 group-hover:text-white/50 transition-colors">
+                                                            <div key={idx} className="flex items-start gap-2.5 text-[11px] sm:text-[11px] font-semibold text-white/30 group-hover:text-white/50 transition-colors">
                                                                 <CheckCircle2 className="w-3.5 h-3.5 text-primary/40 mt-0.5 shrink-0" />
                                                                 <span className="leading-tight">{point}</span>
                                                             </div>

@@ -150,7 +150,7 @@ export function ExportDateRangeModal({
                                     <div className="w-8 h-8 rounded-full flex items-center justify-center bg-secondary/20 border border-white/5">
                                         <X className="w-3.5 h-3.5 text-muted-foreground" />
                                     </div>
-                                    <span className="text-[10px] font-medium truncate w-14 text-center">All</span>
+                                    <span className="text-[11px] font-medium truncate w-14 text-center">All</span>
                                 </div>
                                 {buckets.map((bucket) => (
                                     <div
@@ -166,7 +166,7 @@ export function ExportDateRangeModal({
                                         <div className="w-8 h-8 rounded-full flex items-center justify-center text-lg bg-secondary/20 border border-white/5 p-1.5 text-cyan-500">
                                             {getBucketIcon(bucket.icon || 'Tag')}
                                         </div>
-                                        <span className="text-[10px] font-medium truncate w-14 text-center">{bucket.name}</span>
+                                        <span className="text-[11px] font-medium truncate w-14 text-center">{bucket.name}</span>
                                     </div>
                                 ))}
                             </div>

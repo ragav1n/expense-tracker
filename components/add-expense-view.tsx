@@ -396,7 +396,7 @@ export function AddExpenseView() {
                             <div className="w-10 h-10 rounded-full flex items-center justify-center bg-secondary/20 border border-white/5">
                                 <X className="w-4 h-4 text-muted-foreground" />
                             </div>
-                            <span className="text-[10px] font-medium truncate w-16 text-center">None</span>
+                            <span className="text-[11px] font-medium truncate w-16 text-center">None</span>
                         </div>
                         {buckets.filter(b => !b.is_archived).map((bucket) => (
                             <div
@@ -414,7 +414,7 @@ export function AddExpenseView() {
                                         {getBucketIcon(bucket.icon)}
                                     </div>
                                 </div>
-                                <span className="text-[10px] font-medium truncate w-16 text-center">{bucket.name}</span>
+                                <span className="text-[11px] font-medium truncate w-16 text-center">{bucket.name}</span>
                             </div>
                         ))}
                     </div>
@@ -488,7 +488,7 @@ export function AddExpenseView() {
                         </div>
                         <div>
                             <p className="text-sm font-medium">Exclude from Allowance</p>
-                            <p className="text-[10px] text-muted-foreground">Don't count this against your monthly limit</p>
+                            <p className="text-[11px] text-muted-foreground">Don't count this against your monthly limit</p>
                         </div>
                     </div>
                     <Switch
@@ -506,7 +506,7 @@ export function AddExpenseView() {
                         <Users className="w-5 h-5 text-primary" />
                         <div>
                             <p className="text-sm font-medium">Split this expense</p>
-                            <p className="text-[10px] text-muted-foreground">Divide cost with others</p>
+                            <p className="text-[11px] text-muted-foreground">Divide cost with others</p>
                         </div>
                     </div>
                     <Switch
@@ -569,7 +569,7 @@ export function AddExpenseView() {
                                                 </div>
                                             )}
                                         </div>
-                                        <span className="text-[10px] font-medium truncate w-16 text-center">{group.name}</span>
+                                        <span className="text-[11px] font-medium truncate w-16 text-center">{group.name}</span>
                                     </div>
                                 ))}
                             </div>
@@ -617,7 +617,7 @@ export function AddExpenseView() {
                                                 </div>
                                             )}
                                         </div>
-                                        <span className="text-[10px] font-medium truncate w-16 text-center">{friend.full_name.split(' ')[0]}</span>
+                                        <span className="text-[11px] font-medium truncate w-16 text-center">{friend.full_name.split(' ')[0]}</span>
                                     </div>
                                 ))}
                             </div>
@@ -629,7 +629,7 @@ export function AddExpenseView() {
                                 <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Enter amounts each person owes you</p>
                                 {selectedGroupId ? (
                                     // For groups, we show group members (fetched dynamically)
-                                    <p className="text-[10px] text-muted-foreground italic">Custom amounts for group members will be applied after saving</p>
+                                    <p className="text-[11px] text-muted-foreground italic">Custom amounts for group members will be applied after saving</p>
                                 ) : (
                                     selectedFriendIds.map((friendId) => {
                                         const friend = friends.find(f => f.id === friendId);
@@ -687,7 +687,7 @@ export function AddExpenseView() {
                                                 </span>
                                             </div>
                                             {yourShare < 0 && (
-                                                <p className="text-[10px] text-red-400">⚠ Split amounts exceed the total expense</p>
+                                                <p className="text-[11px] text-red-400">⚠ Split amounts exceed the total expense</p>
                                             )}
                                         </div>
                                     );
@@ -717,7 +717,7 @@ export function AddExpenseView() {
                         <RefreshCcw className="w-5 h-5 text-primary" />
                         <div>
                             <p className="text-sm font-medium">Recurring Expense</p>
-                            <p className="text-[10px] text-muted-foreground">Automatically post this expense</p>
+                            <p className="text-[11px] text-muted-foreground">Automatically post this expense</p>
                         </div>
                     </div>
                     <Switch
@@ -734,7 +734,7 @@ export function AddExpenseView() {
                                     key={freq}
                                     onClick={() => setFrequency(freq)}
                                     className={cn(
-                                        "py-2 text-[10px] font-bold uppercase tracking-wider rounded-xl border transition-all",
+                                     "py-2 text-[11px] font-bold uppercase tracking-wider rounded-xl border transition-all",
                                         frequency === freq
                                             ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
                                             : "bg-background/20 border-white/5 text-muted-foreground hover:border-white/10"
@@ -744,7 +744,7 @@ export function AddExpenseView() {
                                 </button>
                             ))}
                         </div>
-                        <p className="text-[10px] text-center text-muted-foreground italic">
+                        <p className="text-[11px] text-center text-muted-foreground italic">
                             Next bill: {(() => {
                                 const next = new Date(date || new Date());
                                 if (frequency === 'daily') next.setDate(next.getDate() + 1);

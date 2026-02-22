@@ -298,7 +298,7 @@ export function GroupsView() {
                                                 className="w-full h-full"
                                             />
                                         </div>
-                                        <p className="text-[10px] text-center text-muted-foreground">
+                                        <p className="text-[11px] text-center text-muted-foreground">
                                             Align the QR code within the frame to scan.
                                         </p>
                                     </TabsContent>
@@ -355,7 +355,7 @@ export function GroupsView() {
                                 </DialogHeader>
                                 <div className="space-y-4 py-4">
                                     <div className="space-y-3 w-full overflow-hidden">
-                                        <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-1">Select Icon</label>
+                                        <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest pl-1">Select Icon</label>
                                         <div className="flex gap-2 overflow-x-auto pb-4 px-1 w-full scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
                                             {[
                                                 { name: 'Tag', label: 'Tag', icon: Tag },
@@ -398,7 +398,7 @@ export function GroupsView() {
                                         </div>
                                     </div>
                                     <div className="space-y-2 text-left w-full">
-                                        <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-1">Bucket Name</label>
+                                        <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest pl-1">Bucket Name</label>
                                         <Input
                                             placeholder="e.g. Trip, New iPhone, Gift..."
                                             value={newBucketName}
@@ -410,7 +410,7 @@ export function GroupsView() {
                                     <div className="space-y-4">
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div className="space-y-2 text-left w-full">
-                                                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-1">Currency</label>
+                                                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest pl-1">Currency</label>
                                                 <Select value={newBucketCurrency} onValueChange={setNewBucketCurrency}>
                                                     <SelectTrigger className="bg-secondary/20 border-white/5 h-12 rounded-2xl w-full">
                                                         <div className="flex items-center gap-2">
@@ -432,7 +432,7 @@ export function GroupsView() {
                                             </div>
 
                                             <div className="space-y-2 text-left w-full">
-                                                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-1">Total Budget</label>
+                                                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest pl-1">Total Budget</label>
                                                 <div className="relative w-full">
                                                     <Input
                                                         type="number"
@@ -449,7 +449,7 @@ export function GroupsView() {
                                         </div>
 
                                         <div className="space-y-2 text-left w-full">
-                                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-1">Dates</label>
+                                            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest pl-1">Dates</label>
                                             <DateRangePicker
                                                 date={bucketDateRange}
                                                 setDate={setBucketDateRange}
@@ -578,7 +578,7 @@ export function GroupsView() {
                         <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center mb-2">
                             <ArrowDownLeft className="w-5 h-5 text-emerald-500" />
                         </div>
-                        <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">You are owed</p>
+                        <p className="text-[11px] text-emerald-500 font-bold uppercase tracking-wider">You are owed</p>
                         <h4 className="text-xl font-bold text-emerald-500">{formatCurrency(balances.totalOwedToMe)}</h4>
                     </CardContent>
                 </Card>
@@ -587,7 +587,7 @@ export function GroupsView() {
                         <div className="w-10 h-10 rounded-full bg-rose-500/20 flex items-center justify-center mb-2">
                             <ArrowUpRight className="w-5 h-5 text-rose-500" />
                         </div>
-                        <p className="text-[10px] text-rose-500 font-bold uppercase tracking-wider">You owe</p>
+                        <p className="text-[11px] text-rose-500 font-bold uppercase tracking-wider">You owe</p>
                         <h4 className="text-xl font-bold text-rose-500">{formatCurrency(balances.totalOwed)}</h4>
                     </CardContent>
                 </Card>
@@ -613,7 +613,7 @@ export function GroupsView() {
                                 className="h-8 rounded-xl bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500/20 gap-1.5 px-3 border border-cyan-500/20"
                             >
                                 <Plus className="w-3.5 h-3.5" />
-                                <span className="text-[10px] font-bold">New Bucket</span>
+                                <span className="text-[11px] font-bold">New Bucket</span>
                             </Button>
                         </div>
                         {buckets.filter(b => !b.is_archived).length > 0 ? (
@@ -633,7 +633,7 @@ export function GroupsView() {
                                                     </div>
                                                     <div>
                                                         <h4 className="font-bold text-base">{bucket.name}</h4>
-                                                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
+                                                        <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-bold">
                                                             {bucket.start_date && bucket.end_date ? (
                                                                 `${format(new Date(bucket.start_date), 'MMM d')} - ${format(new Date(bucket.end_date), 'MMM d, yy')}`
                                                             ) : 'Active Bucket'}
@@ -686,7 +686,7 @@ export function GroupsView() {
 
                                             {budget > 0 && (
                                                 <div className="space-y-2">
-                                                    <div className="flex justify-between text-[10px] font-bold uppercase tracking-tighter">
+                                                    <div className="flex justify-between text-[11px] font-bold uppercase tracking-tighter">
                                                         <div className="flex flex-col">
                                                             <span className="text-muted-foreground">Spent: {formatCurrency(spent, bucket.currency)} / {formatCurrency(budget, bucket.currency)}</span>
                                                             {bucket.start_date && bucket.end_date && (
@@ -722,7 +722,7 @@ export function GroupsView() {
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-sm font-bold">No active buckets</p>
-                                    <p className="text-[10px] text-muted-foreground px-8">Create a bucket to track private spending like a "Trip" or "Wedding Gift".</p>
+                                    <p className="text-[11px] text-muted-foreground px-8">Create a bucket to track private spending like a "Trip" or "Wedding Gift".</p>
                                 </div>
                                 <Button
                                     onClick={() => setIsAddBucketOpen(true)}
@@ -741,7 +741,7 @@ export function GroupsView() {
                         <div className="pt-4 space-y-4">
                             <div className="flex items-center gap-2 px-1">
                                 <Archive className="w-3 h-3 text-muted-foreground/40" />
-                                <h3 className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">Archived Buckets</h3>
+                                <h3 className="text-[11px] font-bold text-muted-foreground/40 uppercase tracking-widest">Archived Buckets</h3>
                             </div>
                             {buckets.filter(b => b.is_archived).map((bucket) => (
                                 <Card key={bucket.id} className="rounded-3xl overflow-hidden grayscale-[0.5] opacity-60 hover:opacity-100 transition-all border-white/5 bg-card/20 group">
@@ -863,7 +863,7 @@ export function GroupsView() {
                                                                                 <Button
                                                                                     size="sm"
                                                                                     variant="ghost"
-                                                                                    className="h-7 text-[10px] text-primary hover:text-primary hover:bg-primary/10"
+                                                                                    className="h-7 text-[11px] text-primary hover:text-primary hover:bg-primary/10"
                                                                                     onClick={async () => {
                                                                                         try {
                                                                                             await addMemberToGroup(group.id, friend.id);
@@ -878,14 +878,14 @@ export function GroupsView() {
                                                                             </div>
                                                                         ))}
                                                                         {friends.filter(f => !group.members.some(m => m.user_id === f.id)).length === 0 && (
-                                                                            <p className="text-[10px] text-center text-muted-foreground p-4">No more friends to add.</p>
+                                                                            <p className="text-[11px] text-center text-muted-foreground p-4">No more friends to add.</p>
                                                                         )}
                                                                     </div>
                                                                 </ScrollArea>
                                                                 <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-1 mt-4">Current Members</div>
                                                                 <div className="flex flex-wrap gap-2">
                                                                     {group.members.map(m => (
-                                                                        <Badge key={m.user_id} variant="secondary" className="rounded-full px-2 py-0.5 text-[10px]">
+                                                                        <Badge key={m.user_id} variant="secondary" className="rounded-full px-2 py-0.5 text-[11px]">
                                                                             {m.full_name || 'You'}
                                                                         </Badge>
                                                                     ))}
@@ -973,7 +973,7 @@ export function GroupsView() {
                                                     </div>
                                                     <div>
                                                         <h4 className="font-bold text-sm text-muted-foreground line-through decoration-white/20">{group.name}</h4>
-                                                        <p className="text-[10px] text-muted-foreground">
+                                                        <p className="text-[11px] text-muted-foreground">
                                                             {group.end_date && `Ended ${format(new Date(group.end_date), 'MMM yyyy')}`}
                                                         </p>
                                                     </div>
@@ -1001,7 +1001,7 @@ export function GroupsView() {
                                         </Avatar>
                                         <div>
                                             <p className="text-sm font-bold">{request.full_name || request.email?.split('@')[0]}</p>
-                                            <p className="text-[10px] text-muted-foreground">{request.email}</p>
+                                            <p className="text-[11px] text-muted-foreground">{request.email}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -1024,7 +1024,7 @@ export function GroupsView() {
                                         </Button>
                                         <Button
                                             size="sm"
-                                            className="h-7 text-[10px] rounded-full bg-primary text-white hover:bg-primary/90"
+                                            className="h-7 text-[11px] rounded-full bg-primary text-white hover:bg-primary/90"
                                             onClick={async () => {
                                                 try {
                                                     if (request.request_id) {
@@ -1056,7 +1056,7 @@ export function GroupsView() {
                                     </Avatar>
                                     <div>
                                         <p className="text-sm font-bold">{friend.full_name || friend.email?.split('@')[0]}</p>
-                                        <p className="text-[10px] text-muted-foreground">{friend.email}</p>
+                                        <p className="text-[11px] text-muted-foreground">{friend.email}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -1124,7 +1124,7 @@ export function GroupsView() {
                                         </div>
                                         <div className="min-w-0">
                                             <p className="text-sm font-bold truncate">{split.transaction?.description}</p>
-                                            <p className="text-[10px] text-muted-foreground italic truncate">
+                                            <p className="text-[11px] text-muted-foreground italic truncate">
                                                 {isDebtor ? `You owe ${split.transaction?.payer_name}` : `${split.transaction?.payer_name} owes you`}
                                             </p>
                                         </div>
@@ -1147,14 +1147,14 @@ export function GroupsView() {
                                             }
                                         </span>
                                         {split.transaction?.currency && split.transaction.currency !== currency && (
-                                            <span className="text-[10px] text-muted-foreground">
+                                            <span className="text-[11px] text-muted-foreground">
                                                 ≈ {formatCurrency(convertAmount(split.amount, split.transaction.currency))}
                                             </span>
                                         )}
                                         {isDebtor && (
                                             <Button
                                                 size="sm"
-                                                className="h-7 text-[10px] rounded-full bg-primary/20 text-primary border border-primary/20 hover:bg-primary/30"
+                                                className="h-7 text-[11px] rounded-full bg-primary/20 text-primary border border-primary/20 hover:bg-primary/30"
                                                 onClick={async () => {
                                                     try {
                                                         await settleSplit(split.id);

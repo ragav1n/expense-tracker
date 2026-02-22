@@ -199,7 +199,7 @@ export function DeleteAccountDialog({ trigger }: DeleteAccountDialogProps) {
                                 </div>
                             </motion.button>
 
-                            <p className="text-[10px] text-center text-muted-foreground pt-2">
+                            <p className="text-[11px] text-center text-muted-foreground pt-2">
                                 By clicking continue, you agree to our Terms of Service.
                             </p>
                         </div>

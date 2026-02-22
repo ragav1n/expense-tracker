@@ -385,7 +385,7 @@ export function SettingsView() {
 
                         <div className="flex-1 space-y-3">
                             <div className="space-y-1">
-                                <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Full Name</label>
+                                <label className="text-[11px] uppercase font-bold text-muted-foreground tracking-wider">Full Name</label>
                                 <Input
                                     value={fullName}
                                     onChange={(e) => setFullName(e.target.value)}
@@ -394,7 +394,7 @@ export function SettingsView() {
                                 />
                             </div>
                             <div className="space-y-1">
-                                <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Monthly Allowance</label>
+                                <label className="text-[11px] uppercase font-bold text-muted-foreground tracking-wider">Monthly Allowance</label>
                                 <Input
                                     ref={budgetInputRef}
                                     value={localBudget}
@@ -433,7 +433,7 @@ export function SettingsView() {
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium truncate max-w-[150px]">{template.description}</p>
-                                            <p className="text-[10px] text-muted-foreground">
+                                            <p className="text-[11px] text-muted-foreground">
                                                 {formatCurrency(template.amount, template.currency)} • {template.frequency}
                                                 {template.created_at && ` • Started ${format(new Date(template.created_at), 'MMM d, yyyy')}`}
                                             </p>
@@ -455,7 +455,7 @@ export function SettingsView() {
                             </div>
                         )}
                     </div>
-                    <p className="text-[10px] text-muted-foreground">Manage your automated recurring transactions.</p>
+                    <p className="text-[11px] text-muted-foreground">Manage your automated recurring transactions.</p>
                 </div>
 
                 {/* Data Management */}
@@ -493,7 +493,7 @@ export function SettingsView() {
                             <span className="text-xs font-medium">{loadingExport ? 'Exporting...' : 'Export PDF'}</span>
                         </Button>
                     </div>
-                    <p className="text-[10px] text-muted-foreground">Import bank statements or export your expense data.</p>
+                    <p className="text-[11px] text-muted-foreground">Import bank statements or export your expense data.</p>
                 </div>
 
                 {/* Preferences */}
@@ -509,7 +509,7 @@ export function SettingsView() {
                                 <Banknote className="w-4 h-4 text-muted-foreground" />
                                 <div>
                                     <p className="text-sm font-medium">Currency</p>
-                                    <p className="text-[10px] text-muted-foreground">Select your preferred currency</p>
+                                    <p className="text-[11px] text-muted-foreground">Select your preferred currency</p>
                                 </div>
                             </div>
                             <div className="mt-1">
@@ -522,7 +522,7 @@ export function SettingsView() {
                                 <AlertTriangle className="w-4 h-4 text-muted-foreground" />
                                 <div>
                                     <p className="text-sm font-medium">Budget Alerts</p>
-                                    <p className="text-[10px] text-muted-foreground">Alert when overspending</p>
+                                    <p className="text-[11px] text-muted-foreground">Alert when overspending</p>
                                 </div>
                             </div>
                             <Switch
@@ -577,10 +577,10 @@ export function SettingsView() {
                                 <Lock className="w-4 h-4 text-muted-foreground" />
                                 <div>
                                     <p className="text-sm font-medium">Account Email</p>
-                                    <p className="text-[10px] text-muted-foreground">{userEmail}</p>
+                                    <p className="text-[11px] text-muted-foreground">{userEmail}</p>
                                 </div>
                             </div>
-                            <div className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-white/5 text-muted-foreground border border-white/10">
+                            <div className="px-2 py-0.5 rounded text-[11px] font-bold uppercase bg-white/5 text-muted-foreground border border-white/10">
                                 Primary
                             </div>
                         </div>
@@ -630,7 +630,7 @@ export function SettingsView() {
                                     </span>
                                 </div>
                                 {hasPassword && (
-                                    <div className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-primary/10 text-primary border border-primary/20">
+                                    <div className="px-2 py-0.5 rounded text-[11px] font-bold uppercase bg-primary/10 text-primary border border-primary/20">
                                         Linked
                                     </div>
                                 )}
@@ -665,7 +665,7 @@ export function SettingsView() {
                             }
                         />
                     </div>
-                    <p className="text-[10px] text-muted-foreground px-1">
+                    <p className="text-[11px] text-muted-foreground px-1">
                         Permanently delete your account and all associated data.
                     </p>
                 </div>
@@ -673,7 +673,7 @@ export function SettingsView() {
                 {/* Footer Info */}
                 <div className="text-center py-4 space-y-2">
                     <p className="text-xs text-muted-foreground font-medium">Novira v2.1</p>
-                    <div className="flex justify-center items-center gap-2 text-[10px] text-muted-foreground">
+                    <div className="flex justify-center items-center gap-2 text-[11px] text-muted-foreground">
                         <Shield className="w-3 h-3" />
                         <span>Secure & Encrypted</span>
                     </div>
