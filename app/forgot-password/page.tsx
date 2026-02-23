@@ -289,6 +289,18 @@ export default function ForgotPassword() {
                                     Back to Sign In
                                 </Link>
                             </div>
+
+                            {/* Footer */}
+                            <div className="mt-8 text-center space-y-3">
+                                <div className="flex justify-center items-center gap-3 text-[11px] text-muted-foreground font-medium">
+                                    <Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
+                                    <span className="w-1 h-1 rounded-full bg-white/10" />
+                                    <Link href="/terms" className="hover:text-primary transition-colors">Terms of Service</Link>
+                                </div>
+                                <p className="text-[10px] text-muted-foreground/50 font-medium tracking-wider">
+                                    © 2026 NOVIRA. ALL RIGHTS RESERVED.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </motion.div>

@@ -41,6 +41,8 @@ export async function updateSession(request: NextRequest) {
         !request.nextUrl.pathname.startsWith('/signup') &&
         !request.nextUrl.pathname.startsWith('/forgot-password') &&
         !request.nextUrl.pathname.startsWith('/update-password') &&
+        !request.nextUrl.pathname.startsWith('/privacy') &&
+        !request.nextUrl.pathname.startsWith('/terms') &&
         !request.nextUrl.pathname.startsWith('/auth') &&
         !request.nextUrl.pathname.startsWith('/confirm-delete') &&
         !request.nextUrl.pathname.startsWith('/_next') &&

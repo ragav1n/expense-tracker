@@ -99,6 +99,7 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
     const routes = ['/', '/add', '/analytics', '/groups', null, '/search', '/settings'];
 
     const pathname = usePathname();
+    const isPublicPage = ['/privacy', '/terms'].includes(pathname);
     const isAuthPage = ['/signin', '/signup', '/forgot-password', '/update-password'].includes(pathname);
     const { isAuthenticated, isLoading, isNavigating, setIsNavigating } = useUserPreferences();
 
@@ -122,9 +123,9 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const showNav = !isAuthPage && isAuthenticated;
+    const showNav = !isAuthPage && !isPublicPage && isAuthenticated;
 
-    if (isLoading) {
+    if (isLoading && !isPublicPage && !isAuthPage) {
         return null;
     }
 

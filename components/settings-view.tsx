@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ChevronLeft, User, Download, AlertTriangle, Shield, Lock, ChevronRight, SlidersHorizontal, LogOut, Banknote, FileSpreadsheet, ShieldCheck, RefreshCcw, Camera, Trash2, Plus, Save, Wallet, Bell, Mail, Moon, Sun, Smartphone, Globe, CreditCard } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
@@ -673,6 +674,11 @@ export function SettingsView() {
                 {/* Footer Info */}
                 <div className="text-center py-4 space-y-2">
                     <p className="text-xs text-muted-foreground font-medium">Novira v2.1</p>
+                    <div className="flex justify-center items-center gap-3 text-[11px] text-muted-foreground">
+                        <Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
+                        <span className="w-1 h-1 rounded-full bg-white/10" />
+                        <Link href="/terms" className="hover:text-primary transition-colors">Terms of Service</Link>
+                    </div>
                     <div className="flex justify-center items-center gap-2 text-[11px] text-muted-foreground">
                         <Shield className="w-3 h-3" />
                         <span>Secure & Encrypted</span>
