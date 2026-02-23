@@ -35,6 +35,8 @@ const CATEGORY_COLORS: Record<string, string> = {
     shopping: '#F59E0B',  // Amber
     healthcare: '#EF4444', // Red
     entertainment: '#EC4899', // Pink
+    rent: '#6366F1',       // Bright Indigo
+    education: '#84CC16',  // Bright Lime
     others: '#2DD4BF',    // Mint
     uncategorized: '#6366F1', // Indigo
 };
@@ -48,25 +50,27 @@ const chartConfig: ChartConfig = {
     shopping: { label: "Shopping", color: CATEGORY_COLORS.shopping },
     healthcare: { label: "Healthcare", color: CATEGORY_COLORS.healthcare },
     entertainment: { label: "Entertainment", color: CATEGORY_COLORS.entertainment },
+    rent: { label: "Rent", color: CATEGORY_COLORS.rent },
+    education: { label: "Education", color: CATEGORY_COLORS.education },
     others: { label: "Others", color: CATEGORY_COLORS.others },
     uncategorized: { label: "Uncategorized", color: CATEGORY_COLORS.uncategorized },
 };
 
 const PAYMENT_COLORS: Record<string, string> = {
-    cash: '#22C55E',      // Vibrant Green
-    card: '#3B82F6',      // Bright Blue
-    online: '#A855F7',    // Vivid Purple
-    upi: '#F59E0B',       // Bright Amber
-    bank: '#06B6D4',      // Bright Cyan
-    other: '#EC4899',     // Hot Pink
+    cash: '#22C55E',          // Vibrant Green
+    'debit card': '#3B82F6',  // Bright Blue
+    'credit card': '#A855F7', // Vivid Purple
+    upi: '#F59E0B',           // Bright Amber
+    'bank transfer': '#06B6D4', // Bright Cyan
+    other: '#EC4899',         // Hot Pink
 };
 
 const paymentChartConfig: ChartConfig = {
     cash: { label: "Cash", color: PAYMENT_COLORS.cash },
-    card: { label: "Card", color: PAYMENT_COLORS.card },
-    online: { label: "Online", color: PAYMENT_COLORS.online },
+    'debit card': { label: "Debit Card", color: PAYMENT_COLORS['debit card'] },
+    'credit card': { label: "Credit Card", color: PAYMENT_COLORS['credit card'] },
     upi: { label: "UPI", color: PAYMENT_COLORS.upi },
-    bank: { label: "Bank Transfer", color: PAYMENT_COLORS.bank },
+    'bank transfer': { label: "Bank Transfer", color: PAYMENT_COLORS['bank transfer'] },
     other: { label: "Other", color: PAYMENT_COLORS.other },
 };
 

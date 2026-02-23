@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Search, SlidersHorizontal, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, Wallet, Banknote, CreditCard, CircleDollarSign, HelpCircle, Tag, Plane, Home, Gift, ShoppingCart, Stethoscope, Gamepad2, School, Laptop, Music, Heart, RefreshCcw, Shirt } from 'lucide-react';
+import { ChevronLeft, Search, SlidersHorizontal, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, Wallet, Banknote, CreditCard, CircleDollarSign, HelpCircle, Tag, Plane, Home, Gift, ShoppingCart, Stethoscope, Gamepad2, School, Laptop, Music, Heart, RefreshCcw, Shirt, Plus, LayoutGrid } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
@@ -58,11 +58,13 @@ const categories = [
     { id: 'shopping', label: 'Shopping', icon: ShoppingBag },
     { id: 'healthcare', label: 'Healthcare', icon: HeartPulse },
     { id: 'entertainment', label: 'Entertainment', icon: Clapperboard },
-    { id: 'others', label: 'Others', icon: CircleDollarSign },
+    { id: 'rent', label: 'Rent', icon: Home },
+    { id: 'education', label: 'Education', icon: School },
+    { id: 'others', label: 'Others', icon: LayoutGrid },
     { id: 'uncategorized', label: 'Uncategorized', icon: HelpCircle },
 ];
 
-const paymentMethods = ['Cash', 'UPI', 'Debit Card', 'Credit Card'];
+const paymentMethods = ['Cash', 'UPI', 'Debit Card', 'Credit Card', 'Bank Transfer'];
 
 type DateRange = {
     from: Date | undefined;

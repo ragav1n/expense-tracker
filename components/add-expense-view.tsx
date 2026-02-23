@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, CreditCard, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, Wallet, Banknote, HelpCircle, RefreshCcw, Calendar as CalendarIcon, Users, User, CheckCircle2, X, Tag, Plane, Home, Gift, ShoppingCart, Gamepad2, School, Laptop, Music, Heart, Smartphone, Shirt } from 'lucide-react';
+import { ChevronLeft, CreditCard, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, Wallet, Banknote, HelpCircle, RefreshCcw, Calendar as CalendarIcon, Users, User, CheckCircle2, X, Tag, Plane, Home, Gift, ShoppingCart, Gamepad2, School, Laptop, Music, Heart, Smartphone, Shirt, LayoutGrid, Building2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -34,9 +34,19 @@ const dropdownCategories: Category[] = [
     { id: 'shopping', label: 'Shopping', icon: ShoppingBag, color: '#A06CD5' },
     { id: 'healthcare', label: 'Healthcare', icon: HeartPulse, color: '#FF9F1C' },
     { id: 'entertainment', label: 'Entertainment', icon: Clapperboard, color: '#FF1493' },
-    { id: 'others', label: 'Others', icon: HelpCircle, color: '#2DD4BF' },
+    { id: 'rent', label: 'Rent', icon: Home, color: '#6366F1' },
+    { id: 'education', label: 'Education', icon: School, color: '#84CC16' },
+    { id: 'others', label: 'Others', icon: LayoutGrid, color: '#2DD4BF' },
     { id: 'uncategorized', label: 'Uncategorized', icon: HelpCircle, color: '#94A3B8' },
 ];
+
+const PAYMENT_METHOD_COLORS: Record<string, string> = {
+    'Cash': '#22C55E',
+    'UPI': '#F59E0B',
+    'Debit Card': '#3B82F6',
+    'Credit Card': '#A855F7',
+    'Bank Transfer': '#06B6D4',
+};
 
 export function AddExpenseView() {
     const router = useRouter();
@@ -46,7 +56,7 @@ export function AddExpenseView() {
     const [description, setDescription] = useState('');
     const [notes, setNotes] = useState('');
     const [date, setDate] = useState<Date | undefined>(new Date());
-    const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Debit Card' | 'Credit Card' | 'UPI'>('Cash');
+    const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Debit Card' | 'Credit Card' | 'UPI' | 'Bank Transfer'>('Cash');
     const [loading, setLoading] = useState(false);
     const { currency, userId, formatCurrency, convertAmount, CURRENCY_SYMBOLS, CURRENCY_DETAILS } = useUserPreferences();
     const [txCurrency, setTxCurrency] = useState(currency);
@@ -455,26 +465,48 @@ export function AddExpenseView() {
                 <div className="space-y-2">
                     <label className="text-sm font-medium">Payment Method</label>
                     <div className="grid grid-cols-2 gap-2">
-                        {(['Cash', 'UPI', 'Debit Card', 'Credit Card'] as const).map((method) => (
-                            <div
-                                key={method}
-                                onClick={() => setPaymentMethod(method)}
-                                className={cn(
-                                    "flex items-center justify-start gap-3 p-3 rounded-xl border cursor-pointer transition-all",
-                                    paymentMethod === method
-                                        ? "bg-primary/20 border-primary text-primary"
-                                        : "bg-secondary/10 border-white/10 hover:bg-secondary/20"
-                                )}
-                            >
-                                <div className="w-8 h-8 rounded-full bg-secondary/20 flex items-center justify-center shrink-0">
-                                    {method === 'Cash' ? <Banknote className="w-4 h-4" /> :
-                                        method === 'UPI' ? <Smartphone className="w-4 h-4" /> :
-                                            method === 'Debit Card' ? <CreditCard className="w-4 h-4" /> :
-                                                <Wallet className="w-4 h-4" />}
+                        {(['Cash', 'UPI', 'Debit Card', 'Credit Card', 'Bank Transfer'] as const).map((method, index) => {
+                            const isSelected = paymentMethod === method;
+                            const color = PAYMENT_METHOD_COLORS[method];
+                            
+                            return (
+                                <div
+                                    key={method}
+                                    onClick={() => setPaymentMethod(method)}
+                                    className={cn(
+                                        "flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all",
+                                        isSelected
+                                            ? "border-white/20 shadow-lg"
+                                            : "bg-secondary/10 border-white/5 hover:bg-secondary/20",
+                                        index === 4 && "col-span-2"
+                                    )}
+                                    style={{
+                                        backgroundColor: isSelected ? `${color}20` : undefined,
+                                        borderColor: isSelected ? color : undefined,
+                                    }}
+                                >
+                                    <div 
+                                        className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors"
+                                        style={{ 
+                                            backgroundColor: isSelected ? `${color}30` : 'rgba(255,255,255,0.05)',
+                                            color: isSelected ? color : 'inherit'
+                                        }}
+                                    >
+                                        {method === 'Cash' ? <Banknote className="w-4 h-4" /> :
+                                            method === 'UPI' ? <Smartphone className="w-4 h-4" /> :
+                                                method === 'Debit Card' ? <CreditCard className="w-4 h-4" /> :
+                                                    method === 'Credit Card' ? <Wallet className="w-4 h-4" /> :
+                                                        <Building2 className="w-4 h-4" />}
+                                    </div>
+                                    <span 
+                                        className="text-sm font-medium transition-colors"
+                                        style={{ color: isSelected ? color : undefined }}
+                                    >
+                                        {method}
+                                    </span>
                                 </div>
-                                <span className="text-sm font-medium">{method}</span>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             </div>

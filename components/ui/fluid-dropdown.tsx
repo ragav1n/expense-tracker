@@ -75,22 +75,16 @@ const IconWrapper = ({
     color,
 }: { icon: React.ElementType; isHovered: boolean; color: string }) => (
     <motion.div
-        className="w-4 h-4 mr-2 relative"
+        className="w-4 h-4 mr-2 relative flex items-center justify-center"
         initial={false}
-        animate={isHovered ? { scale: 1.2 } : { scale: 1 }}
+        animate={isHovered ? { scale: 1.25 } : { scale: 1 }}
+        transition={{ type: "spring", stiffness: 400, damping: 10 }}
     >
-        <Icon className="w-4 h-4" />
-        {isHovered && (
-            <motion.div
-                className="absolute inset-0"
-                style={{ color }}
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 1 }}
-                transition={{ duration: 0.5, ease: "easeInOut" }}
-            >
-                <Icon className="w-4 h-4" strokeWidth={2} />
-            </motion.div>
-        )}
+        <Icon 
+            className="w-4 h-4 transition-colors duration-200" 
+            style={{ color: color }} 
+            strokeWidth={isHovered ? 2.5 : 2}
+        />
     </motion.div>
 )
 

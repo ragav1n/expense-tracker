@@ -5,7 +5,7 @@ import { BudgetAlertManager } from '@/components/budget-alert-manager';
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useRouter } from 'next/navigation';
-import { Plus, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, CircleDollarSign, ArrowUpRight, ArrowDownLeft, Users, MoreVertical, Pencil, Trash2, X, History, Clock, HelpCircle, Tag, Plane, Home, Gift, ShoppingCart, Stethoscope, Gamepad2, School, Laptop, Music, Heart, RefreshCcw, Wallet, ChevronRight, Check, Shirt } from 'lucide-react';
+import { Plus, Utensils, Car, Zap, ShoppingBag, HeartPulse, Clapperboard, CircleDollarSign, ArrowUpRight, ArrowDownLeft, Users, MoreVertical, Pencil, Trash2, X, History, Clock, HelpCircle, Tag, Plane, Home, Gift, ShoppingCart, Stethoscope, Gamepad2, School, Laptop, Music, Heart, RefreshCcw, Wallet, ChevronRight, Check, Shirt, LayoutGrid } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Pie, PieChart, Cell } from 'recharts';
@@ -57,6 +57,8 @@ const CATEGORY_COLORS: Record<string, string> = {
     shopping: '#F9C74F',  // Yellow
     healthcare: '#FF9F1C', // Orange
     entertainment: '#FF1493', // Deep Pink
+    rent: '#6366F1',       // Bright Indigo
+    education: '#84CC16',  // Bright Lime
     others: '#2DD4BF',    // Mint
     settlement: '#10B981', // Emerald for settlement
     uncategorized: '#6366F1', // Indigo-500 for Uncategorized
@@ -95,6 +97,8 @@ const chartConfig: ChartConfig = {
     shopping: { label: "Shopping", color: CATEGORY_COLORS.shopping },
     healthcare: { label: "Healthcare", color: CATEGORY_COLORS.healthcare },
     entertainment: { label: "Entertainment", color: CATEGORY_COLORS.entertainment },
+    rent: { label: "Rent", color: CATEGORY_COLORS.rent },
+    education: { label: "Education", color: CATEGORY_COLORS.education },
     others: { label: "Others", color: CATEGORY_COLORS.others },
     uncategorized: { label: "Uncategorized", color: CATEGORY_COLORS.uncategorized },
 };
@@ -569,11 +573,17 @@ export function DashboardView() {
     const spendingByCategory = useMemo(() => transactions.reduce((acc, tx) => {
         if (!userId) return acc;
 
-        // Include all categories (settlements now inherit category)
-
-        // Filter for current month using parseISO
-        const txDate = parseISO(tx.date);
-        if (!isSameMonth(txDate, new Date())) return acc;
+        if (isBucketFocused) {
+            // Project Focus: show all expenses for this project bucket (all time)
+            if (tx.bucket_id !== effectiveFocus) return acc;
+        } else {
+            // Allowance Focus: exclude project elements that are marked explicitly
+            if (tx.exclude_from_allowance) return acc;
+            
+            // Filter for current month using parseISO
+            const txDate = parseISO(tx.date);
+            if (!isSameMonth(txDate, new Date())) return acc;
+        }
 
         const cat = tx.category.toLowerCase();
         const myShare = calculateUserShare(tx, userId);
@@ -591,7 +601,7 @@ export function DashboardView() {
             }
         }
         return acc;
-    }, {} as Record<string, number>), [transactions, userId, calculateUserShare, currency, convertAmount]);
+    }, {} as Record<string, number>), [transactions, userId, isBucketFocused, effectiveFocus, calculateUserShare, currency, convertAmount]);
 
     const spendingData: SpendingCategory[] = useMemo(() => Object.entries(spendingByCategory).map(([cat, value]) => ({
         name: cat.charAt(0).toUpperCase() + cat.slice(1),
@@ -611,6 +621,9 @@ export function DashboardView() {
         case 'shopping': return <ShoppingBag className={className} />;
         case 'healthcare': return <HeartPulse className={className} />;
         case 'entertainment': return <Clapperboard className={className} />;
+        case 'rent': return <Home className={className} />;
+        case 'education': return <School className={className} />;
+        case 'others': return <LayoutGrid className={className} />;
         case 'settlement': return <ArrowUpRight className={className} />;
         case 'uncategorized': return <HelpCircle className={className} />;
         default: return <CircleDollarSign className={className} />;
@@ -1019,7 +1032,13 @@ export function DashboardView() {
                         <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-6">
                             {spendingData.length > 0 ? (
                                 <>
-                                    <div className="w-32 h-32 relative flex-shrink-0">
+                                    <motion.div 
+                                        key={dashboardFocus}
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ duration: 0.5, ease: "easeOut" }}
+                                        className="w-32 h-32 relative flex-shrink-0"
+                                    >
                                         <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[250px]">
                                             <PieChart>
                                                 <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
@@ -1032,6 +1051,12 @@ export function DashboardView() {
                                                     paddingAngle={5}
                                                     cornerRadius={5}
                                                     strokeWidth={0}
+                                                    isAnimationActive={true}
+                                                    animationBegin={0}
+                                                    animationDuration={1500}
+                                                    animationEasing="ease-in-out"
+                                                    startAngle={90}
+                                                    endAngle={450}
                                                 >
                                                     {spendingData.map((entry, index) => (
                                                         <Cell key={`cell-${index}`} fill={entry.color} />
@@ -1039,7 +1064,7 @@ export function DashboardView() {
                                                 </Pie>
                                             </PieChart>
                                         </ChartContainer>
-                                    </div>
+                                    </motion.div>
                                     <div className="w-full flex-1 space-y-3">
                                         {spendingData.map((item) => (
                                             <div key={item.name} className="flex items-center justify-between text-[11px]">

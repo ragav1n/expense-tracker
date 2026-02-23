@@ -85,7 +85,7 @@ export function ImportView() {
 
     // Categories for mapping/fallback
     const CATEGORIES = [
-        'Food', 'Groceries', 'Fashion', 'Transport', 'Bills', 'Shopping', 'Healthcare', 'Entertainment', 'Others', 'Uncategorized'
+        'Food', 'Groceries', 'Fashion', 'Transport', 'Bills', 'Shopping', 'Healthcare', 'Entertainment', 'Rent', 'Education', 'Others', 'Uncategorized'
     ];
 
     const findHeaderRow = (data: any[][]): { index: number, headers: string[] } => {
@@ -343,7 +343,9 @@ export function ImportView() {
                 else if (lowerDesc.includes('shirt') || lowerDesc.includes('clothes') || lowerDesc.includes('fashion') || lowerDesc.includes('zara') || lowerDesc.includes('h&m') || lowerDesc.includes('apparel')) category = 'Fashion';
                 else if (lowerDesc.includes('netflix') || lowerDesc.includes('spotify') || lowerDesc.includes('movie') || lowerDesc.includes('cinema')) category = 'Entertainment';
                 else if (lowerDesc.includes('pharmacy') || lowerDesc.includes('doctor') || lowerDesc.includes('hospital')) category = 'Healthcare';
-                else if (lowerDesc.includes('bill') || lowerDesc.includes('rent') || lowerDesc.includes('electricity') || lowerDesc.includes('recharge')) category = 'Bills';
+                else if (lowerDesc.includes('bill') || lowerDesc.includes('electricity') || lowerDesc.includes('recharge')) category = 'Bills';
+                else if (lowerDesc.includes('rent') || lowerDesc.includes('lease') || lowerDesc.includes('landlord')) category = 'Rent';
+                else if (lowerDesc.includes('school') || lowerDesc.includes('tuition') || lowerDesc.includes('course') || lowerDesc.includes('education') || lowerDesc.includes('college') || lowerDesc.includes('university')) category = 'Education';
                 else if (lowerDesc.includes('shop') || lowerDesc.includes('amazon') || lowerDesc.includes('flipkart') || lowerDesc.includes('myntra')) category = 'Shopping';
             }
 
